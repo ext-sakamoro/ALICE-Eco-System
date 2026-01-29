@@ -1,0 +1,25 @@
+[package]
+name = "alice-eco-system"
+version = "0.1.0"
+edition = "2021"
+authors = ["Moroya Sakamoto"]
+description = "ALICE Ecosystem Integration Demo - Edge → Streaming → DB"
+license = "MIT"
+repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
+
+[dependencies]
+# ALICE Ecosystem (Python bindings disabled for integration demo)
+alice-edge = { path = "../ALICE-Edge" }
+alice-db = { path = "../ALICE-DB", default-features = false }
+libasp = { path = "../ALICE-Streaming-Protocol", default-features = false }
+
+# Utilities
+tempfile = "3"
+
+[[bin]]
+name = "alice-demo"
+path = "src/main.rs"
+
+[[example]]
+name = "sensor_pipeline"
+path = "examples/sensor_pipeline.rs"
