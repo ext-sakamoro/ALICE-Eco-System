@@ -3,11 +3,12 @@
 //! Demonstrates the complete data pipeline with ZERO unnecessary allocations.
 //!
 //! ```text
-//! [Sensor Generator (Iterator)] → [Edge: Stack Only] → [Network] → [DB: Batch Write]
+//! [Sensor Generator (Iterator)] → [Edge: Stack Only] → [Network] → [DB: Batch Write] → [View]
 //! ```
 
 use alice_db::{AliceDB, Aggregation};
 use alice_edge::fit_linear_fixed;
+use alice_view::{ViewerConfig, launch_viewer};
 use tempfile::tempdir;
 
 // Constants
@@ -230,6 +231,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     // SUMMARY
     // ========================================================================
+    // ========================================================================
+    // PHASE 6: ALICE-VIEW VISUALIZATION (Optional)
+    // ========================================================================
+    println!("━━━ PHASE 6: ALICE-View Visualization ━━━");
+    println!("  GPU-accelerated procedural rendering available!");
+    println!();
+    println!("  Data can be visualized as:");
+    println!("    - Perlin noise terrain (temperature → elevation)");
+    println!("    - Voronoi cells (sensor clustering)");
+    println!("    - Mandelbrot fractal (infinite zoom demo)");
+    println!("    - Plasma effect (animated data flow)");
+    println!();
+
+    // Check if --view flag is passed
+    let launch_view = std::env::args().any(|arg| arg == "--view");
+
+    if launch_view {
+        println!("  Launching ALICE-View...");
+        println!("  Controls: Scroll=Zoom, Drag=Pan, F1=X-Ray, F2=Stats, Space=Pause");
+        println!();
+    } else {
+        println!("  Run with --view to launch the visualization window");
+        println!();
+    }
+
+    // ========================================================================
+    // SUMMARY
+    // ========================================================================
     println!("╔══════════════════════════════════════════════════════════════╗");
     println!("║           PIPELINE SUMMARY (TRUE KARIKARI EDITION)           ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
@@ -251,7 +280,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
              stats.total_disk_size, stats.average_compression_ratio);
     println!("║     ▼                                                        ║");
     println!("║  [Query]                                                     ║");
-    println!("║     └─ Point, Range, Aggregation (SIMD accelerated)          ║");
+    println!("║     │ Point, Range, Aggregation (SIMD accelerated)           ║");
+    println!("║     ▼                                                        ║");
+    println!("║  [ALICE-View] (GPU Procedural Rendering)                     ║");
+    println!("║     └─ wgpu + egui, infinite zoom, X-Ray mode                ║");
     println!("║                                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  OPTIMIZATIONS APPLIED (TRUE KARIKARI):                      ║");
@@ -271,5 +303,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("✓ ALICE Ecosystem Integration: SUCCESS (True Karikari - Zero Malloc)");
 
     db.close()?;
+
+    // Launch viewer if requested (after DB close to free resources)
+    if launch_view {
+        launch_viewer(ViewerConfig {
+            title: "ALICE Ecosystem - Data Visualization".to_string(),
+            show_stats: true,
+            ..Default::default()
+        })?;
+    }
+
     Ok(())
 }

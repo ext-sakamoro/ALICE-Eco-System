@@ -12,6 +12,7 @@ repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 alice-edge = { path = "../ALICE-Edge" }
 alice-db = { path = "../ALICE-DB", default-features = false }
 libasp = { path = "../ALICE-Streaming-Protocol", default-features = false }
+alice-view = { path = "../ALICE-View" }
 
 # Utilities
 tempfile = "3"
