@@ -23,6 +23,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-DB](https://github.com/ext-sakamoro/ALICE-DB) | Model-based storage | 50-100x compression |
 | [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | General compression | Variable ratio |
 | [ALICE-View](https://github.com/ext-sakamoro/ALICE-View) | GPU visualization | Infinite zoom, X-Ray |
+| [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | Voice codec | 100-600x compression |
+| [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | Text/log compression | 27-43% ratio |
+| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | 3D shape encoding | 10-1000x compression |
 
 ## Quick Start
 
