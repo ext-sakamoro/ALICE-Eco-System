@@ -178,6 +178,32 @@ ALICE-SDF + ALICE-CDN + ALICE-Cache combine to deliver 3D assets as mathematical
 | CSG (10 ops) | 200-500 KB | ~500 bytes | **400-1000x** |
 | Complex scene (100 nodes) | 2-4 MB | 2-4 KB | **500-1000x** |
 
+## Demo: Game Engine Pipeline
+
+ALICE-Sync + ALICE-Physics combine for deterministic multiplayer game networking. Only player inputs (~24 bytes) are synchronized — physics state is never transmitted.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Player    │────▶│ ALICE-Sync  │────▶│ALICE-Physics│────▶│ ALICE-View  │
+│  InputFrame │     │  Rollback   │     │  Fix128     │     │  wgpu       │
+│  (24 bytes) │     │  Lockstep   │     │  XPBD Step  │     │  Rendering  │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                    InputFrame(i16)     FrameInput(Fix128)
+                    ──── bridge ────▶
+                    SimChecksum(u64) ◀── WorldHash(u64)
+```
+
+| Metric | State Sync | ALICE Input Sync |
+|--------|-----------|-----------------|
+| Bandwidth (4p, 60fps) | ~960 KB/s | **5.6 KB/s** |
+| Determinism | Approximate | **Bit-exact** |
+| Rollback | Full state transfer | **24-byte input replay** |
+
+The `physics_bridge` module (feature `physics`) provides:
+- `sync_input_to_physics()` / `physics_input_to_sync()` — InputFrame (i16) ↔ FrameInput (Fix128)
+- `physics_checksum_to_world_hash()` — Desync verification
+- `PhysicsRollbackSession` — Combined rollback sync + deterministic physics
+
 ## Use Cases
 
 ### IoT / Edge Computing
@@ -190,6 +216,12 @@ ALICE-SDF + ALICE-CDN + ALICE-Cache combine to deliver 3D assets as mathematical
 - Procedural content (CSG recipes instead of baked meshes)
 - Collaborative 3D editing (SDF diffs at minimal bandwidth)
 - IoT/Edge 3D (80 bytes vs 20 KB per object)
+
+### Multiplayer Game Engine
+- Deterministic lockstep / rollback netcode (5.6 KB/s for 4 players)
+- Physics-accurate rollback with snapshot restore
+- Cross-platform bit-exact simulation (128-bit fixed-point)
+- SDF asset streaming for game worlds (200-800x vs glTF)
 
 ### Benefits
 - **Bandwidth**: 99% reduction in data transmission
