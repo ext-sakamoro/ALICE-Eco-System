@@ -16,7 +16,7 @@
 │                                                                             │
 │  ┌──── Compute ──────┐  ┌─── Analytics ──┐  ┌─── Application ────────┐  │
 │  │ Container  ML     │  │ Analytics      │  │ Browser  Eco-System    │  │
-│  │ Physics    TRT    │  │ View           │  │ (Edge → DB → View)     │  │
+│  │ Physics+NC TRT    │  │ View           │  │ (Edge → DB → View)     │  │
 │  └───────────────────┘  └────────────────┘  └────────────────────────┘  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -53,7 +53,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-API](https://github.com/ext-sakamoro/ALICE-API) | v0.2.0 | API Gateway with Distributed Rate Limiting | GCRA lock-free, SFQ, zero-copy splice | AGPL-3.0 |
 | [ALICE-CDN](https://github.com/ext-sakamoro/ALICE-CDN) | v0.2.0 | Decentralized Content Delivery | Vivaldi coordinates, SIMD, Maglev hashing | AGPL-3.0 |
 | [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | v1.0.0 | High-Performance Video Streaming Codec | FlatBuffers, motion estimation, SIMD | MIT |
-| [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | v0.6.0 | P2P Synchronization via Event Diffing | 18-byte events, bit-exact determinism | AGPL-3.0 |
+| [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | v0.6.0 | P2P Synchronization via Event Diffing | 18-byte events, bit-exact determinism, Lockstep/Rollback, PyO3 | AGPL-3.0 |
 
 ### Security & Cryptography
 
@@ -69,7 +69,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Container](https://github.com/ext-sakamoro/ALICE-Container) | v0.2.0 | Minimal Container Runtime | Direct cgroup v2, io_uring, clone3, PSI | AGPL-3.0 |
 | [ALICE-ML](https://github.com/ext-sakamoro/ALICE-ML) | v0.1.0 | 1.58-bit Ternary Inference Engine | {-1,0,+1} only, 16x compression, no multiply | AGPL-3.0 |
 | [ALICE-TRT](https://github.com/ext-sakamoro/ALICE-TRT) | v0.1.0 | GPU Ternary Inference Engine | wgpu/CUDA, BitNet, GPU-accelerated matmul | AGPL-3.0 |
-| [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | v0.2.0 | Deterministic 128-bit Physics Engine | I64F64, CORDIC, XPBD, GJK/EPA, BVH | AGPL-3.0 |
+| [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | v0.3.0 | Deterministic 128-bit Physics Engine | I64F64, CORDIC, XPBD, GJK/EPA, BVH, Netcode, PyO3 | AGPL-3.0 |
 
 ### Analytics & Visualization
 
@@ -158,12 +158,38 @@ cargo run -- --view
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
+## Demo: SDF Asset Delivery Pipeline
+
+ALICE-SDF + ALICE-CDN + ALICE-Cache combine to deliver 3D assets as mathematical descriptions instead of polygon meshes, achieving **200-800x bandwidth reduction** vs glTF.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Client    │────▶│ ALICE-CDN   │────▶│ ALICE-Cache │────▶│ ALICE-SDF   │
+│  Request    │     │  Vivaldi    │     │  Markov     │     │  ASDF       │
+│  (asset_id) │     │  Routing    │     │  Prefetch   │     │  ~80 bytes  │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                    O(log n + k)         lock-free            vs glTF 20 KB
+                    nearest node         prediction           = 200-300x
+```
+
+| Asset Type | glTF Size | SDF Size | Ratio |
+|------------|-----------|----------|-------|
+| Sphere | 15-25 KB | ~80 bytes | **200-300x** |
+| CSG (10 ops) | 200-500 KB | ~500 bytes | **400-1000x** |
+| Complex scene (100 nodes) | 2-4 MB | 2-4 KB | **500-1000x** |
+
 ## Use Cases
 
 ### IoT / Edge Computing
 - Smart sensors (temperature, humidity, pressure)
 - Industrial monitoring (vibration, flow rate)
 - Agriculture (soil moisture, weather stations)
+
+### 3D Asset Delivery
+- Game level streaming (SDF zones, Markov prefetch)
+- Procedural content (CSG recipes instead of baked meshes)
+- Collaborative 3D editing (SDF diffs at minimal bandwidth)
+- IoT/Edge 3D (80 bytes vs 20 KB per object)
 
 ### Benefits
 - **Bandwidth**: 99% reduction in data transmission
