@@ -204,6 +204,33 @@ The `physics_bridge` module (feature `physics`) provides:
 - `physics_checksum_to_world_hash()` — Desync verification
 - `PhysicsRollbackSession` — Combined rollback sync + deterministic physics
 
+## Demo: Data Pipeline
+
+ALICE-Queue + ALICE-Analytics + ALICE-DB combine for IoT/log collection with streaming aggregation and model-based persistent storage.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ Sensor/App  │────▶│ ALICE-Queue │────▶│  Analytics  │────▶│  ALICE-DB   │
+│  MetricEvent│     │ SPSC + WAL  │     │ HLL,DDSketch│     │ LSM-Tree    │
+│  (17 bytes) │     │ Exactly-once│     │  Streaming  │     │ Model-Based │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                    Lock-free O(1)      Counter, Gauge       O(1) point query
+                    mmap persistence    P50/P90/P99          50-1000x compress
+```
+
+| Metric | Raw Logging | ALICE Data Pipeline |
+|--------|------------|---------------------|
+| Per-event size | ~200 bytes (JSON) | **17 bytes** (binary) |
+| Storage (1M events) | ~200 MB | **~6 entries/metric** (aggregated) |
+| Query latency | O(N) scan | **O(1)** model compute |
+| Privacy | Full raw data | **Only aggregates stored** |
+
+The `queue_bridge` module (feature `queue` in ALICE-Analytics) and `analytics_bridge` module (feature `analytics` in ALICE-DB) provide:
+- `encode_metric_payload()` / `parse_metric_event()` — MetricEvent ↔ 17-byte queue payload
+- `QueueConsumerPipeline` — Combined queue drain + streaming aggregation
+- `flush_metrics_to_db()` — Persist pipeline slots to model-based DB
+- `AnalyticsSink` — Combined MetricPipeline + AliceDB with windowed flush
+
 ## Use Cases
 
 ### IoT / Edge Computing
