@@ -3,7 +3,7 @@ name = "alice-eco-system"
 version = "0.1.0"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration Demo - Edge → Streaming → DB"
+description = "ALICE Ecosystem Integration - Edge → CDN → Cache → Physics → Sync → DB Pipeline"
 license = "MIT"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
@@ -30,13 +30,13 @@ crc32fast = "1"
 # Utilities
 tempfile = "3"
 
+[lib]
+name = "alice_eco_system"
+path = "src/lib.rs"
+
 [[bin]]
 name = "alice-demo"
 path = "src/main.rs"
-
-[[example]]
-name = "sensor_pipeline"
-path = "examples/sensor_pipeline.rs"
 
 [[example]]
 name = "sdf_delivery"
