@@ -9,10 +9,23 @@ repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
 [dependencies]
 # ALICE Ecosystem (Python bindings disabled for integration demo)
-alice-edge = { path = "../ALICE-Edge" }
+alice-edge = { path = "../ALICE-Edge", features = ["std"] }
 alice-db = { path = "../ALICE-DB", default-features = false }
 libasp = { path = "../ALICE-Streaming-Protocol", default-features = false }
 alice-view = { path = "../ALICE-View" }
+
+# 3D Asset Delivery Pipeline
+alice-sdf = { path = "../ALICE-SDF", default-features = false }
+alice-cdn = { path = "../ALICE-CDN", features = ["content_types"] }
+alice-cache = { path = "../ALICE-Cache" }
+
+# Game Engine Pipeline
+alice-physics = { path = "../ALICE-Physics", features = ["replay"] }
+alice-sync = { path = "../ALICE-Sync", features = ["telemetry"] }
+
+# Serialization (in-memory ASDF, zero disk I/O)
+bincode = "1"
+crc32fast = "1"
 
 # Utilities
 tempfile = "3"
@@ -24,3 +37,11 @@ path = "src/main.rs"
 [[example]]
 name = "sensor_pipeline"
 path = "examples/sensor_pipeline.rs"
+
+[[example]]
+name = "sdf_delivery"
+path = "examples/sdf_delivery.rs"
+
+[[example]]
+name = "game_pipeline"
+path = "examples/game_pipeline.rs"

@@ -1,4 +1,4 @@
-//! ALICE Ecosystem Integration Demo (Karikari Edition)
+//! ALICE Ecosystem Integration Demo
 //!
 //! Demonstrates the complete data pipeline with ZERO unnecessary allocations.
 //!
@@ -47,30 +47,25 @@ impl Iterator for SensorGenerator {
     }
 }
 
-/// Serialize coefficients (Zero-Copy, Inline)
+/// Serialize two i32 coefficients as single u64 store (Zero-Copy, Inline)
 #[inline(always)]
 fn serialize_coefficients(slope: i32, intercept: i32) -> [u8; 8] {
-    let s_bytes = slope.to_le_bytes();
-    let i_bytes = intercept.to_le_bytes();
-    // Modern compilers optimize this to two 32-bit stores or one 64-bit store
-    [
-        s_bytes[0], s_bytes[1], s_bytes[2], s_bytes[3],
-        i_bytes[0], i_bytes[1], i_bytes[2], i_bytes[3],
-    ]
+    // Pack two i32 → one u64: single 64-bit store instruction
+    let combined = (slope as u32 as u64) | ((intercept as u32 as u64) << 32);
+    combined.to_le_bytes()
 }
 
-/// Deserialize coefficients (Zero-Copy, Inline)
+/// Deserialize two i32 coefficients as single u64 load (Zero-Copy, Inline)
 #[inline(always)]
 fn deserialize_coefficients(buf: &[u8; 8]) -> (i32, i32) {
-    // Safe Rust with compile-time known size - optimizer removes bounds checks
-    let slope = i32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]);
-    let intercept = i32::from_le_bytes([buf[4], buf[5], buf[6], buf[7]]);
-    (slope, intercept)
+    // Unpack u64 → two i32: single 64-bit load + shift
+    let combined = u64::from_le_bytes(*buf);
+    (combined as u32 as i32, (combined >> 32) as u32 as i32)
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("╔══════════════════════════════════════════════════════════════╗");
-    println!("║   ALICE ECOSYSTEM INTEGRATION DEMO (TRUE KARIKARI EDITION)   ║");
+    println!("║         ALICE ECOSYSTEM INTEGRATION DEMO                      ║");
     println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
 
@@ -155,7 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Instead of calling db.put() 1000 times (1000 lock acquisitions),
     // we build a batch and insert once.
     //
-    // TRUE KARIKARI: Stack-allocated fixed array (16KB)
+    // Stack-allocated fixed array (16KB)
     // Zero malloc in user code!
     let mut batch_buffer = [(0i64, 0.0f32); SAMPLE_COUNT];
 
@@ -260,7 +255,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // SUMMARY
     // ========================================================================
     println!("╔══════════════════════════════════════════════════════════════╗");
-    println!("║           PIPELINE SUMMARY (TRUE KARIKARI EDITION)           ║");
+    println!("║                      PIPELINE SUMMARY                         ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║                                                              ║");
     println!("║  [Sensor]                                                    ║");
@@ -286,7 +281,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║     └─ wgpu + egui, infinite zoom, X-Ray mode                ║");
     println!("║                                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
-    println!("║  OPTIMIZATIONS APPLIED (TRUE KARIKARI):                      ║");
+    println!("║  OPTIMIZATIONS APPLIED:                                       ║");
     println!("║    ✓ Stack allocation - sensor buffer (4KB)                  ║");
     println!("║    ✓ Stack allocation - batch buffer (16KB)                  ║");
     println!("║    ✓ Iterator-based generation (lazy evaluation)             ║");
@@ -300,7 +295,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║  BANDWIDTH SAVED: 99.8%                                      ║");
     println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
-    println!("✓ ALICE Ecosystem Integration: SUCCESS (True Karikari - Zero Malloc)");
+    println!("✓ ALICE Ecosystem Integration: SUCCESS (Zero Malloc)");
 
     db.close()?;
 

@@ -52,7 +52,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-API](https://github.com/ext-sakamoro/ALICE-API) | v0.2.0 | API Gateway with Distributed Rate Limiting | GCRA lock-free, SFQ, zero-copy splice | AGPL-3.0 |
 | [ALICE-CDN](https://github.com/ext-sakamoro/ALICE-CDN) | v0.2.0 | Decentralized Content Delivery | Vivaldi coordinates, SIMD, Maglev hashing | AGPL-3.0 |
-| [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | v1.0.0 | High-Performance Video Streaming Codec | FlatBuffers, motion estimation, SIMD | MIT |
+| [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | v1.0.0 | High-Performance Video Streaming Codec | FlatBuffers, motion estimation, SIMD, **media-stack** (Codec+Voice) | MIT |
 | [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | v0.6.0 | P2P Synchronization via Event Diffing | 18-byte events, bit-exact determinism, Lockstep/Rollback, PyO3 | AGPL-3.0 |
 
 ### Security & Cryptography
@@ -99,8 +99,14 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 git clone https://github.com/ext-sakamoro/ALICE-Eco-System.git
 cd ALICE-Eco-System
 
-# Run the integration demo
+# Run the integration demo (Edge → DB → View)
 cargo run
+
+# Run the SDF asset delivery demo (SDF → CDN → Cache)
+cargo run --example sdf_delivery
+
+# Run the game engine pipeline demo (SDF → CDN → Physics → Sync → DB)
+cargo run --example game_pipeline
 
 # Run with GPU visualization
 cargo run -- --view
@@ -120,7 +126,7 @@ cargo run -- --view
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║   ALICE ECOSYSTEM INTEGRATION DEMO (TRUE KARIKARI EDITION)   ║
+║         ALICE ECOSYSTEM INTEGRATION DEMO                      ║
 ╚══════════════════════════════════════════════════════════════╝
 
 ━━━ PHASE 1: Sensor Data Generation (Stack Allocated) ━━━
@@ -166,19 +172,46 @@ ALICE-SDF + ALICE-CDN + ALICE-Cache combine to deliver 3D assets as mathematical
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Client    │────▶│ ALICE-CDN   │────▶│ ALICE-Cache │────▶│ ALICE-SDF   │
 │  Request    │     │  Vivaldi    │     │  Markov     │     │  ASDF       │
-│  (asset_id) │     │  Routing    │     │  Prefetch   │     │  ~80 bytes  │
+│  (asset_id) │     │  Routing    │     │  Prefetch   │     │  38 bytes   │
 └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                    O(log n + k)         lock-free            vs glTF 20 KB
-                    nearest node         prediction           = 200-300x
+                    O(log n + k)         lock-free            vs glTF 15 KB
+                    nearest node         prediction           = 395x
 ```
 
-| Asset Type | glTF Size | SDF Size | Ratio |
-|------------|-----------|----------|-------|
-| Sphere | 15-25 KB | ~80 bytes | **200-300x** |
-| CSG (10 ops) | 200-500 KB | ~500 bytes | **400-1000x** |
-| Complex scene (100 nodes) | 2-4 MB | 2-4 KB | **500-1000x** |
+| Asset Type | glTF Size | ASDF Size | Ratio |
+|------------|-----------|-----------|-------|
+| Sphere | ~15 KB | **38 bytes** | **395x** |
+| CSG (union+subtract) | ~200 KB | **58 bytes** | **3,448x** |
+| Complex scene (100 nodes) | ~2 MB | **398 bytes** | **5,025x** |
 
-## Demo: Game Engine Pipeline
+## Demo: Full Game Engine Pipeline (6 Crates)
+
+The `game_pipeline` example demonstrates cross-crate integration across 6 ALICE components:
+
+```
+[ALICE-SDF]        Create world geometry (ASDF binary)
+     ↓
+[ALICE-CDN]        Type-aware content routing (ASDF detection)
+     ↓
+[ALICE-Physics]    Deterministic simulation (128-bit fixed-point)
+     ↓
+[ALICE-Sync]       Input synchronization (Lockstep)
+     ↓
+[ALICE-DB]         Replay recording + Telemetry (model-based compression)
+```
+
+Cross-crate bridges demonstrated:
+- **SDF → Physics** — `physics_bridge` (`impl SdfField for CompiledSdf`)
+- **Physics → DB** — `replay.rs` (trajectory compression)
+- **Sync → DB** — `telemetry.rs` (metric time-series)
+- **CDN ← SDF** — `content_types` (ASDF detection)
+- **Sync → Physics** — `physics_bridge` (`PhysicsRollbackSession`)
+
+```bash
+cargo run --example game_pipeline
+```
+
+## Demo: Game Engine Networking
 
 ALICE-Sync + ALICE-Physics combine for deterministic multiplayer game networking. Only player inputs (~24 bytes) are synchronized — physics state is never transmitted.
 
@@ -231,6 +264,37 @@ The `queue_bridge` module (feature `queue` in ALICE-Analytics) and `analytics_br
 - `flush_metrics_to_db()` — Persist pipeline slots to model-based DB
 - `AnalyticsSink` — Combined MetricPipeline + AliceDB with windowed flush
 
+## Demo: Media Streaming Pipeline
+
+ALICE-Streaming-Protocol + ALICE-Codec + ALICE-Voice combine as a unified **media-stack** for ultra-low bandwidth video+voice streaming.
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌─────────────┐
+│   Camera    │────▶│ ALICE-Codec      │────▶│ ALICE-Streaming  │────▶│  Receiver   │
+│  RGB Frame  │     │ YCoCg-R+Wavelet  │     │  Protocol (ASP)  │     │  Decode +   │
+│  (6.2 MB)   │     │ +rANS  (~50 KB)  │     │  FlatBuffers     │     │  Display    │
+└─────────────┘     └──────────────────┘     └──────────────────┘     └─────────────┘
+
+┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌─────────────┐
+│ Microphone  │────▶│ ALICE-Voice      │────▶│ ALICE-Streaming  │────▶│  Receiver   │
+│  PCM 16kHz  │     │ LPC Parametric   │     │  Protocol (ASP)  │     │  Synthesize │
+│  (32 KB/s)  │     │  (~50 bytes/frm) │     │  FlatBuffers     │     │  + Playback │
+└─────────────┘     └──────────────────┘     └──────────────────┘     └─────────────┘
+```
+
+| Stream | Traditional | ALICE Media Stack |
+|--------|-----------|-------------------|
+| Video (1080p) | 5-10 Mbps (H.265) | **~0.5-2 Mbps** (Wavelet+rANS) |
+| Voice | 32 KB/s (PCM) | **~50 bytes/frame** (LPC, 600x) |
+| Combined | ~5-10 Mbps | **~0.5-2 Mbps** |
+
+Enable with: `libasp = { features = ["media-stack"] }`
+
+Key optimizations:
+- **Rayon parallel 3-channel** video encode/decode (Y/Co/Cg via `rayon::join`)
+- **Voice batch API** for multi-frame processing
+- **Python bindings** with GIL release + NumPy zero-copy
+
 ## Use Cases
 
 ### IoT / Edge Computing
@@ -242,7 +306,7 @@ The `queue_bridge` module (feature `queue` in ALICE-Analytics) and `analytics_br
 - Game level streaming (SDF zones, Markov prefetch)
 - Procedural content (CSG recipes instead of baked meshes)
 - Collaborative 3D editing (SDF diffs at minimal bandwidth)
-- IoT/Edge 3D (80 bytes vs 20 KB per object)
+- IoT/Edge 3D (38 bytes vs 15 KB per object)
 
 ### Multiplayer Game Engine
 - Deterministic lockstep / rollback netcode (5.6 KB/s for 4 players)
