@@ -211,6 +211,18 @@ Cross-crate bridges demonstrated:
 cargo run --example game_pipeline
 ```
 
+### New Cross-Crate Bridges
+
+In addition to the bridges above, the following connections have been added:
+
+- **Sync <-> Cache** -- `cache_bridge` (feature `cache` in ALICE-Sync) / `sync_bridge` (feature `sync` in ALICE-Cache): CRDT-based distributed cache invalidation
+- **Auth <-> Crypto** -- `crypto_bridge` (feature `crypto` in ALICE-Auth) / `auth_bridge` (feature `auth` in ALICE-Crypto): Hardware-backed token signing and authentication-aware key management
+
+### Build Profile Changes
+
+- `[profile.release]`: Added complete release profile section (LTO, codegen-units, strip)
+- `[profile.bench]`: Standardized bench profile added across ecosystem crates
+
 ## Demo: Game Engine Networking
 
 ALICE-Sync + ALICE-Physics combine for deterministic multiplayer game networking. Only player inputs (~24 bytes) are synchronized — physics state is never transmitted.
