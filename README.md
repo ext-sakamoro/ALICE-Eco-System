@@ -213,12 +213,19 @@ Cross-crate bridges demonstrated:
 cargo run --example game_pipeline
 ```
 
-### New Cross-Crate Bridges
+### Cross-Crate Bridge Matrix
 
-In addition to the bridges above, the following connections have been added:
+The ALICE ecosystem contains **82 cross-crate bridges** connecting 26 components. Key bridge categories:
 
-- **Sync <-> Cache** -- `cache_bridge` (feature `cache` in ALICE-Sync) / `sync_bridge` (feature `sync` in ALICE-Cache): CRDT-based distributed cache invalidation
-- **Auth <-> Crypto** -- `crypto_bridge` (feature `crypto` in ALICE-Auth) / `auth_bridge` (feature `auth` in ALICE-Crypto): Hardware-backed token signing and authentication-aware key management
+| Category | Bridges | Description |
+|----------|---------|-------------|
+| **Data Storage** | Cache↔Analytics, Queue→Text, Container→DB, Auth→DB, TRT→DB, Print→DB | Persistence and metrics |
+| **Security** | Auth↔Crypto, Container→Crypto, Auth→API | Encryption, signing, secrets |
+| **Synchronization** | Sync↔Cache, Container→Sync, Cloud-Gateway→Container | Distributed state |
+| **Media** | Voice→Text, TRT→Voice, Browser→Voice | Audio/speech processing |
+| **Content Delivery** | Browser→CDN, Browser→SDF, Browser→View | Routing and rendering |
+| **Search & Analytics** | Text→Search, Browser→Search, Browser→Analytics, Print→Analytics | Indexing and telemetry |
+| **Orchestration** | Cloud-Gateway→Queue, Cloud-Gateway→Container | Message routing and deploy |
 
 ### Build Profile Changes
 
@@ -396,6 +403,156 @@ ALICE-Cloud-Gateway can route SDF scenes from edge devices to ALICE-Print for re
 ```
 
 This enables **scan-to-print**: a Raspberry Pi with a 3D scanner captures an object as SDF, streams it through the cloud gateway, and a remote ALICE-Print instance generates G-code for fabrication — all without ever creating a polygon mesh.
+
+## Demo: Container Orchestration Pipeline (5 Crates)
+
+ALICE-Container + ALICE-Cloud-Gateway + ALICE-Sync + ALICE-Crypto + ALICE-DB combine for secure, synchronized container orchestration with audit logging.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│  Container  │────▶│ ALICE-Sync  │────▶│ALICE-Cloud-GW│────▶│  ALICE-DB   │
+│  Runtime    │     │  Sync Event │     │  Orchestrate │     │  Audit Log  │
+│  cgroup v2  │     │  (18 bytes) │     │  Deploy/Scale│     │  (40 bytes) │
+└─────────────┘     └─────────────┘     └──────────────┘     └─────────────┘
+   │                                           │
+   ▼                                           ▼
+┌─────────────┐                        ┌──────────────┐
+│ALICE-Crypto │                        │ALICE-Container│
+│ seal/open   │                        │ queue_bridge  │
+│ XChaCha20   │                        │ Priority route│
+└─────────────┘                        └──────────────┘
+```
+
+Cross-crate bridges:
+- **Container → DB** — `ContainerRecord` 40-byte serialization + `ContainerDbSink`
+- **Container → Crypto** — `ContainerSecretStore` (XChaCha20-Poly1305 secret management)
+- **Container → Sync** — `ContainerSyncEvent` 18-byte compact sync events + `container_world_hash()`
+- **Cloud-Gateway → Queue** — `GatewayRouter` priority message routing
+- **Cloud-Gateway → Container** — `ContainerOrchestrator` deploy/scale/health_check
+
+## Demo: Compressed Log SIEM Pipeline (4 Crates)
+
+ALICE-Queue + ALICE-Text + ALICE-Search + ALICE-DB combine for a compressed log ingestion pipeline where logs are exception-compressed, full-text indexed, and stored in model-based DB.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Log Source  │────▶│ ALICE-Queue │────▶│ ALICE-Text  │────▶│ALICE-Search │
+│  Raw logs   │     │ text_bridge │     │ search_bridge│     │  FM-Index   │
+│  (~200 B/ev)│     │ Batch+Compr.│     │ Compress+Idx│     │  Backward   │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                                                                    │
+                                                                    ▼
+                                                             ┌─────────────┐
+                                                             │  ALICE-DB   │
+                                                             │  LSM-Tree   │
+                                                             │  50-1000x   │
+                                                             └─────────────┘
+```
+
+| Metric | Traditional SIEM | ALICE Log Pipeline |
+|--------|-----------------|-------------------|
+| Per-event storage | ~200 bytes (JSON) | **~20 bytes** (exception-compressed) |
+| Full-text search | Elasticsearch (GB RAM) | **FM-Index** (~1.0x compressed size) |
+| Storage (1M logs) | ~200 MB | **~20 MB** (compressed + model-based) |
+| Query | O(N) scan | **O(m)** backward search (m = pattern length) |
+
+Cross-crate bridges:
+- **Queue → Text** — `TextLogPipeline` batched log compression via `ALICEText`
+- **Text → Search** — `CompressedSearchIndex` wrapping FM-Index for compressed text
+
+## Demo: AI-Driven SDF Pipeline (3 Crates)
+
+ALICE-TRT + ALICE-View + ALICE-Voice combine for GPU-accelerated inference with neural upscaling and voice feature extraction.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Ternary    │────▶│ ALICE-TRT   │────▶│ ALICE-View  │────▶│   Display   │
+│  Model      │     │ db_bridge   │     │ view_bridge │     │   Neural    │
+│  (2-bit GPU)│     │ Log metrics │     │ Upscale 4x  │     │   Upscaled  │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                           │
+                           ▼
+                    ┌─────────────┐
+                    │ ALICE-Voice │
+                    │ voice_bridge│
+                    │ Mel features│
+                    └─────────────┘
+```
+
+Cross-crate bridges:
+- **TRT → DB** — `TrtDbStore` inference metrics persistence (34-byte `InferenceRecord`)
+- **TRT → View** — `NeuralUpscaler` quality tiers (Performance/Balanced/Quality/UltraQuality)
+- **TRT → Voice** — `GpuVoiceExtractor` mel-frequency feature extraction
+
+## Demo: Zero-Trust Auth Pipeline (3 Crates)
+
+ALICE-Auth + ALICE-DB + ALICE-Crypto combine for zero-trust authentication with audit logging, rate limiting, and Ed25519 signature verification.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Client    │────▶│ ALICE-Auth  │────▶│  ALICE-DB   │
+│  Ed25519    │     │ api_bridge  │     │ db_bridge   │
+│  token+sig  │     │ Verify+Rate │     │ Audit log   │
+└─────────────┘     └─────────────┘     └─────────────┘
+                    │                          │
+                    │ verify(&identity,        │ AuthAuditLog
+                    │  &token, &signature)     │ (43 bytes)
+                    ▼                          ▼
+              ┌─────────────┐          ┌─────────────┐
+              │ALICE-Crypto │          │  Query by   │
+              │ crypto_bridge│         │  identity + │
+              │ BLAKE3 + XCC│          │  time range │
+              └─────────────┘          └─────────────┘
+```
+
+Cross-crate bridges:
+- **Auth → API** — `AuthMiddleware` Ed25519 token verification + sliding window rate limiter
+- **Auth → DB** — `AuthDbStore` audit log persistence (43-byte `AuthAuditLog`, time-range queries)
+- **Auth → Crypto** — Existing `crypto_bridge` for token hashing + session encryption
+
+## Demo: Next-Gen Browser Pipeline (8 Crates)
+
+ALICE-Browser connects to 8 ALICE crates for a fully integrated semantic browser with SDF rendering, CDN routing, voice input, analytics, and compressed text.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                          ALICE-Browser                                    │
+│                                                                          │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐       │
+│  │ text_bridge│  │cache_bridge│  │cdn_bridge  │  │analytics   │       │
+│  │ ALICE-Text │  │ ALICE-Cache│  │ ALICE-CDN  │  │ _bridge    │       │
+│  │ Compress   │  │ DOM cache  │  │ Vivaldi rt │  │ DDSketch   │       │
+│  └────────────┘  └────────────┘  └────────────┘  └────────────┘       │
+│                                                                          │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐       │
+│  │search_bridge│ │view_bridge │  │ sdf_bridge │  │voice_bridge│       │
+│  │ALICE-Search│  │ SDF UI     │  │ Web SDF    │  │ Voice Act. │       │
+│  │ In-page    │  │ Rounded    │  │ Scene eval │  │ Detection  │       │
+│  │ FM-Index   │  │ Rects      │  │ Sphere tr. │  │ Downsample │       │
+│  └────────────┘  └────────────┘  └────────────┘  └────────────┘       │
+│                                                                          │
+│  Core: dom, net, render, engine, simd, branchless, fast_math, mobile    │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+| Feature | Traditional Browser | ALICE-Browser |
+|---------|-------------------|---------------|
+| UI Rendering | Raster/Vector | **SDF** (infinite resolution) |
+| Content Routing | DNS round-robin | **Vivaldi** coordinate nearest-node |
+| Search | JavaScript DOM walk | **FM-Index** O(m) backward search |
+| Text Compression | gzip (~3x) | **Exception-based** (~10-50x) |
+| Analytics | External JS SDK | **Built-in** DDSketch/HLL/CMS |
+| Voice | WebRTC | **Parametric** 600x compression |
+
+Cross-crate bridges (8 total):
+- **Browser → Text** — `text_bridge` compressed DOM content
+- **Browser → Cache** — `cache_bridge` DOM classification caching
+- **Browser → Search** — `search_bridge` in-page FM-Index search
+- **Browser → Analytics** — `analytics_bridge` page load telemetry (DDSketch, HLL, CMS)
+- **Browser → CDN** — `cdn_bridge` Vivaldi coordinate routing
+- **Browser → View (SDF UI)** — `view_bridge` resolution-independent SDF rounded rects
+- **Browser → SDF** — `sdf_bridge` WebSDF scene evaluation + sphere tracing
+- **Browser → Voice** — `voice_bridge` voice activity detection + downsample
 
 ## Use Cases
 
