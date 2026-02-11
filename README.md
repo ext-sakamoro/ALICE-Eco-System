@@ -218,15 +218,17 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **90 cross-crate bridges** connecting 28 components. Key bridge categories:
+The ALICE ecosystem contains **103 cross-crate bridges** connecting 28 components. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
-| **Data Storage** | Cache↔Analytics, Queue→Text, Container→DB, Auth→DB, TRT→DB, Print→DB | Persistence and metrics |
+| **Data Storage** | Cache↔Analytics, Queue→Text, Container→DB, Auth→DB, TRT→DB, Print→DB, Animation→DB, Manga→DB | Persistence and metrics |
 | **Security** | Auth↔Crypto, Container→Crypto, Auth→API | Encryption, signing, secrets |
 | **Synchronization** | Sync↔Cache, Container→Sync, Cloud-Gateway→Container | Distributed state |
-| **Media** | Voice→Text, TRT→Voice, Browser→Voice | Audio/speech processing |
-| **Content Delivery** | Browser→CDN, Browser→SDF, Browser→View | Routing and rendering |
+| **Media** | Voice→Text, TRT→Voice, Browser→Voice, Animation→Voice | Audio/speech processing |
+| **Content Delivery** | Browser→CDN, Browser→SDF, Browser→View, Animation→CDN, Manga→CDN | Routing and rendering |
+| **Anime Pipeline** | Animation→SDF, Animation→Codec, Animation→Cache, Animation→Browser, Animation→ML, Animation→Streaming | Anime production & distribution |
+| **Manga Pipeline** | Manga→SDF, Manga→Print, Manga→Codec, Manga→Cache, Manga→Browser, Manga→Search, Manga→Text | Manga creation & distribution |
 | **Search & Analytics** | Text→Search, Browser→Search, Browser→Analytics, Print→Analytics | Indexing and telemetry |
 | **Orchestration** | Cloud-Gateway→Queue, Cloud-Gateway→Container | Message routing and deploy |
 
