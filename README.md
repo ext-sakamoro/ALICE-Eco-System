@@ -6,17 +6,17 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (24 Components)                     │
+│                          ALICE Ecosystem (26 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
 │  │ Edge   Zip  Codec │  │ DB    Cache │  │ API    CDN    │  │ Auth      │ │
 │  │ Voice  Text  SDF  │  │ Queue Search│  │ Sync Streaming│  │ Crypto    │ │
-│  └───────────────────┘  └────────────┘  └───────────────┘  └───────────┘ │
-│                                                                             │
+│  └───────────────────┘  └────────────┘  │ Cloud-Gateway │  └───────────┘ │
+│                                          └───────────────┘                  │
 │  ┌──── Compute ──────┐  ┌─── Analytics ──┐  ┌─── Application ────────┐  │
-│  │ Container  ML     │  │ Analytics      │  │ Browser  Eco-System    │  │
-│  │ Physics+NC TRT    │  │ View           │  │ (Edge → DB → View)     │  │
+│  │ Container  ML     │  │ Analytics      │  │ Browser  Print         │  │
+│  │ Physics+NC TRT    │  │ View           │  │ Eco-System             │  │
 │  └───────────────────┘  └────────────────┘  └────────────────────────┘  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -54,6 +54,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-CDN](https://github.com/ext-sakamoro/ALICE-CDN) | v0.2.0 | Decentralized Content Delivery | Vivaldi coordinates, SIMD, Maglev hashing | AGPL-3.0 |
 | [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | v1.0.0 | High-Performance Video Streaming Codec | FlatBuffers, motion estimation, SIMD, **media-stack** (Codec+Voice) | MIT |
 | [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | v0.6.0 | P2P Synchronization via Event Diffing | 18-byte events, bit-exact determinism, Lockstep/Rollback, PyO3 | AGPL-3.0 |
+| [ALICE-Cloud-Gateway](https://github.com/ext-sakamoro/ALICE-Cloud-Gateway) | v0.1.0 | Edge-to-Cloud SDF Ingest Gateway | ASP decrypt, BLAKE3 KDF, DDSketch/HLL telemetry | AGPL-3.0 |
 
 ### Security & Cryptography
 
@@ -83,6 +84,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Browser](https://github.com/ext-sakamoro/ALICE-Browser) | v0.2.0 | Semantic Browser | SDF rendering, ML filtering, predictive cache | MIT OR Apache-2.0 |
+| [ALICE-Print](https://github.com/ext-sakamoro/ALICE-Print) | v0.1.0 | Direct SDF-to-G-code Slicer | SIMD 8-wide Marching Squares, O(n) contour, Bambu .3mf | Proprietary |
 
 ### Integration
 
@@ -90,7 +92,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.1.0 | Ecosystem Integration Demo | Edge → Streaming → DB → View pipeline | MIT |
 
-**Total: 24 components** | AGPL-3.0: 14 | MIT: 6 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 2
+**Total: 26 components** | AGPL-3.0: 15 | MIT: 6 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 2 | Proprietary: 1
 
 ## Quick Start
 
@@ -307,6 +309,94 @@ Key optimizations:
 - **Voice batch API** for multi-frame processing
 - **Python bindings** with GIL release + NumPy zero-copy
 
+## Demo: Edge-to-Cloud AR Pipeline (7 Crates)
+
+ALICE-Cloud-Gateway orchestrates the full edge-to-cloud SDF streaming pipeline, connecting 7 ALICE crates for real-time AR data delivery.
+
+```
+┌──────── Edge (Raspberry Pi 5) ────────┐
+│                                        │
+│  Dolphin D5 Lite (USB 3.0)            │
+│       │                                │
+│  [ALICE-Edge]    depth → SDF compress  │
+│  [ALICE-ML]      1.58-bit classify     │
+│  [ALICE-Streaming-Protocol] ASP packet │
+│  [ALICE-Crypto]  seal_packet()         │
+│       │                                │
+└───────┼────────────────────────────────┘
+        │ QUIC/UDP
+        ▼
+┌──────── Cloud (ALICE-Cloud-Gateway) ───┐
+│                                        │
+│  IngestPipeline::process_packet()      │
+│       │                                │
+│       ├─→ ALICE-Crypto   decrypt       │
+│       ├─→ ALICE-DB       SDF storage   │
+│       ├─→ ALICE-Cache    hot frames    │
+│       ├─→ ALICE-Sync     device sync   │
+│       ├─→ ALICE-CDN      edge routing  │
+│       └─→ ALICE-Analytics telemetry    │
+└────────────────────────────────────────┘
+```
+
+| Stage | Data Size | Compression |
+|-------|-----------|-------------|
+| Raw point cloud (100K pts) | 4.8 MB | — |
+| SDF primitives (CSG) | 200-600 B | **8,000-24,000x** |
+| SDF SVO chunks | 2-50 KB | **96-2,400x** |
+| ASP packet (encrypted) | +40 B overhead | negligible |
+
+Cross-crate bridges:
+- **Edge → Crypto** — `seal_packet()` per-device stream encryption (BLAKE3 KDF)
+- **Gateway → DB** — `SdfStorage::store_keyframe()` Morton code spatial indexing
+- **Gateway → Sync** — `CloudSyncHub::process_device_update()` star topology
+- **Gateway → CDN** — `SdfCdnRouter::route_sdf_request()` Maglev + Vivaldi
+- **Gateway → Analytics** — `GatewayTelemetry::record_packet()` DDSketch/HLL/CMS
+
+## Demo: SDF-to-Print Pipeline (3 Crates)
+
+ALICE-SDF + ALICE-Print combine to skip the traditional mesh → STL → slicer pipeline entirely. SDF nodes are sliced directly into G-code toolpaths using SIMD Marching Squares, with optional Bambu Lab .3mf packaging.
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  SDF Node   │────▶│ ALICE-Print │────▶│   G-code    │────▶│  Printer    │
+│  CSG tree   │     │  Slicer     │     │  Marlin /   │     │  Bambu Lab  │
+│  (38 bytes) │     │  SIMD 8-wide│     │  Klipper    │     │  or FDM     │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                    CompiledSdf          154 KB (sphere)
+                    → Z-slice (Rayon)    layer-by-layer
+                    → Marching Squares
+                    → O(n) Contour
+                    → Toolpath → Gcode
+```
+
+| Shape | Traditional Pipeline | ALICE Direct Pipeline | Speedup |
+|-------|---------------------|----------------------|---------|
+| Sphere 15mm | SDF → Mesh (MC) → STL → PrusaSlicer | SDF → G-code (2.2ms) | **No intermediate mesh** |
+| Box 60x40x30 | Mesh → STL export → Import → Slice | SDF → G-code (direct) | **Zero file I/O** |
+| CSG subtract | Boolean mesh ops → Repair → Slice | SDF → G-code (native CSG) | **No mesh repair** |
+
+Cross-crate bridges:
+- **SDF → Print** — `CompiledSdf` bytecode VM + `eval_compiled_batch_simd()` for Z-slice evaluation
+- **Print → .3mf** — `pack_bambu_3mf()` ZIP packaging for Bambu Lab printers
+
+### Cloud-to-Print: Remote Fabrication Pipeline (4 Crates)
+
+ALICE-Cloud-Gateway can route SDF scenes from edge devices to ALICE-Print for remote 3D printing, enabling cloud-based digital fabrication.
+
+```
+┌──────── Edge ─────────┐     ┌──────── Cloud ─────────┐     ┌─── Fabrication ───┐
+│                       │     │                        │     │                   │
+│  [ALICE-Edge]         │     │  [ALICE-Cloud-Gateway] │     │  [ALICE-Print]    │
+│  3D scan → SDF        │────▶│  IngestPipeline        │────▶│  SDF → G-code     │
+│  [ALICE-Crypto]       │     │  → decrypt + store     │     │  → .3mf / .gcode  │
+│  seal_packet()        │     │  → ALICE-DB persist    │     │  → Bambu Lab H2S  │
+│                       │     │  → route to printer    │     │                   │
+└───────────────────────┘     └────────────────────────┘     └───────────────────┘
+```
+
+This enables **scan-to-print**: a Raspberry Pi with a 3D scanner captures an object as SDF, streams it through the cloud gateway, and a remote ALICE-Print instance generates G-code for fabrication — all without ever creating a polygon mesh.
+
 ## Use Cases
 
 ### IoT / Edge Computing
@@ -326,6 +416,13 @@ Key optimizations:
 - Cross-platform bit-exact simulation (128-bit fixed-point)
 - SDF asset streaming for game worlds (200-800x vs glTF)
 
+### 3D Printing / Digital Fabrication
+- Direct SDF-to-G-code slicing (no mesh intermediary)
+- Cloud-to-print via ALICE-Cloud-Gateway (scan → SDF → remote print)
+- CSG operations natively supported (no boolean mesh repair)
+- Bambu Lab .3mf packaging for one-click print
+- LLM-assisted model generation (ALICE-SDF `llm_schema` → ALICE-Print)
+
 ### Benefits
 - **Bandwidth**: 99% reduction in data transmission
 - **Battery**: 90% less power for radio (biggest consumer)
@@ -343,6 +440,7 @@ Key optimizations:
 │  ║  LAYER 7: Application                                                    ║   │
 │  ║  ┌──────────────────────────────────────────────────────────────────┐     ║   │
 │  ║  │ ALICE-Browser  (SDF render, ML filter, smart cache, search)     │     ║   │
+│  ║  │ ALICE-Print    (SDF → G-code, SIMD slicer, Bambu .3mf)         │     ║   │
 │  ║  └─────────────────────────────┬────────────────────────────────────┘     ║   │
 │  ╚════════════════════════════════╪═════════════════════════════════════════╝   │
 │                                   │                                              │
@@ -369,6 +467,9 @@ Key optimizations:
 │  ║  │ ALICE-API│  │   CDN    │  │   Sync   │  │  Streaming    │            ║   │
 │  ║  │ GCRA/SFQ │  │ Vivaldi  │  │ P2P Diff │  │  Protocol     │            ║   │
 │  ║  └─────┬────┘  └────┬─────┘  └────┬─────┘  └──────┬────────┘            ║   │
+│  ║  ┌─────────────────────────────────────────────────────────┐             ║   │
+│  ║  │ ALICE-Cloud-Gateway (ASP ingest, BLAKE3 KDF, telemetry) │             ║   │
+│  ║  └─────────────────────────┬───────────────────────────────┘             ║   │
 │  ╚════════╪═════════════╪════════════╪═══════════════╪═════════════════════╝   │
 │           │             │            │                                            │
 │  ╔════════╪═════════════╪════════════╪══════════════════════════════════════╗   │
