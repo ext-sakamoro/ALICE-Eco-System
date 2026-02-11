@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (26 Components)                     │
+│                          ALICE Ecosystem (28 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -16,8 +16,9 @@
 │                                          └───────────────┘                  │
 │  ┌──── Compute ──────┐  ┌─── Analytics ──┐  ┌─── Application ────────┐  │
 │  │ Container  ML     │  │ Analytics      │  │ Browser  Print         │  │
-│  │ Physics+NC TRT    │  │ View           │  │ Eco-System             │  │
-│  └───────────────────┘  └────────────────┘  └────────────────────────┘  │
+│  │ Physics+NC TRT    │  │ View           │  │ Animation  Manga       │  │
+│  └───────────────────┘  └────────────────┘  │ Eco-System             │  │
+│                                              └────────────────────────┘  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -85,6 +86,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Browser](https://github.com/ext-sakamoro/ALICE-Browser) | v0.2.0 | Semantic Browser | SDF rendering, ML filtering, predictive cache | MIT OR Apache-2.0 |
 | [ALICE-Print](https://github.com/ext-sakamoro/ALICE-Print) | v0.1.0 | Direct SDF-to-G-code Slicer | SIMD 8-wide Marching Squares, O(n) contour, Bambu .3mf | Proprietary |
+| [ALICE-Animation](https://github.com/ext-sakamoro/ALICE-Animation) | v0.1.0 | Anime SDF Direction Engine | SceneGraph, Director/Cut, NPR cel-shading, fake perspective, 20-50KB episodes | Proprietary |
+| [ALICE-Manga](https://github.com/ext-sakamoro/ALICE-Manga) | v0.1.0 | SDF Manga Creation Engine | Bezier strokes, screentone (moire-free), balloon/panel SDF, ASDF export, 2-10KB/page | Proprietary |
 
 ### Integration
 
@@ -92,7 +95,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.1.0 | Ecosystem Integration Demo | Edge → Streaming → DB → View pipeline | MIT |
 
-**Total: 26 components** | AGPL-3.0: 15 | MIT: 6 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 2 | Proprietary: 1
+**Total: 28 components** | AGPL-3.0: 15 | MIT: 6 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 2 | Proprietary: 3
 
 ## Quick Start
 
@@ -215,7 +218,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **82 cross-crate bridges** connecting 26 components. Key bridge categories:
+The ALICE ecosystem contains **90 cross-crate bridges** connecting 28 components. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -554,6 +557,68 @@ Cross-crate bridges (8 total):
 - **Browser → SDF** — `sdf_bridge` WebSDF scene evaluation + sphere tracing
 - **Browser → Voice** — `voice_bridge` voice activity detection + downsample
 
+## Demo: Anime Production Pipeline (3-5 Crates)
+
+ALICE-Animation + ALICE-SDF combine for anime episode production as compact SDF packages (~20-50 KB per episode), replacing hundreds of megabytes of traditional video.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+│  Storyboard │────▶│   ALICE-     │────▶│  ALICE-SDF   │────▶│ ALICE-View  │
+│  Director   │     │  Animation   │     │  ASDF binary │     │  Real-time  │
+│  Cuts/Scenes│     │  SceneGraph  │     │  (20-50 KB)  │     │  NPR render │
+└─────────────┘     │  Camera/NPR  │     └──────────────┘     └─────────────┘
+                    └──────────────┘
+                     ↑ (optional)
+               ┌─────────────┐
+               │ ALICE-Voice │
+               │  Lip sync   │
+               │  (formants) │
+               └─────────────┘
+```
+
+| Metric | Traditional Anime | ALICE Anime Pipeline |
+|--------|------------------|---------------------|
+| Episode file size | 200-500 MB (video) | **20-50 KB** (ASDF) |
+| Resolution | Fixed (1080p/4K) | **Infinite** (SDF) |
+| Character re-pose | Re-draw/re-render | **Timeline keyframe edit** |
+| Localization | Subtitle overlay | **SDF balloon reflow** |
+
+Cross-crate bridges:
+- **Animation → SDF** — SceneGraph actors wrap `SdfNode`, `Timeline` keyframes
+- **Animation → Voice** — `lip_sync` module: `ParametricParams` formant → phoneme → mouth `Timeline`
+- **Animation → View** — CameraState + AnimeShading for NPR rendering
+- **Animation → Streaming-Protocol** — Episode → `SdfSceneDescriptor` for streaming delivery
+
+## Demo: SDF Manga Pipeline (2-3 Crates)
+
+ALICE-Manga + ALICE-SDF produce resolution-independent manga pages as SDF trees (~2-10 KB per page), with mathematically moire-free screentones.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+│  Artist     │────▶│  ALICE-Manga │────▶│  ALICE-SDF   │────▶│  Reader     │
+│  Strokes,   │     │  Panel/Tone  │     │  ASDF binary │     │  ALICE-View │
+│  Balloons   │     │  Balloon     │     │  (2-10 KB)   │     │  or SVG     │
+└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
+                     ↑ (optional)
+               ┌─────────────┐
+               │ ALICE-Text  │
+               │ Localization│
+               │ (compress)  │
+               └─────────────┘
+```
+
+| Metric | Traditional Manga (raster) | ALICE Manga (SDF) |
+|--------|---------------------------|-------------------|
+| Page size | 2-5 MB (PNG/JPEG) | **2-10 KB** (ASDF) |
+| Zoom quality | Pixelated at 200%+ | **Infinite resolution** |
+| Screen tone | Moire at non-native DPI | **Mathematically moire-free** |
+| Localization | Manual text replacement | **Balloon auto-reflow** |
+
+Cross-crate bridges:
+- **Manga → SDF** — Strokes (`Segment2D`/`Bezier`), Panels (`RoundedRect2D`+`Onion`), Tones (`RepeatInfinite`)
+- **Manga → Text** — `compress_tuned()` for dialogue compression
+- **Manga → Animation** — Optional: animated manga (page transitions, panel effects)
+
 ## Use Cases
 
 ### IoT / Edge Computing
@@ -596,8 +661,10 @@ Cross-crate bridges (8 total):
 │  ╔═══════════════════════════════════════════════════════════════════════════╗   │
 │  ║  LAYER 7: Application                                                    ║   │
 │  ║  ┌──────────────────────────────────────────────────────────────────┐     ║   │
-│  ║  │ ALICE-Browser  (SDF render, ML filter, smart cache, search)     │     ║   │
-│  ║  │ ALICE-Print    (SDF → G-code, SIMD slicer, Bambu .3mf)         │     ║   │
+│  ║  │ ALICE-Browser    (SDF render, ML filter, smart cache, search)   │     ║   │
+│  ║  │ ALICE-Print      (SDF → G-code, SIMD slicer, Bambu .3mf)     │     ║   │
+│  ║  │ ALICE-Animation  (Anime SDF direction, NPR, fake perspective) │     ║   │
+│  ║  │ ALICE-Manga      (SDF manga, moire-free tone, balloon reflow) │     ║   │
 │  ║  └─────────────────────────────┬────────────────────────────────────┘     ║   │
 │  ╚════════════════════════════════╪═════════════════════════════════════════╝   │
 │                                   │                                              │
@@ -672,9 +739,72 @@ ALICE:       Store "f(x) = x" for x in [1,10]       → 8 bytes
 
 For sensor data that follows physical laws (temperature gradients, pressure decay, etc.), the mathematical model is often trivially small compared to the raw data.
 
+## License Strategy — 3-Layer Monetization Architecture
+
+The ALICE ecosystem employs a **3-layer license strategy** designed to maximize adoption while protecting high-value authoring tools.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ALICE License Architecture                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  Layer 3: 防壁 (Proprietary/BSL)         ← Revenue generator     │
+│  ┌─────────────────────────────────────────────────────────┐     │
+│  │ ALICE-Animation  ALICE-Manga  ALICE-Print              │     │
+│  │ Pro authoring tools / Encoders / Production pipelines   │     │
+│  │ License: Commercial required for production use         │     │
+│  └─────────────────────────────────────────────────────────┘     │
+│                                                                   │
+│  Layer 2: 致死毒 (AGPL-3.0)              ← SaaS protection       │
+│  ┌─────────────────────────────────────────────────────────┐     │
+│  │ ALICE-Cache  ALICE-Queue  ALICE-DB  ALICE-CDN           │     │
+│  │ ALICE-API  ALICE-Search  ALICE-Auth  ALICE-Crypto       │     │
+│  │ ALICE-Container  ALICE-ML  ALICE-TRT  ALICE-Physics     │     │
+│  │ ALICE-Sync  ALICE-Cloud-Gateway  ALICE-Analytics        │     │
+│  │ Distribution servers / Infrastructure / Backend         │     │
+│  │ AGPL requires source disclosure if used in SaaS         │     │
+│  └─────────────────────────────────────────────────────────┘     │
+│                                                                   │
+│  Layer 1: 撒き餌 (MIT)                   ← Adoption driver       │
+│  ┌─────────────────────────────────────────────────────────┐     │
+│  │ ALICE-SDF  ALICE-Edge  ALICE-Voice  ALICE-View          │     │
+│  │ ALICE-Streaming-Protocol  ALICE-Eco-System              │     │
+│  │ Format definitions / Viewers / Renderers / Decoders     │     │
+│  │ MIT = maximum adoption, anyone can build readers        │     │
+│  └─────────────────────────────────────────────────────────┘     │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Strategy Rationale
+
+| Layer | License | Purpose | Target |
+|-------|---------|---------|--------|
+| **Layer 1: 撒き餌** (Bait) | MIT | Maximize format adoption — free readers, viewers, and decoders ensure the ALICE format becomes ubiquitous | Developers, hobbyists, OSS projects |
+| **Layer 2: 致死毒** (Lethal) | AGPL-3.0 | Prevent SaaS free-riding — any company deploying ALICE infrastructure as a service must open-source modifications or purchase commercial license | Netflix, Amazon, cloud providers |
+| **Layer 3: 防壁** (Fortress) | Proprietary | Protect revenue — authoring tools (Animation, Manga, Print) that create ALICE content require commercial licensing | Production studios, publishers |
+
+### Target Markets
+
+- **Anime**: Netflix, Amazon Prime Video, Crunchyroll — ALICE-Animation replaces 200-500 MB episodes with 20-50 KB ASDF packages
+- **Manga**: ピッコマ, LINE Manga, Kindle — ALICE-Manga replaces 2-5 MB raster pages with 2-10 KB resolution-independent SDF pages
+- **3D Printing**: Bambu Lab, Prusa — ALICE-Print skips mesh intermediary entirely
+
+### Revenue Model
+
+```
+Reading (MIT) ──── FREE ───────────── Everyone can read ALICE content
+Distributing (AGPL) ── OPEN ────────── SaaS providers must open-source or pay
+Creating (Proprietary) ── PAID ─────── Studios/publishers pay for authoring tools
+```
+
+The free reader tier ensures content reaches maximum audience. The AGPL layer ensures infrastructure providers contribute back. The proprietary layer captures value from professional content creators.
+
 ## License
 
-MIT License
+MIT License (this integration demo)
+
+See individual component READMEs for per-crate licenses.
 
 ## Author
 
