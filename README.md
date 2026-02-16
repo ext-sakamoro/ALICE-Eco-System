@@ -753,14 +753,14 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │                    ALICE License Architecture                     │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  Layer 3: 防壁 (Proprietary/BSL)         ← Revenue generator     │
+│  Layer 3: Proprietary/BSL                ← Revenue generator     │
 │  ┌─────────────────────────────────────────────────────────┐     │
 │  │ ALICE-Animation  ALICE-Manga  ALICE-Print              │     │
 │  │ Pro authoring tools / Encoders / Production pipelines   │     │
 │  │ License: Commercial required for production use         │     │
 │  └─────────────────────────────────────────────────────────┘     │
 │                                                                   │
-│  Layer 2: 致死毒 (AGPL-3.0)              ← SaaS protection       │
+│  Layer 2: AGPL-3.0                       ← SaaS protection       │
 │  ┌─────────────────────────────────────────────────────────┐     │
 │  │ ALICE-Cache  ALICE-Queue  ALICE-DB  ALICE-CDN           │     │
 │  │ ALICE-API  ALICE-Search  ALICE-Auth  ALICE-Crypto       │     │
@@ -771,7 +771,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  │ AGPL requires source disclosure if used in SaaS         │     │
 │  └─────────────────────────────────────────────────────────┘     │
 │                                                                   │
-│  Layer 1: 撒き餌 (MIT)                   ← Adoption driver       │
+│  Layer 1: MIT                            ← Adoption driver       │
 │  ┌─────────────────────────────────────────────────────────┐     │
 │  │ ALICE-SDF  ALICE-Edge  ALICE-Voice  ALICE-View          │     │
 │  │ ALICE-Streaming-Protocol  ALICE-Eco-System              │     │
@@ -786,9 +786,9 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 
 | Layer | License | Purpose | Target |
 |-------|---------|---------|--------|
-| **Layer 1: 撒き餌** (Bait) | MIT | Maximize format adoption — free readers, viewers, and decoders ensure the ALICE format becomes ubiquitous | Developers, hobbyists, OSS projects |
-| **Layer 2: 致死毒** (Lethal) | AGPL-3.0 | Prevent SaaS free-riding — any company deploying ALICE infrastructure as a service must open-source modifications or purchase commercial license | Netflix, Amazon, cloud providers |
-| **Layer 3: 防壁** (Fortress) | Proprietary | Protect revenue — authoring tools (Animation, Manga, Print) that create ALICE content require commercial licensing | Production studios, publishers |
+| **Layer 1** | MIT | Maximize format adoption — free readers, viewers, and decoders ensure the ALICE format becomes ubiquitous | Developers, hobbyists, OSS projects |
+| **Layer 2** | AGPL-3.0 | Prevent SaaS free-riding — any company deploying ALICE infrastructure as a service must open-source modifications or purchase commercial license | Netflix, Amazon, cloud providers |
+| **Layer 3** | Proprietary | Protect revenue — authoring tools (Animation, Manga, Print) that create ALICE content require commercial licensing | Production studios, publishers |
 
 ### Target Markets
 
