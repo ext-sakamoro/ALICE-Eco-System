@@ -6,12 +6,13 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (28 Components)                     │
+│                          ALICE Ecosystem (29 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
 │  │ Edge   Zip  Codec │  │ DB    Cache │  │ API    CDN    │  │ Auth      │ │
-│  │ Voice  Text  SDF  │  │ Queue Search│  │ Sync Streaming│  │ Crypto    │ │
+│  │ Voice  Text  SDF  │  │ Queue Search│  │ DNS  Streaming│  │ Crypto    │ │
+│  │                   │  │            │  │ Sync Cloud-GW │  │           │ │
 │  └───────────────────┘  └────────────┘  │ Cloud-Gateway │  └───────────┘ │
 │                                          └───────────────┘                  │
 │  ┌──── Compute ──────┐  ┌─── Analytics ──┐  ┌─── Application ────────┐  │
@@ -31,7 +32,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | v0.1.0 | Embedded Model Generator | 500x compression, no_std, 1KB footprint | MIT |
+| [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | v0.1.0 | Embedded Model Generator | 500x compression, 751ns/1K samples, sensors, MQTT, dashboard | MIT (Core) |
 | [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | v1.0.0 | Procedural Generation Compression | 10-1000x for patterns, LZMA fallback | Open Core (MIT core) |
 | [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | v0.1.0 | 3D Wavelet Video/Audio Codec | CDF 9/7 Wavelet, rANS entropy coding | AGPL-3.0 |
 | [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | v0.1.0 | Voice Procedural Codec | LPC parametric 100-600x, privacy-preserving | MIT |
@@ -56,6 +57,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | v1.0.0 | High-Performance Video Streaming Codec | FlatBuffers, motion estimation, SIMD, **media-stack** (Codec+Voice) | MIT |
 | [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | v0.6.0 | P2P Synchronization via Event Diffing | 18-byte events, bit-exact determinism, Lockstep/Rollback, PyO3 | AGPL-3.0 |
 | [ALICE-Cloud-Gateway](https://github.com/ext-sakamoro/ALICE-Cloud-Gateway) | v0.1.0 | Edge-to-Cloud SDF Ingest Gateway | ASP decrypt, BLAKE3 KDF, DDSketch/HLL telemetry | AGPL-3.0 |
+| [ALICE-DNS](https://github.com/ext-sakamoro/ALICE-DNS) | v0.1.0 | Bloom Filter DNS Ad-Blocker | 453KB binary, O(1) lookup, Pi-hole replacement | AGPL-3.0 |
 
 ### Security & Cryptography
 
@@ -95,7 +97,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.1.0 | Ecosystem Integration Demo | Edge → Streaming → DB → View pipeline | MIT |
 
-**Total: 28 components** | AGPL-3.0: 15 | MIT: 6 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 2 | Proprietary: 3
+**Total: 29 components** | AGPL-3.0: 16 | MIT: 5 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 2 | Proprietary: 3
 
 ## Quick Start
 
@@ -693,9 +695,10 @@ Cross-crate bridges:
 │  ║  │ ALICE-API│  │   CDN    │  │   Sync   │  │  Streaming    │            ║   │
 │  ║  │ GCRA/SFQ │  │ Vivaldi  │  │ P2P Diff │  │  Protocol     │            ║   │
 │  ║  └─────┬────┘  └────┬─────┘  └────┬─────┘  └──────┬────────┘            ║   │
-│  ║  ┌─────────────────────────────────────────────────────────┐             ║   │
-│  ║  │ ALICE-Cloud-Gateway (ASP ingest, BLAKE3 KDF, telemetry) │             ║   │
-│  ║  └─────────────────────────┬───────────────────────────────┘             ║   │
+│  ║  ┌──────────┐  ┌─────────────────────────────────────────────┐          ║   │
+│  ║  │ALICE-DNS │  │ ALICE-Cloud-Gateway (ASP ingest, BLAKE3 KDF)│          ║   │
+│  ║  │Bloom O(1)│  └─────────────────────────┬───────────────────┘          ║   │
+│  ║  └─────┬────┘                            │                              ║   │
 │  ╚════════╪═════════════╪════════════╪═══════════════╪═════════════════════╝   │
 │           │             │            │                                            │
 │  ╔════════╪═════════════╪════════════╪══════════════════════════════════════╗   │
@@ -763,6 +766,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  │ ALICE-API  ALICE-Search  ALICE-Auth  ALICE-Crypto       │     │
 │  │ ALICE-Container  ALICE-ML  ALICE-TRT  ALICE-Physics     │     │
 │  │ ALICE-Sync  ALICE-Cloud-Gateway  ALICE-Analytics        │     │
+│  │ ALICE-DNS                                               │     │
 │  │ Distribution servers / Infrastructure / Backend         │     │
 │  │ AGPL requires source disclosure if used in SaaS         │     │
 │  └─────────────────────────────────────────────────────────┘     │
