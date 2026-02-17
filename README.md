@@ -6,20 +6,25 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (29 Components)                     │
+│                          ALICE Ecosystem (35 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
 │  │ Edge   Zip  Codec │  │ DB    Cache │  │ API    CDN    │  │ Auth      │ │
 │  │ Voice  Text  SDF  │  │ Queue Search│  │ DNS  Streaming│  │ Crypto    │ │
-│  │                   │  │            │  │ Sync Cloud-GW │  │           │ │
-│  └───────────────────┘  └────────────┘  │ Cloud-Gateway │  └───────────┘ │
-│                                          └───────────────┘                  │
+│  │ Synth  Font       │  │            │  │ Sync Cloud-GW │  │           │ │
+│  └───────────────────┘  └────────────┘  └───────────────┘  └───────────┘ │
+│                                                                             │
 │  ┌──── Compute ──────┐  ┌─── Analytics ──┐  ┌─── Application ────────┐  │
 │  │ Container  ML     │  │ Analytics      │  │ Browser  Print         │  │
-│  │ Physics+NC TRT    │  │ View           │  │ Animation  Manga       │  │
-│  └───────────────────┘  └────────────────┘  │ Eco-System             │  │
-│                                              └────────────────────────┘  │
+│  │ Physics    TRT    │  │ View           │  │ Animation  Manga       │  │
+│  │ RTOS              │  └────────────────┘  │ Eco-System             │  │
+│  └───────────────────┘                       └────────────────────────┘  │
+│                                                                             │
+│  ┌──── Motion & VCS ─┐                                                     │
+│  │ Motion  VCS      │                                                     │
+│  │ Kinematics       │                                                     │
+│  └───────────────────┘                                                     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -38,6 +43,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | v0.1.0 | Voice Procedural Codec | LPC parametric 100-600x, privacy-preserving | MIT |
 | [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | v1.0.0 | Exception-Based Text Compression | Pattern recognition, columnar encoding | BSL 1.1 (→MIT 2028) |
 | [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | v0.1.0 | 3D Signed Distance Functions | 10-1000x, infinite resolution, CSG ops | MIT |
+| [ALICE-Synth](https://github.com/ext-sakamoro/ALICE-Synth) | v0.1.0 | Procedural Audio Synthesis | FM/Additive/Subtractive/Wavetable, 64-voice polyphony, no_std | MIT |
+| [ALICE-Font](https://github.com/ext-sakamoro/ALICE-Font) | v0.1.0 | Parametric MetaFont Renderer | 40-byte params → SDF glyphs, variable-width pen, LRU atlas, no_std | MIT |
 
 ### Data & Storage
 
@@ -74,6 +81,15 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-ML](https://github.com/ext-sakamoro/ALICE-ML) | v0.1.0 | 1.58-bit Ternary Inference Engine | {-1,0,+1} only, 16x compression, no multiply | AGPL-3.0 |
 | [ALICE-TRT](https://github.com/ext-sakamoro/ALICE-TRT) | v0.1.0 | GPU Ternary Inference Engine | wgpu/CUDA, BitNet, GPU-accelerated matmul | AGPL-3.0 |
 | [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | v0.3.0 | Deterministic 128-bit Physics Engine | I64F64, CORDIC, XPBD, GJK/EPA, BVH, Netcode, PyO3 | AGPL-3.0 |
+| [ALICE-RTOS](https://github.com/ext-sakamoro/ALICE-RTOS) | v0.1.0 | Math-First Real-Time OS | RMS scheduler, Liu-Layland analysis, SPSC ring, < 2KB kernel | AGPL-3.0 |
+
+### Motion & Version Control
+
+| Component | Version | Description | Feature | License |
+|-----------|---------|-------------|---------|---------|
+| [ALICE-Motion](https://github.com/ext-sakamoro/ALICE-Motion) | v0.1.0 | NURBS/Bezier Trajectory Control | Cox-de Boor, de Casteljau, trapezoidal/S-curve profiles, no_std | MIT |
+| [ALICE-VCS](https://github.com/ext-sakamoro/ALICE-VCS) | v0.1.0 | AST Semantic Version Control | Tree diff, 3-way merge, content-addressed snapshots, FNV-1a Merkle | AGPL-3.0 |
+| [ALICE-Kinematics](https://github.com/ext-sakamoro/ALICE-Kinematics) | v0.1.0 | Human Motion Intent Compression | 7-DoF arm, jerk minimization, 8-byte intent packets, 10,000x compression | Open Core (MIT decoder) |
 
 ### Analytics & Visualization
 
@@ -97,7 +113,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.1.0 | Ecosystem Integration Demo | Edge → Streaming → DB → View pipeline | MIT |
 
-**Total: 29 components** | AGPL-3.0: 16 | MIT: 5 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 2 | Proprietary: 3
+**Total: 35 components** | AGPL-3.0: 18 | MIT: 8 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
 
 ## Quick Start
 
@@ -220,7 +236,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **103 cross-crate bridges** connecting 28 components. Key bridge categories:
+The ALICE ecosystem contains **103+ cross-crate bridges** connecting 33 components. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -717,6 +733,9 @@ Cross-crate bridges:
 │  ║  │ 500x   │ │10-1000x│ │Wavelet │ │LPC 600x│ │Pattern │ │  CSG   │     ║   │
 │  ║  │ no_std │ │  LZMA  │ │  rANS  │ │Privacy │ │Columnar│ │Infinite│     ║   │
 │  ║  └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘     ║   │
+│  ║  ┌────────┐ ┌────────┐                                                   ║   │
+│  ║  │ Synth  │ │  Font  │  Procedural audio + parametric metafont          ║   │
+│  ║  └────┬───┘ └────┬───┘                                                   ║   │
 │  ╚═══════╪══════════╪══════════╪══════════╪══════════╪══════════╪══════════╝   │
 │          │          │          │          │          │          │                  │
 │  ╔═══════╪══════════╪══════════╪══════════╪══════════╪══════════╪══════════╗   │
@@ -727,6 +746,16 @@ Cross-crate bridges:
 │  ║  │ io_uring      │ │ no multiply   │ │ wgpu/CUDA     │ │ XPBD,GJK   │  ║   │
 │  ║  │ clone3, PSI   │ │ SIMD-ready    │ │ BitNet matmul │ │ CORDIC,BVH  │  ║   │
 │  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
+│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐                  ║   │
+│  ║  │  ALICE-RTOS   │ │ ALICE-Motion  │ │  ALICE-VCS    │                  ║   │
+│  ║  │ RMS scheduler │ │ NURBS/Bezier  │ │ AST diff/merge│                  ║   │
+│  ║  │ Liu-Layland   │ │ Trapezoidal   │ │ Merkle hash   │                  ║   │
+│  ║  │ SPSC ring,<2KB│ │ S-curve prof. │ │ Content-addr  │                  ║   │
+│  ║  └───────────────┘ └───────────────┘ └───────────────┘                  ║   │
+│  ║  ┌───────────────────┐                                                  ║   │
+│  ║  │ALICE-Kinematics   │  7-DoF arm, jerk min., 8-byte intent packets    ║   │
+│  ║  │ MIT decoder       │  Open Core (encoder = AGPL-3.0)                  ║   │
+│  ║  └───────────────────┘                                                  ║   │
 │  ╚══════════════════════════════════════════════════════════════════════════╝   │
 │                                                                                  │
 │  All components: Rust | no_std compatible | Zero allocation | Deterministic      │
@@ -766,7 +795,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  │ ALICE-API  ALICE-Search  ALICE-Auth  ALICE-Crypto       │     │
 │  │ ALICE-Container  ALICE-ML  ALICE-TRT  ALICE-Physics     │     │
 │  │ ALICE-Sync  ALICE-Cloud-Gateway  ALICE-Analytics        │     │
-│  │ ALICE-DNS                                               │     │
+│  │ ALICE-DNS  ALICE-Codec  ALICE-RTOS  ALICE-VCS           │     │
 │  │ Distribution servers / Infrastructure / Backend         │     │
 │  │ AGPL requires source disclosure if used in SaaS         │     │
 │  └─────────────────────────────────────────────────────────┘     │
@@ -775,6 +804,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  ┌─────────────────────────────────────────────────────────┐     │
 │  │ ALICE-SDF  ALICE-Edge  ALICE-Voice  ALICE-View          │     │
 │  │ ALICE-Streaming-Protocol  ALICE-Eco-System              │     │
+│  │ ALICE-Synth  ALICE-Motion  ALICE-Font                    │     │
 │  │ Format definitions / Viewers / Renderers / Decoders     │     │
 │  │ MIT = maximum adoption, anyone can build readers        │     │
 │  └─────────────────────────────────────────────────────────┘     │
