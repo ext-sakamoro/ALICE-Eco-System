@@ -1,6 +1,6 @@
 //! RTOS bridges — ALICE-RTOS ↔ Edge, Queue, Container, Analytics, DB
 //!
-//! 5 bridges connecting the math-first RTOS to the ALICE ecosystem.
+//! 8 bridges connecting the math-first RTOS to the ALICE ecosystem.
 
 use alice_rtos::{Kernel, Task, TaskPriority};
 use alice_rtos::kernel::KernelStats;
@@ -162,12 +162,100 @@ pub fn rtos_to_db_log(stats: &KernelStats, timestamp_us: i64) -> RtosDbLogEntry 
     }
 }
 
+// ── Bridge 6: RTOS → Sync (kernel state sync) ──────────────────────
+
+/// RTOS kernel state for ALICE-Sync distributed synchronization.
+pub struct RtosSyncState {
+    /// Utilization snapshot.
+    pub utilization: f32,
+    /// Tasks executed count.
+    pub tasks_executed: u32,
+    /// Context switch count.
+    pub context_switches: u32,
+    /// Whether kernel is schedulable.
+    pub schedulable: bool,
+}
+
+/// Package RTOS kernel state for ALICE-Sync P2P exchange.
+pub fn rtos_to_sync_state(stats: &KernelStats) -> RtosSyncState {
+    RtosSyncState {
+        utilization: stats.utilization,
+        tasks_executed: stats.tasks_executed as u32,
+        context_switches: stats.context_switches as u32,
+        schedulable: stats.schedulable,
+    }
+}
+
+// ── Bridge 7: RTOS → Crypto (encrypted kernel telemetry) ────────────
+
+/// Encrypted RTOS telemetry payload.
+pub struct RtosCryptoPayload {
+    /// Plaintext telemetry bytes.
+    pub plaintext: Vec<u8>,
+    /// Content hash for integrity.
+    pub content_hash: u64,
+    /// Payload size.
+    pub payload_bytes: usize,
+}
+
+/// Prepare RTOS telemetry for ALICE-Crypto encryption.
+pub fn rtos_to_crypto_payload(stats: &KernelStats) -> RtosCryptoPayload {
+    let mut data = Vec::with_capacity(32);
+    data.extend_from_slice(&stats.total_us.to_le_bytes());
+    data.extend_from_slice(&stats.total_ticks.to_le_bytes());
+    data.extend_from_slice(&stats.tasks_executed.to_le_bytes());
+    data.extend_from_slice(&stats.context_switches.to_le_bytes());
+    data.extend_from_slice(&stats.utilization.to_le_bytes());
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    let len = data.len();
+    RtosCryptoPayload {
+        plaintext: data,
+        content_hash: hash,
+        payload_bytes: len,
+    }
+}
+
+// ── Bridge 8: RTOS → Cache (task config caching) ────────────────────
+
+/// RTOS task configuration cache entry for ALICE-Cache.
+pub struct RtosCacheEntry {
+    /// Content hash for cache key.
+    pub content_hash: u64,
+    /// Task count.
+    pub task_count: usize,
+    /// Total utilization.
+    pub utilization: f32,
+    /// Schedulability.
+    pub schedulable: bool,
+}
+
+/// Prepare RTOS kernel analysis for ALICE-Cache storage.
+pub fn rtos_to_cache_entry(stats: &KernelStats, task_count: usize) -> RtosCacheEntry {
+    let mut data = Vec::with_capacity(16);
+    data.extend_from_slice(&stats.utilization.to_le_bytes());
+    data.extend_from_slice(&(task_count as u32).to_le_bytes());
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    RtosCacheEntry {
+        content_hash: hash,
+        task_count,
+        utilization: stats.utilization,
+        schedulable: stats.schedulable,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_rtos::SpscRing;
 
     fn dummy_task(_: &mut [u8]) {}
 
@@ -245,5 +333,52 @@ mod tests {
         let entry = rtos_to_db_log(&stats, 1_000_000);
         assert_eq!(entry.timestamp_us, 1_000_000);
         assert!((entry.utilization - 0.25).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_rtos_to_sync_state() {
+        let stats = KernelStats {
+            total_us: 500_000,
+            total_ticks: 5000,
+            tasks_executed: 250,
+            context_switches: 100,
+            utilization: 0.42,
+            schedulable: true,
+        };
+        let state = rtos_to_sync_state(&stats);
+        assert!((state.utilization - 0.42).abs() < 0.001);
+        assert_eq!(state.tasks_executed, 250);
+        assert!(state.schedulable);
+    }
+
+    #[test]
+    fn test_rtos_to_crypto_payload() {
+        let stats = KernelStats {
+            total_us: 1_000_000,
+            total_ticks: 10_000,
+            tasks_executed: 100,
+            context_switches: 50,
+            utilization: 0.25,
+            schedulable: true,
+        };
+        let crypto = rtos_to_crypto_payload(&stats);
+        assert!(crypto.payload_bytes > 0);
+        assert_ne!(crypto.content_hash, 0);
+    }
+
+    #[test]
+    fn test_rtos_to_cache_entry() {
+        let stats = KernelStats {
+            total_us: 1_000_000,
+            total_ticks: 10_000,
+            tasks_executed: 100,
+            context_switches: 50,
+            utilization: 0.35,
+            schedulable: true,
+        };
+        let entry = rtos_to_cache_entry(&stats, 4);
+        assert_ne!(entry.content_hash, 0);
+        assert_eq!(entry.task_count, 4);
+        assert!((entry.utilization - 0.35).abs() < 0.001);
     }
 }

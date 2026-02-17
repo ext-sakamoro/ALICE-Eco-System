@@ -1,6 +1,6 @@
 //! Motion bridges — ALICE-Motion ↔ Physics, Print, Animation, Edge, SDF
 //!
-//! 5 bridges connecting NURBS/Bezier trajectory control to the ALICE ecosystem.
+//! 9 bridges connecting NURBS/Bezier trajectory control to the ALICE ecosystem.
 
 use alice_motion::{CubicBezier, MotionPlan, TrapezoidalProfile, Vec3, VelocityProfile};
 use alice_physics::Vec3Fix;
@@ -181,6 +181,150 @@ pub fn motion_to_sdf_sweep(curve: &CubicBezier, samples: usize) -> MotionSdfSwee
     }
 }
 
+// ── Bridge 6: Motion → DB (trajectory persistence) ──────────────────
+
+/// Trajectory record for ALICE-DB persistence.
+pub struct TrajectoryDbRecord {
+    /// Content hash.
+    pub content_hash: u64,
+    /// Bezier control points serialized (48 bytes).
+    pub bezier_bytes: [u8; 48],
+    /// Arc length in mm.
+    pub arc_length: f32,
+    /// Duration in seconds.
+    pub duration_secs: f32,
+}
+
+/// Serialize CubicBezier trajectory for ALICE-DB persistence.
+pub fn motion_to_db_record(curve: &CubicBezier, v_max: f32, a_max: f32) -> TrajectoryDbRecord {
+    let mut bytes = [0u8; 48];
+    let points = [curve.p0, curve.p1, curve.p2, curve.p3];
+    for (i, p) in points.iter().enumerate() {
+        let offset = i * 12;
+        bytes[offset..offset + 4].copy_from_slice(&p.x.to_le_bytes());
+        bytes[offset + 4..offset + 8].copy_from_slice(&p.y.to_le_bytes());
+        bytes[offset + 8..offset + 12].copy_from_slice(&p.z.to_le_bytes());
+    }
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &bytes {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    let arc = curve.arc_length(64);
+    let profile = TrapezoidalProfile::new(v_max, a_max, arc);
+    TrajectoryDbRecord {
+        content_hash: hash,
+        bezier_bytes: bytes,
+        arc_length: arc,
+        duration_secs: profile.duration(),
+    }
+}
+
+// ── Bridge 7: Motion → Sync (trajectory sync) ──────────────────────
+
+/// Trajectory sync packet for ALICE-Sync multiplayer.
+pub struct TrajectorySyncPacket {
+    /// Bezier control points serialized (48 bytes).
+    pub bezier_bytes: [u8; 48],
+    /// Content hash.
+    pub content_hash: u64,
+    /// Max velocity (mm/s).
+    pub v_max: f32,
+    /// Player ID.
+    pub player_id: u8,
+}
+
+/// Package CubicBezier for ALICE-Sync P2P exchange.
+pub fn motion_to_sync_packet(curve: &CubicBezier, v_max: f32, player_id: u8) -> TrajectorySyncPacket {
+    let mut bytes = [0u8; 48];
+    let points = [curve.p0, curve.p1, curve.p2, curve.p3];
+    for (i, p) in points.iter().enumerate() {
+        let offset = i * 12;
+        bytes[offset..offset + 4].copy_from_slice(&p.x.to_le_bytes());
+        bytes[offset + 4..offset + 8].copy_from_slice(&p.y.to_le_bytes());
+        bytes[offset + 8..offset + 12].copy_from_slice(&p.z.to_le_bytes());
+    }
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &bytes {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    TrajectorySyncPacket {
+        bezier_bytes: bytes,
+        content_hash: hash,
+        v_max,
+        player_id,
+    }
+}
+
+// ── Bridge 8: Motion → Cache (trajectory caching) ───────────────────
+
+/// Trajectory cache entry for ALICE-Cache.
+pub struct TrajectoryCacheEntry {
+    /// Content hash for cache key.
+    pub content_hash: u64,
+    /// Bezier control points serialized.
+    pub bezier_bytes: [u8; 48],
+    /// Arc length (for eviction priority).
+    pub arc_length: f32,
+}
+
+/// Prepare CubicBezier for ALICE-Cache storage.
+pub fn motion_to_cache_entry(curve: &CubicBezier) -> TrajectoryCacheEntry {
+    let mut bytes = [0u8; 48];
+    let points = [curve.p0, curve.p1, curve.p2, curve.p3];
+    for (i, p) in points.iter().enumerate() {
+        let offset = i * 12;
+        bytes[offset..offset + 4].copy_from_slice(&p.x.to_le_bytes());
+        bytes[offset + 4..offset + 8].copy_from_slice(&p.y.to_le_bytes());
+        bytes[offset + 8..offset + 12].copy_from_slice(&p.z.to_le_bytes());
+    }
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &bytes {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    TrajectoryCacheEntry {
+        content_hash: hash,
+        bezier_bytes: bytes,
+        arc_length: curve.arc_length(64),
+    }
+}
+
+// ── Bridge 9: Motion → Crypto (encrypted trajectory) ────────────────
+
+/// Encrypted trajectory payload for secure transport.
+pub struct TrajectoryCryptoPayload {
+    /// Plaintext Bezier bytes.
+    pub plaintext: [u8; 48],
+    /// Content hash for integrity.
+    pub content_hash: u64,
+    /// Payload size.
+    pub payload_bytes: usize,
+}
+
+/// Prepare CubicBezier for ALICE-Crypto encryption.
+pub fn motion_to_crypto_payload(curve: &CubicBezier) -> TrajectoryCryptoPayload {
+    let mut bytes = [0u8; 48];
+    let points = [curve.p0, curve.p1, curve.p2, curve.p3];
+    for (i, p) in points.iter().enumerate() {
+        let offset = i * 12;
+        bytes[offset..offset + 4].copy_from_slice(&p.x.to_le_bytes());
+        bytes[offset + 4..offset + 8].copy_from_slice(&p.y.to_le_bytes());
+        bytes[offset + 8..offset + 12].copy_from_slice(&p.z.to_le_bytes());
+    }
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &bytes {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    TrajectoryCryptoPayload {
+        plaintext: bytes,
+        content_hash: hash,
+        payload_bytes: 48,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -250,5 +394,39 @@ mod tests {
         assert_eq!(sweep.path_points.len(), 20);
         assert_eq!(sweep.tangents.len(), 20);
         assert!(sweep.arc_length > 0.0);
+    }
+
+    #[test]
+    fn test_motion_to_db_record() {
+        let curve = test_curve();
+        let rec = motion_to_db_record(&curve, 100.0, 500.0);
+        assert_ne!(rec.content_hash, 0);
+        assert!(rec.arc_length > 0.0);
+        assert!(rec.duration_secs > 0.0);
+    }
+
+    #[test]
+    fn test_motion_to_sync_packet() {
+        let curve = test_curve();
+        let pkt = motion_to_sync_packet(&curve, 100.0, 1);
+        assert_eq!(pkt.player_id, 1);
+        assert_ne!(pkt.content_hash, 0);
+        assert!((pkt.v_max - 100.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_motion_to_cache_entry() {
+        let curve = test_curve();
+        let entry = motion_to_cache_entry(&curve);
+        assert_ne!(entry.content_hash, 0);
+        assert!(entry.arc_length > 0.0);
+    }
+
+    #[test]
+    fn test_motion_to_crypto_payload() {
+        let curve = test_curve();
+        let crypto = motion_to_crypto_payload(&curve);
+        assert_eq!(crypto.payload_bytes, 48);
+        assert_ne!(crypto.content_hash, 0);
     }
 }

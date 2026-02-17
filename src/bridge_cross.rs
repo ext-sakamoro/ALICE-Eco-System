@@ -1,7 +1,8 @@
 //! Cross-bridges — Inter-connections among the 6 new ALICE crates
 //!
-//! 7 bridges connecting Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS,
-//! Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth.
+//! 10 bridges connecting Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS,
+//! Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth, Motion→Font,
+//! Kinematics→Synth, RTOS→VCS.
 
 use alice_font::param::MetaFontParams;
 use alice_kinematics::Vec3k;
@@ -284,6 +285,102 @@ pub fn font_synth_lyrics_timing(text: &str, score: &Score) -> Vec<LyricsTiming> 
     timings
 }
 
+// ── Bridge 8: Motion → Font (trajectory text annotation) ────────────
+
+/// Text annotation positioned along a trajectory for ALICE-Font.
+pub struct TrajectoryAnnotation {
+    /// Text content.
+    pub text: String,
+    /// Font parameter bytes.
+    pub params_bytes: [u8; 40],
+    /// Position along trajectory (0.0..1.0).
+    pub t: f32,
+    /// World position at t.
+    pub position: (f32, f32, f32),
+}
+
+/// Create text annotation along a Motion trajectory with ALICE-Font params.
+pub fn motion_font_annotation(
+    curve: &CubicBezier,
+    text: &str,
+    params: &MetaFontParams,
+    t: f32,
+) -> TrajectoryAnnotation {
+    let pos = curve.position(t.clamp(0.0, 1.0));
+    TrajectoryAnnotation {
+        text: text.to_string(),
+        params_bytes: params.encode(),
+        t,
+        position: (pos.x, pos.y, pos.z),
+    }
+}
+
+// ── Bridge 9: Kinematics → Synth (motion-driven audio) ──────────────
+
+/// Motion-driven audio trigger for ALICE-Synth.
+pub struct MotionAudioTrigger {
+    /// MIDI note (mapped from joint angle).
+    pub note: u8,
+    /// Velocity (mapped from motion speed).
+    pub velocity: u8,
+    /// Duration in ticks.
+    pub duration_ticks: u16,
+    /// Channel.
+    pub channel: u8,
+}
+
+/// Convert Kinematics Intent to ALICE-Synth audio trigger.
+pub fn kinematics_synth_trigger(intent: &alice_kinematics::Intent) -> MotionAudioTrigger {
+    let target = intent.target;
+    // Map position to note: x → pitch (0.0..1.0 → 48..84)
+    let note = ((target.x.abs().min(1.0) * 36.0) as u8 + 48).min(127);
+    // Map y to velocity
+    let velocity = ((target.y.abs().min(1.0) * 127.0) as u8).max(1);
+    // Map duration
+    let dur_ticks = ((intent.duration_secs() * 96.0) as u16).max(1);
+    MotionAudioTrigger {
+        note,
+        velocity,
+        duration_ticks: dur_ticks,
+        channel: 0,
+    }
+}
+
+// ── Bridge 10: RTOS → VCS (task execution versioning) ───────────────
+
+/// RTOS execution snapshot for VCS versioning.
+pub struct RtosVcsSnapshot {
+    /// AST node count.
+    pub node_count: usize,
+    /// Diff operations vs previous snapshot.
+    pub diff_ops: usize,
+    /// Diff size in bytes.
+    pub diff_bytes: usize,
+}
+
+/// Convert RTOS KernelStats to VCS AstTree for execution versioning.
+pub fn rtos_to_vcs_tree(stats: &KernelStats) -> AstTree {
+    let mut tree = AstTree::new();
+    let root = tree.add_node(AstNodeKind::Root, "rtos_snapshot", 0);
+    tree.add_node(AstNodeKind::Parameter, &format!("util_{}", (stats.utilization * 1000.0) as i32), root);
+    tree.add_node(AstNodeKind::Parameter, &format!("tasks_{}", stats.tasks_executed), root);
+    tree.add_node(AstNodeKind::Parameter, &format!("switches_{}", stats.context_switches), root);
+    tree.add_node(AstNodeKind::Parameter, &format!("ticks_{}", stats.total_ticks), root);
+    tree
+}
+
+/// Diff two RTOS execution snapshots using VCS.
+pub fn vcs_diff_rtos(old: &KernelStats, new: &KernelStats) -> RtosVcsSnapshot {
+    let old_tree = rtos_to_vcs_tree(old);
+    let new_tree = rtos_to_vcs_tree(new);
+    let ops = diff_trees(&old_tree, &new_tree);
+    RtosVcsSnapshot {
+        node_count: 5, // root + 4 parameters
+        diff_ops: ops.len(),
+        diff_bytes: patch_size_bytes(&ops),
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -389,5 +486,51 @@ mod tests {
         assert_eq!(timings[0].ch, 'A');
         assert_eq!(timings[1].ch, 'B');
         assert!(timings[0].start_secs < timings[1].start_secs);
+    }
+
+    #[test]
+    fn test_motion_font_annotation() {
+        let curve = CubicBezier::new(
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(10.0, 20.0, 0.0),
+            Vec3::new(30.0, 20.0, 0.0),
+            Vec3::new(40.0, 0.0, 0.0),
+        );
+        let params = MetaFontParams::sans_regular();
+        let ann = motion_font_annotation(&curve, "Label", &params, 0.5);
+        assert_eq!(ann.text, "Label");
+        assert!((ann.t - 0.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_kinematics_synth_trigger() {
+        let intent = alice_kinematics::Intent::reach(alice_kinematics::Vec3k::new(0.5, 0.8, 0.0), 100);
+        let trigger = kinematics_synth_trigger(&intent);
+        assert!(trigger.note >= 48 && trigger.note <= 84);
+        assert!(trigger.velocity > 0);
+        assert!(trigger.duration_ticks > 0);
+    }
+
+    #[test]
+    fn test_vcs_diff_rtos() {
+        let stats1 = alice_rtos::kernel::KernelStats {
+            total_us: 500_000,
+            total_ticks: 5000,
+            tasks_executed: 250,
+            context_switches: 100,
+            utilization: 0.42,
+            schedulable: true,
+        };
+        let stats2 = alice_rtos::kernel::KernelStats {
+            total_us: 1_000_000,
+            total_ticks: 10_000,
+            tasks_executed: 500,
+            context_switches: 200,
+            utilization: 0.45,
+            schedulable: true,
+        };
+        let diff = vcs_diff_rtos(&stats1, &stats2);
+        assert!(diff.diff_ops > 0);
+        assert_eq!(diff.node_count, 5);
     }
 }

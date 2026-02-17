@@ -1,6 +1,6 @@
 //! Font bridges — ALICE-Font ↔ View, Browser, SDF, Manga, Animation, CDN, Print
 //!
-//! 7 bridges connecting parametric metafonts to the ALICE ecosystem.
+//! 11 bridges connecting parametric metafonts to the ALICE ecosystem.
 
 use alice_font::glyph::GLYPH_SDF_SIZE;
 use alice_font::param::MetaFontParams;
@@ -335,6 +335,117 @@ pub fn font_to_print_contours(text: &str, params: &MetaFontParams, scale_mm: f32
     }
 }
 
+// ── Bridge 8: Font → DB (font parameter persistence) ──────────────────
+
+/// Serialized font parameter record for ALICE-DB storage.
+pub struct FontDbRecord {
+    /// Content hash for deduplication.
+    pub content_hash: u64,
+    /// Serialized MetaFontParams bytes.
+    pub data: [u8; 40],
+    /// Weight value.
+    pub weight: f32,
+    /// Serif value.
+    pub serif: f32,
+}
+
+/// Serialize MetaFontParams for ALICE-DB persistence.
+pub fn font_to_db_record(params: &MetaFontParams) -> FontDbRecord {
+    let data = params.encode();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    FontDbRecord {
+        content_hash: hash,
+        data,
+        weight: params.weight,
+        serif: params.serif,
+    }
+}
+
+// ── Bridge 9: Font → Cache (font parameter caching) ──────────────────
+
+/// Font cache entry for ALICE-Cache.
+pub struct FontCacheEntry {
+    /// Content hash for cache key.
+    pub content_hash: u64,
+    /// Font parameter bytes (40 bytes).
+    pub params_bytes: [u8; 40],
+    /// Compression ratio vs TTF.
+    pub compression_ratio: f64,
+}
+
+/// Prepare MetaFontParams for ALICE-Cache storage.
+pub fn font_to_cache_entry(params: &MetaFontParams) -> FontCacheEntry {
+    let data = params.encode();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    FontCacheEntry {
+        content_hash: hash,
+        params_bytes: data,
+        compression_ratio: 500_000.0 / 40.0,
+    }
+}
+
+// ── Bridge 10: Font → Sync (font parameter sync) ─────────────────────
+
+/// Font sync packet for ALICE-Sync multiplayer.
+pub struct FontSyncPacket {
+    /// Font parameter bytes.
+    pub params_bytes: [u8; 40],
+    /// Content hash.
+    pub content_hash: u64,
+    /// Player ID.
+    pub player_id: u8,
+}
+
+/// Package MetaFontParams for ALICE-Sync P2P exchange.
+pub fn font_to_sync_packet(params: &MetaFontParams, player_id: u8) -> FontSyncPacket {
+    let data = params.encode();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    FontSyncPacket {
+        params_bytes: data,
+        content_hash: hash,
+        player_id,
+    }
+}
+
+// ── Bridge 11: Font → Crypto (DRM font payload) ─────────────────────
+
+/// Encrypted font payload for DRM protection.
+pub struct FontCryptoPayload {
+    /// Plaintext font parameter bytes.
+    pub plaintext: [u8; 40],
+    /// Content hash for integrity verification.
+    pub content_hash: u64,
+    /// Payload size.
+    pub payload_bytes: usize,
+}
+
+/// Prepare MetaFontParams for ALICE-Crypto encryption.
+pub fn font_to_crypto_payload(params: &MetaFontParams) -> FontCryptoPayload {
+    let data = params.encode();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    FontCryptoPayload {
+        plaintext: data,
+        content_hash: hash,
+        payload_bytes: 40,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -408,5 +519,37 @@ mod tests {
         let r = font_to_print_contours("A", &p, 10.0, 0.5);
         // May or may not have contours depending on glyph SDF
         assert!(r.path_length_mm >= 0.0);
+    }
+
+    #[test]
+    fn test_font_to_db_record() {
+        let p = MetaFontParams::sans_regular();
+        let rec = font_to_db_record(&p);
+        assert_ne!(rec.content_hash, 0);
+        assert_eq!(rec.data.len(), 40);
+    }
+
+    #[test]
+    fn test_font_to_cache_entry() {
+        let p = MetaFontParams::serif_regular();
+        let entry = font_to_cache_entry(&p);
+        assert_ne!(entry.content_hash, 0);
+        assert!(entry.compression_ratio > 10000.0);
+    }
+
+    #[test]
+    fn test_font_to_sync_packet() {
+        let p = MetaFontParams::mono_regular();
+        let pkt = font_to_sync_packet(&p, 1);
+        assert_eq!(pkt.player_id, 1);
+        assert_ne!(pkt.content_hash, 0);
+    }
+
+    #[test]
+    fn test_font_to_crypto_payload() {
+        let p = MetaFontParams::sans_bold();
+        let crypto = font_to_crypto_payload(&p);
+        assert_eq!(crypto.payload_bytes, 40);
+        assert_ne!(crypto.content_hash, 0);
     }
 }

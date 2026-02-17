@@ -58,6 +58,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-api"
+version = "0.1.0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "alice-cache"
 version = "0.2.0"
 dependencies = [
@@ -69,6 +76,10 @@ dependencies = [
 [[package]]
 name = "alice-cdn"
 version = "0.2.0"
+
+[[package]]
+name = "alice-codec"
+version = "0.1.0"
 
 [[package]]
 name = "alice-db"
@@ -91,23 +102,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-dns"
+version = "0.1.0"
+dependencies = [
+ "alice-cache",
+]
+
+[[package]]
 name = "alice-eco-system"
 version = "0.2.0"
 dependencies = [
+ "alice-api",
  "alice-cache",
  "alice-cdn",
+ "alice-codec",
  "alice-db",
+ "alice-dns",
  "alice-edge",
  "alice-font",
  "alice-kinematics",
+ "alice-ml",
  "alice-motion",
  "alice-physics",
  "alice-rtos",
  "alice-sdf",
+ "alice-search",
  "alice-sync",
  "alice-synth",
+ "alice-text",
+ "alice-trt",
  "alice-vcs",
  "alice-view",
+ "alice-voice",
+ "alice-zip",
  "bincode",
  "crc32fast",
  "libasp",
@@ -124,6 +151,10 @@ version = "0.1.0"
 
 [[package]]
 name = "alice-kinematics"
+version = "0.1.0"
+
+[[package]]
+name = "alice-ml"
 version = "0.1.0"
 
 [[package]]
@@ -161,6 +192,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-search"
+version = "0.1.0"
+
+[[package]]
 name = "alice-sync"
 version = "0.6.0"
 dependencies = [
@@ -176,6 +211,37 @@ dependencies = [
 [[package]]
 name = "alice-synth"
 version = "0.1.0"
+
+[[package]]
+name = "alice-text"
+version = "1.0.0"
+dependencies = [
+ "bincode",
+ "bytemuck",
+ "chrono",
+ "clap",
+ "log",
+ "lzma-rs",
+ "memmap2",
+ "mimalloc",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "thiserror 1.0.69",
+ "zstd",
+]
+
+[[package]]
+name = "alice-trt"
+version = "0.1.0"
+dependencies = [
+ "alice-ml",
+ "bytemuck",
+ "pollster 0.4.0",
+ "wgpu 23.0.1",
+]
 
 [[package]]
 name = "alice-vcs"
@@ -207,6 +273,16 @@ dependencies = [
  "tracing-subscriber",
  "wgpu 0.19.4",
  "winit",
+]
+
+[[package]]
+name = "alice-voice"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "serde",
+ "serde-big-array",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -3025,6 +3101,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex"
+version = "1.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e10754a14b9137dd7b1e3e5b0493cc9171fdd105e0ab477f51b72e7f3ac0e276"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
 name = "regex-automata"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3238,6 +3326,15 @@ checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
 dependencies = [
  "serde_core",
  "serde_derive",
+]
+
+[[package]]
+name = "serde-big-array"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11fc7cc2c76d73e0f27ee52abbd64eec84d46f370c88371120433196934e4b7f"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -5178,6 +5275,34 @@ name = "zmij"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02aae0f83f69aafc94776e879363e9771d7ecbffe2c7fbb6c14c5e00dfe88439"
+
+[[package]]
+name = "zstd"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e91ee311a569c327171651566e07972200e76fcfe2242a4fa446149a3881c08a"
+dependencies = [
+ "zstd-safe",
+]
+
+[[package]]
+name = "zstd-safe"
+version = "7.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f49c4d5f0abb602a93fb8736af2a4f4dd9512e36f7f570d66e65ff867ed3b9d"
+dependencies = [
+ "zstd-sys",
+]
+
+[[package]]
+name = "zstd-sys"
+version = "2.0.16+zstd.1.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91e19ebc2adc8f83e43039e79776e3fda8ca919132d68a1fed6a5faca2683748"
+dependencies = [
+ "cc",
+ "pkg-config",
+]
 
 [[package]]
 name = "zune-inflate"

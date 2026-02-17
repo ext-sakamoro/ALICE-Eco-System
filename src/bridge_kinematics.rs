@@ -1,6 +1,6 @@
 //! Kinematics bridges — ALICE-Kinematics ↔ Sync, Edge, Physics, Animation, ASP, DB
 //!
-//! 6 bridges connecting human motion intent compression to the ALICE ecosystem.
+//! 9 bridges connecting human motion intent compression to the ALICE ecosystem.
 
 use alice_kinematics::{ArmChain, Intent, Predictor, Vec3k};
 use alice_physics::Vec3Fix;
@@ -200,6 +200,95 @@ pub fn kinematics_to_db_records(intents: &[Intent], start_timestamp: i64) -> Vec
     records
 }
 
+// ── Bridge 7: Kinematics → Cache (intent caching) ───────────────────
+
+/// Intent cache entry for ALICE-Cache.
+pub struct IntentCacheEntry {
+    /// Content hash for cache key.
+    pub content_hash: u64,
+    /// Intent bytes (8 bytes).
+    pub intent_bytes: [u8; 8],
+    /// Duration in seconds (for eviction priority).
+    pub duration_secs: f32,
+}
+
+/// Prepare Intent for ALICE-Cache storage.
+pub fn kinematics_to_cache_entry(intent: &Intent) -> IntentCacheEntry {
+    let bytes = intent.encode();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &bytes {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    IntentCacheEntry {
+        content_hash: hash,
+        intent_bytes: bytes,
+        duration_secs: intent.duration_secs(),
+    }
+}
+
+// ── Bridge 8: Kinematics → Crypto (encrypted intent) ────────────────
+
+/// Encrypted intent payload for secure transport.
+pub struct IntentCryptoPayload {
+    /// Plaintext intent bytes.
+    pub plaintext: [u8; 8],
+    /// Content hash for integrity.
+    pub content_hash: u64,
+    /// Payload size.
+    pub payload_bytes: usize,
+}
+
+/// Prepare Intent for ALICE-Crypto encryption.
+pub fn kinematics_to_crypto_payload(intent: &Intent) -> IntentCryptoPayload {
+    let bytes = intent.encode();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &bytes {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    IntentCryptoPayload {
+        plaintext: bytes,
+        content_hash: hash,
+        payload_bytes: 8,
+    }
+}
+
+// ── Bridge 9: Kinematics → CDN (motion library distribution) ────────
+
+/// Motion capture library package for ALICE-CDN delivery.
+pub struct MocapCdnPackage {
+    /// Intent sequence bytes.
+    pub data: Vec<u8>,
+    /// Content hash for CDN routing.
+    pub content_hash: u64,
+    /// Number of intents.
+    pub intent_count: usize,
+    /// Total duration in seconds.
+    pub total_duration_secs: f32,
+}
+
+/// Package Intent sequence for ALICE-CDN distribution.
+pub fn kinematics_to_cdn_package(intents: &[Intent]) -> MocapCdnPackage {
+    let mut data = Vec::with_capacity(intents.len() * 8);
+    let mut total_dur = 0.0f32;
+    for intent in intents {
+        data.extend_from_slice(&intent.encode());
+        total_dur += intent.duration_secs();
+    }
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    MocapCdnPackage {
+        data,
+        content_hash: hash,
+        intent_count: intents.len(),
+        total_duration_secs: total_dur,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -270,5 +359,35 @@ mod tests {
         assert_eq!(recs.len(), 1);
         assert_eq!(recs[0].timestamp, 0);
         assert_ne!(recs[0].content_hash, 0);
+    }
+
+    #[test]
+    fn test_kinematics_to_cache_entry() {
+        let intent = Intent::reach(Vec3k::new(0.3, 0.4, 0.0), 100);
+        let entry = kinematics_to_cache_entry(&intent);
+        assert_ne!(entry.content_hash, 0);
+        assert_eq!(entry.intent_bytes.len(), 8);
+        assert!(entry.duration_secs > 0.0);
+    }
+
+    #[test]
+    fn test_kinematics_to_crypto_payload() {
+        let intent = Intent::reach(Vec3k::new(0.5, 0.2, 0.1), 50);
+        let crypto = kinematics_to_crypto_payload(&intent);
+        assert_eq!(crypto.payload_bytes, 8);
+        assert_ne!(crypto.content_hash, 0);
+    }
+
+    #[test]
+    fn test_kinematics_to_cdn_package() {
+        let intents = vec![
+            Intent::reach(Vec3k::new(0.3, 0.4, 0.0), 100),
+            Intent::reach(Vec3k::new(0.5, 0.2, 0.1), 50),
+        ];
+        let pkg = kinematics_to_cdn_package(&intents);
+        assert_eq!(pkg.intent_count, 2);
+        assert_eq!(pkg.data.len(), 16);
+        assert_ne!(pkg.content_hash, 0);
+        assert!(pkg.total_duration_secs > 0.0);
     }
 }

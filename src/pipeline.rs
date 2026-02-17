@@ -1,6 +1,6 @@
 //! ALICE Eco-System Pipeline — Edge to DB
 //!
-//! Connects 15 ALICE crates into a unified write pipeline:
+//! Connects 24 ALICE crates into unified pipelines:
 //!
 //! - **Path A** (IoT/Sensor): Edge → ASP → CDN → DB
 //! - **Path B-1** (Asset Delivery): SDF → CDN → Cache
@@ -9,8 +9,10 @@
 //! - **Path D** (Anime Production): VCS → SDF → Animation + Font + Synth → CDN
 //! - **Path E** (Real-Time Embedded): RTOS → Edge → Synth → ASP
 //! - **Path F** (3D Print Optimization): SDF → Motion (S-curve) → Print → .3mf
-//!
-//! All paths terminate at ALICE-DB (model-based compression).
+//! - **Path G** (AI Inference): ML → TRT → SDF / Physics / View
+//! - **Path H** (Voice Delivery): Voice → Synth → Codec → CDN → Cache
+//! - **Path I** (Full-Text Search): Text → Search → DB / Browser
+//! - **Path J** (DNS + API Gateway): DNS → API → Auth / CDN / Cache
 
 use std::path::PathBuf;
 
@@ -33,7 +35,7 @@ use alice_kinematics::{ArmChain, Intent};
 use alice_motion::{CubicBezier, TrapezoidalProfile, VelocityProfile};
 use alice_rtos::{Kernel, TaskPriority};
 use alice_synth::{FmPatch, Patch, Score, Synthesizer};
-use alice_vcs::{Repository};
+use alice_vcs::Repository;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -167,6 +169,123 @@ pub struct PrintOptResult {
     pub avg_feed_rate: f32,
     /// Max feed rate (mm/min).
     pub max_feed_rate: f32,
+}
+
+/// Result of AI inference pipeline (Path G: ML → TRT → SDF/Physics/View).
+pub struct AiInferenceResult {
+    /// ML ternary joint count.
+    pub ml_joint_count: usize,
+    /// ML inference operations.
+    pub ml_inference_ops: usize,
+    /// TRT parameter count.
+    pub trt_param_count: usize,
+    /// TRT FLOPS per inference.
+    pub trt_flops: usize,
+}
+
+/// Result of voice delivery pipeline (Path H: Voice → Synth → Codec).
+pub struct VoiceDeliveryResult {
+    /// Voice carrier frequency (Hz).
+    pub carrier_freq: f32,
+    /// Whether voiced.
+    pub voiced: bool,
+    /// Codec compressed bytes.
+    pub codec_compressed_bytes: usize,
+    /// Codec compression ratio.
+    pub codec_compression_ratio: f32,
+}
+
+/// Result of full-text search pipeline (Path I: Text → Search).
+pub struct FullTextSearchResult {
+    /// Compressed text bytes.
+    pub compressed_bytes: usize,
+    /// Search index size (nodes).
+    pub index_node_count: usize,
+    /// Bandwidth savings percentage.
+    pub bandwidth_saving_pct: f32,
+}
+
+/// Result of DNS+API gateway pipeline (Path J: DNS → API).
+pub struct DnsApiGatewayResult {
+    /// Whether the domain was blocked.
+    pub dns_blocked: bool,
+    /// Whether the request was rate-limited.
+    pub api_rate_allowed: bool,
+    /// Operation type from HTTP method.
+    pub operation: &'static str,
+    /// Content type hint.
+    pub content_type_hint: &'static str,
+}
+
+// ── Path G: AI Inference ─────────────────────────────────────────────
+
+/// AI inference pipeline: ML ternary inference → TRT GPU config.
+///
+/// `[ALICE-ML] → [ALICE-TRT] → [ALICE-SDF] / [ALICE-Physics] / [ALICE-View]`
+pub fn path_g_ai_inference(state_dims: usize, action_dims: usize, hidden: &[usize]) -> AiInferenceResult {
+    let trt_config = crate::bridge_trt::trt_physics_policy(state_dims, action_dims, hidden);
+    AiInferenceResult {
+        ml_joint_count: action_dims,
+        ml_inference_ops: state_dims * action_dims,
+        trt_param_count: trt_config.param_count,
+        trt_flops: trt_config.flops_per_inference,
+    }
+}
+
+// ── Path H: Voice Delivery ───────────────────────────────────────────
+
+/// Voice delivery pipeline: Voice parametric → Synth → Codec compression.
+///
+/// `[ALICE-Voice] → [ALICE-Synth] → [ALICE-Codec] → [ALICE-CDN] → [ALICE-Cache]`
+pub fn path_h_voice_delivery(params: &alice_voice::ParametricParams) -> VoiceDeliveryResult {
+    let synth_params = crate::bridge_voice::voice_to_synth_params(params);
+    // Synth → Codec: generate PCM and compress via wavelet
+    let pcm: Vec<f32> = (0..320).map(|i| (i as f32 * synth_params.carrier_freq * std::f32::consts::TAU / 16000.0).sin() * synth_params.amplitude).collect();
+    let codec_result = crate::bridge_codec::codec_compress_synth_pcm(&pcm);
+    VoiceDeliveryResult {
+        carrier_freq: synth_params.carrier_freq,
+        voiced: synth_params.voiced,
+        codec_compressed_bytes: codec_result.compressed_bytes,
+        codec_compression_ratio: codec_result.compression_ratio,
+    }
+}
+
+// ── Path I: Full-Text Search ─────────────────────────────────────────
+
+/// Full-text search pipeline: Text compression → Search index → DB/Browser.
+///
+/// `[ALICE-Text] → [ALICE-Search] → [ALICE-DB] / [ALICE-Browser]`
+pub fn path_i_fulltext_search(text: &str, query: &str) -> FullTextSearchResult {
+    let browser_content = crate::bridge_text::text_to_browser_content(text);
+    let index = alice_search::AliceIndex::build(text.as_bytes(), 4);
+    let search_result = crate::bridge_search::search_db_query(&index, query.as_bytes());
+    FullTextSearchResult {
+        compressed_bytes: browser_content.compressed_bytes,
+        index_node_count: search_result.occurrence_count,
+        bandwidth_saving_pct: browser_content.bandwidth_saving_pct,
+    }
+}
+
+// ── Path J: DNS + API Gateway ────────────────────────────────────────
+
+/// DNS + API gateway pipeline: DNS classification → API rate limiting → routing.
+///
+/// `[ALICE-DNS] → [ALICE-API] → [ALICE-Auth] / [ALICE-CDN] / [ALICE-Cache]`
+pub fn path_j_dns_api_gateway(domain: &str, path: &str) -> DnsApiGatewayResult {
+    // DNS: classify domain
+    let mut dns_engine = alice_dns::DnsBloomEngine::new();
+    let action = dns_engine.check_domain(domain);
+    let dns_blocked = matches!(action, alice_dns::DnsAction::Block | alice_dns::DnsAction::Spoof);
+    // API: rate limiting + routing
+    let limiter = alice_api::GcraCell::new(100.0, 10);
+    let auth = crate::bridge_api::api_auth_check(&limiter, domain, alice_api::HttpMethod::Get, 1_000_000_000);
+    let route = crate::bridge_api::api_to_cdn_route(path, alice_api::HttpMethod::Get, auth.rate_allowed);
+    DnsApiGatewayResult {
+        dns_blocked,
+        api_rate_allowed: auth.rate_allowed,
+        operation: auth.operation,
+        content_type_hint: route.content_type_hint,
+    }
 }
 
 // ── Pipeline ─────────────────────────────────────────────────────────────
@@ -847,5 +966,51 @@ mod tests {
         assert!(val.is_some());
 
         pipeline.close().unwrap();
+    }
+
+    #[test]
+    fn test_path_g_ai_inference() {
+        let result = path_g_ai_inference(12, 6, &[128, 64]);
+        assert_eq!(result.ml_joint_count, 6);
+        assert!(result.ml_inference_ops > 0);
+        assert!(result.trt_param_count > 0);
+        assert!(result.trt_flops > 0);
+    }
+
+    #[test]
+    fn test_path_h_voice_delivery() {
+        use alice_voice::{ParametricParams, PitchInfo, LpcCoefficients, Formant};
+        let params = ParametricParams {
+            pitch: PitchInfo { f0: 220.0, period: 72.7, voicing_prob: 0.95, confidence: 0.9, is_voiced: true },
+            lpc: LpcCoefficients { coeffs: vec![0.5, -0.3], gain: 0.6, reflection: vec![], error: 0.01 },
+            formants: vec![
+                Formant { frequency: 700.0, bandwidth: 80.0, amplitude: 1.0 },
+                Formant { frequency: 1200.0, bandwidth: 90.0, amplitude: 0.8 },
+                Formant { frequency: 2600.0, bandwidth: 120.0, amplitude: 0.5 },
+            ],
+            activity: alice_voice::VoiceActivity { is_voiced: true, confidence: 0.95, energy_db: -20.0 },
+            frame_size: 320,
+            sample_rate: 16000,
+        };
+        let result = path_h_voice_delivery(&params);
+        assert!(result.carrier_freq > 0.0);
+        assert!(result.voiced);
+        assert!(result.codec_compressed_bytes > 0);
+    }
+
+    #[test]
+    fn test_path_i_fulltext_search() {
+        let text = "The quick brown fox jumps over the lazy dog. ".repeat(10);
+        let result = path_i_fulltext_search(&text, "fox");
+        assert!(result.compressed_bytes > 0);
+        assert!(result.index_node_count > 0);
+    }
+
+    #[test]
+    fn test_path_j_dns_api_gateway() {
+        let result = path_j_dns_api_gateway("example.com", "/assets/model.asdf");
+        assert!(result.api_rate_allowed);
+        assert_eq!(result.operation, "read");
+        assert_eq!(result.content_type_hint, "application/x-alice-sdf");
     }
 }

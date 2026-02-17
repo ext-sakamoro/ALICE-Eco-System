@@ -1,6 +1,6 @@
-//! Synth bridges — ALICE-Synth ↔ Streaming-Protocol, Animation, Codec, DB, View
+//! Synth bridges — ALICE-Synth ↔ Streaming-Protocol, Animation, Codec, DB, View, Cache, CDN, Sync, Crypto
 //!
-//! 5 bridges connecting procedural audio to the ALICE ecosystem.
+//! 9 bridges connecting procedural audio to the ALICE ecosystem.
 
 use alice_synth::{
     FmPatch, NoteEventKind, Patch, Score, Synthesizer,
@@ -209,6 +209,118 @@ pub fn synth_to_view_waveform(score: &Score, sample_rate: u32, columns: usize) -
     WaveformView { peaks, duration_secs: duration, rms }
 }
 
+// ── Bridge 6: Synth → Cache (Score content caching) ─────────────────────
+
+/// Score cache entry for ALICE-Cache.
+pub struct SynthCacheEntry {
+    /// Content hash for cache key.
+    pub content_hash: u64,
+    /// Score bytes for cache value.
+    pub data: Vec<u8>,
+    /// Duration in seconds (for eviction priority).
+    pub duration_secs: f32,
+    /// Event count.
+    pub event_count: usize,
+}
+
+/// Prepare Score for ALICE-Cache storage.
+pub fn synth_to_cache_entry(score: &Score) -> SynthCacheEntry {
+    let data = score.to_bytes();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    SynthCacheEntry {
+        content_hash: hash,
+        data,
+        duration_secs: score.duration_secs(),
+        event_count: score.events.len(),
+    }
+}
+
+// ── Bridge 7: Synth → CDN (audio content distribution) ──────────────────
+
+/// Audio content package for ALICE-CDN delivery.
+pub struct SynthCdnPackage {
+    /// Score bytes (compact wire format).
+    pub score_bytes: Vec<u8>,
+    /// Content hash for CDN routing.
+    pub content_hash: u64,
+    /// MIME type hint.
+    pub content_type: &'static str,
+    /// Duration in seconds.
+    pub duration_secs: f32,
+}
+
+/// Package Score for ALICE-CDN content delivery.
+pub fn synth_to_cdn_package(score: &Score) -> SynthCdnPackage {
+    let data = score.to_bytes();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    SynthCdnPackage {
+        score_bytes: data,
+        content_hash: hash,
+        content_type: "application/x-alice-score",
+        duration_secs: score.duration_secs(),
+    }
+}
+
+// ── Bridge 8: Synth → Sync (multiplayer music sync) ─────────────────────
+
+/// Score sync packet for ALICE-Sync multiplayer music.
+pub struct SynthSyncPacket {
+    /// Score bytes.
+    pub score_bytes: Vec<u8>,
+    /// Tempo BPM for synchronization.
+    pub tempo_bpm: u16,
+    /// Current playback position in ticks.
+    pub position_tick: u32,
+    /// Event count.
+    pub event_count: usize,
+}
+
+/// Prepare Score for ALICE-Sync multiplayer synchronization.
+pub fn synth_to_sync_packet(score: &Score, position_tick: u32) -> SynthSyncPacket {
+    SynthSyncPacket {
+        score_bytes: score.to_bytes(),
+        tempo_bpm: score.header.tempo_bpm,
+        position_tick,
+        event_count: score.events.len(),
+    }
+}
+
+// ── Bridge 9: Synth → Crypto (encrypted audio payload) ──────────────────
+
+/// Encrypted audio payload for secure transport.
+pub struct SynthCryptoPayload {
+    /// Score bytes (to be encrypted).
+    pub plaintext: Vec<u8>,
+    /// Content hash for integrity verification.
+    pub content_hash: u64,
+    /// Payload size.
+    pub payload_bytes: usize,
+}
+
+/// Prepare Score bytes for ALICE-Crypto encryption.
+pub fn synth_to_crypto_payload(score: &Score) -> SynthCryptoPayload {
+    let data = score.to_bytes();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    let len = data.len();
+    SynthCryptoPayload {
+        plaintext: data,
+        content_hash: hash,
+        payload_bytes: len,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -270,5 +382,38 @@ mod tests {
         assert_eq!(wf.peaks.len(), 100);
         assert!(wf.duration_secs > 0.0);
         assert!(wf.rms >= 0.0);
+    }
+
+    #[test]
+    fn test_synth_to_cache_entry() {
+        let score = test_score();
+        let entry = synth_to_cache_entry(&score);
+        assert_ne!(entry.content_hash, 0);
+        assert!(!entry.data.is_empty());
+        assert_eq!(entry.event_count, 4);
+    }
+
+    #[test]
+    fn test_synth_to_cdn_package() {
+        let score = test_score();
+        let pkg = synth_to_cdn_package(&score);
+        assert!(!pkg.score_bytes.is_empty());
+        assert_eq!(pkg.content_type, "application/x-alice-score");
+    }
+
+    #[test]
+    fn test_synth_to_sync_packet() {
+        let score = test_score();
+        let pkt = synth_to_sync_packet(&score, 96);
+        assert_eq!(pkt.tempo_bpm, 120);
+        assert_eq!(pkt.position_tick, 96);
+    }
+
+    #[test]
+    fn test_synth_to_crypto_payload() {
+        let score = test_score();
+        let crypto = synth_to_crypto_payload(&score);
+        assert!(crypto.payload_bytes > 0);
+        assert_ne!(crypto.content_hash, 0);
     }
 }

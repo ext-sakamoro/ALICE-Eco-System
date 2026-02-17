@@ -111,7 +111,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.2.0 | Ecosystem Integration Hub | 144+ bridges, 6 pipeline paths (IoT/Game/MoCap/Anime/Embedded/Print) | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.2.0 | Ecosystem Integration Hub | 105 bridges, 11 pipeline paths (A-J), 24 crates connected, 115 tests | MIT |
 
 **Total: 35 components** | AGPL-3.0: 18 | MIT: 8 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
 
@@ -236,7 +236,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **144+ cross-crate bridges** connecting 35 components. Key bridge categories:
+The ALICE ecosystem contains **105 cross-crate bridges** across 16 bridge files and 11 pipeline paths, connecting 24 crates with 115 tests. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -256,6 +256,14 @@ The ALICE ecosystem contains **144+ cross-crate bridges** connecting 35 componen
 | **RTOS Bridges** | RTOS→Edge, RTOS→Queue, RTOS→Container, RTOS→Analytics, RTOS→DB | Real-time task scheduling |
 | **VCS Bridges** | VCS→SDF, VCS→Animation, VCS→Manga, VCS→Sync, VCS→DB, VCS→Auth | AST semantic version control |
 | **Cross-Crate Bridges** | Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS, Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth | Multi-domain integration |
+| **Voice Bridges** | Voice→Synth, Voice→Animation, Voice→Font, Voice→Edge | Parametric voice codec to ecosystem |
+| **Codec Bridges** | Codec→Synth, Codec→Animation, Codec→SDF, Codec→View | 3D wavelet codec to ecosystem |
+| **Text Bridges** | Text→Font, Text→Manga, Text→DB, Text→Browser | Exception-based text compression |
+| **ML/TRT Bridges** | ML→Physics, ML→SDF, ML→Animation, TRT→SDF, TRT→Physics, TRT→View | Ternary AI inference |
+| **DNS/API Bridges** | DNS→Browser, DNS→Cache, API→Auth, API→CDN | DNS ad-blocking + API gateway |
+| **Search Bridges** | Search→DB, Search→Browser, Search→VCS | FM-Index full-text search |
+| **Zip Bridges** | Zip→Edge, Zip→DB | Procedural compression |
+| **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS | End-to-end cross-crate pipelines |
 
 ### Build Profile Changes
 

@@ -1,10 +1,10 @@
 //! VCS bridges — ALICE-VCS ↔ SDF, Animation, Manga, Sync, DB, Auth
 //!
-//! 6 bridges connecting AST semantic version control to the ALICE ecosystem.
+//! 11 bridges connecting AST semantic version control to the ALICE ecosystem.
 
 use alice_sdf::{SdfNode, SdfTree};
 use alice_vcs::ast::{AstNodeKind, AstTree, NodeId};
-use alice_vcs::diff::{diff_trees, patch_size_bytes};
+use alice_vcs::diff::{diff_trees, patch_size_bytes, DiffOp};
 use alice_vcs::store::Hash;
 use alice_vcs::Repository;
 
@@ -241,6 +241,156 @@ pub fn vcs_auth_request(repo_name: &str, operation: VcsOperation, commit_hash: O
     }
 }
 
+// ── Bridge 7: VCS → CDN (repository distribution) ──────────────────
+
+/// VCS repository package for ALICE-CDN delivery.
+pub struct VcsCdnPackage {
+    /// Snapshot data.
+    pub data: Vec<u8>,
+    /// Content hash for CDN routing.
+    pub content_hash: u64,
+    /// Number of nodes.
+    pub node_count: usize,
+    /// Content type.
+    pub content_type: &'static str,
+}
+
+/// Package VCS tree snapshot for ALICE-CDN distribution.
+pub fn vcs_to_cdn_package(tree: &AstTree, hash: Hash) -> VcsCdnPackage {
+    let node_count = count_ast_nodes(tree);
+    let mut data = Vec::new();
+    data.extend_from_slice(&hash.to_le_bytes());
+    data.extend_from_slice(&(node_count as u32).to_le_bytes());
+    let mut content_hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        content_hash ^= b as u64;
+        content_hash = content_hash.wrapping_mul(0x100000001b3);
+    }
+    VcsCdnPackage {
+        data,
+        content_hash,
+        node_count,
+        content_type: "application/x-alice-vcs",
+    }
+}
+
+// ── Bridge 8: VCS → Cache (tree snapshot caching) ───────────────────
+
+/// VCS tree cache entry for ALICE-Cache.
+pub struct VcsCacheEntry {
+    /// Content hash for cache key.
+    pub content_hash: u64,
+    /// Commit hash.
+    pub commit_hash: Hash,
+    /// Node count.
+    pub node_count: usize,
+}
+
+/// Prepare VCS tree snapshot for ALICE-Cache storage.
+pub fn vcs_to_cache_entry(tree: &AstTree, hash: Hash) -> VcsCacheEntry {
+    let node_count = count_ast_nodes(tree);
+    let mut data = Vec::new();
+    data.extend_from_slice(&hash.to_le_bytes());
+    data.extend_from_slice(&(node_count as u32).to_le_bytes());
+    let mut content_hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        content_hash ^= b as u64;
+        content_hash = content_hash.wrapping_mul(0x100000001b3);
+    }
+    VcsCacheEntry {
+        content_hash,
+        commit_hash: hash,
+        node_count,
+    }
+}
+
+// ── Bridge 9: VCS → Crypto (signed commits) ─────────────────────────
+
+/// Signed commit payload for ALICE-Crypto.
+pub struct VcsCryptoPayload {
+    /// Commit hash.
+    pub commit_hash: Hash,
+    /// Plaintext (commit metadata).
+    pub plaintext: Vec<u8>,
+    /// Content hash for integrity.
+    pub content_hash: u64,
+    /// Payload size.
+    pub payload_bytes: usize,
+}
+
+/// Prepare VCS commit for ALICE-Crypto signing.
+pub fn vcs_to_crypto_payload(hash: Hash, message: &str, tree: &AstTree) -> VcsCryptoPayload {
+    let mut data = Vec::new();
+    data.extend_from_slice(&hash.to_le_bytes());
+    data.extend_from_slice(message.as_bytes());
+    data.extend_from_slice(&(count_ast_nodes(tree) as u32).to_le_bytes());
+    let mut content_hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        content_hash ^= b as u64;
+        content_hash = content_hash.wrapping_mul(0x100000001b3);
+    }
+    let len = data.len();
+    VcsCryptoPayload {
+        commit_hash: hash,
+        plaintext: data,
+        content_hash,
+        payload_bytes: len,
+    }
+}
+
+// ── Bridge 10: VCS → Print (revision metadata for print) ────────────
+
+/// Print revision metadata from VCS.
+pub struct VcsPrintRevision {
+    /// Commit hash.
+    pub commit_hash: Hash,
+    /// Node count (scene complexity).
+    pub node_count: usize,
+    /// Diff size vs previous revision.
+    pub diff_bytes: usize,
+    /// Label for the revision.
+    pub label: String,
+}
+
+/// Create print revision metadata from VCS tree.
+pub fn vcs_to_print_revision(hash: Hash, message: &str, tree: &AstTree) -> VcsPrintRevision {
+    VcsPrintRevision {
+        commit_hash: hash,
+        node_count: count_ast_nodes(tree),
+        diff_bytes: 0,
+        label: message.to_string(),
+    }
+}
+
+// ── Bridge 11: VCS → View (diff visualization) ─────────────────────
+
+/// Diff visualization data for ALICE-View.
+pub struct VcsViewDiff {
+    /// Number of added nodes.
+    pub added: usize,
+    /// Number of removed nodes.
+    pub removed: usize,
+    /// Number of modified nodes.
+    pub modified: usize,
+    /// Total diff operations.
+    pub total_ops: usize,
+    /// Diff size in bytes.
+    pub diff_bytes: usize,
+}
+
+/// Generate diff visualization data for ALICE-View.
+pub fn vcs_to_view_diff(old: &AstTree, new: &AstTree) -> VcsViewDiff {
+    let ops = diff_trees(old, new);
+    let bytes = patch_size_bytes(&ops);
+    VcsViewDiff {
+        added: ops.iter().filter(|o| matches!(o, DiffOp::Insert { .. })).count(),
+        removed: ops.iter().filter(|o| matches!(o, DiffOp::Delete { .. })).count(),
+        modified: ops.iter().filter(|o| matches!(o, DiffOp::Update { .. })).count(),
+        total_ops: ops.len(),
+        diff_bytes: bytes,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -318,5 +468,60 @@ mod tests {
         assert_eq!(req.repo_name, "my-repo");
         assert_eq!(req.operation, VcsOperation::Write);
         assert_eq!(req.commit_hash, Some(999));
+    }
+
+    #[test]
+    fn test_vcs_to_cdn_package() {
+        let mut tree = AstTree::new();
+        let root = tree.add_node(AstNodeKind::Root, "scene", 0);
+        tree.add_node(AstNodeKind::Primitive, "sphere", root);
+        let pkg = vcs_to_cdn_package(&tree, 12345);
+        assert_ne!(pkg.content_hash, 0);
+        assert!(pkg.node_count >= 2);
+        assert_eq!(pkg.content_type, "application/x-alice-vcs");
+    }
+
+    #[test]
+    fn test_vcs_to_cache_entry() {
+        let mut tree = AstTree::new();
+        tree.add_node(AstNodeKind::Root, "root", 0);
+        let entry = vcs_to_cache_entry(&tree, 999);
+        assert_ne!(entry.content_hash, 0);
+        assert_eq!(entry.commit_hash, 999);
+    }
+
+    #[test]
+    fn test_vcs_to_crypto_payload() {
+        let mut tree = AstTree::new();
+        tree.add_node(AstNodeKind::Root, "root", 0);
+        let crypto = vcs_to_crypto_payload(123, "test commit", &tree);
+        assert_eq!(crypto.commit_hash, 123);
+        assert!(crypto.payload_bytes > 0);
+        assert_ne!(crypto.content_hash, 0);
+    }
+
+    #[test]
+    fn test_vcs_to_print_revision() {
+        let mut tree = AstTree::new();
+        tree.add_node(AstNodeKind::Root, "root", 0);
+        let rev = vcs_to_print_revision(456, "v1.0", &tree);
+        assert_eq!(rev.commit_hash, 456);
+        assert_eq!(rev.label, "v1.0");
+    }
+
+    #[test]
+    fn test_vcs_to_view_diff() {
+        let mut old = AstTree::new();
+        let root = old.add_node(AstNodeKind::Root, "scene", 0);
+        old.add_node(AstNodeKind::Primitive, "sphere", root);
+
+        let mut new = AstTree::new();
+        let root2 = new.add_node(AstNodeKind::Root, "scene", 0);
+        new.add_node(AstNodeKind::Primitive, "sphere", root2);
+        new.add_node(AstNodeKind::Primitive, "box", root2);
+
+        let diff = vcs_to_view_diff(&old, &new);
+        assert!(diff.total_ops > 0);
+        assert!(diff.diff_bytes > 0);
     }
 }

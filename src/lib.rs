@@ -1,6 +1,6 @@
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 15 ALICE crates into unified pipelines with 144+ cross-crate bridges.
+//! Connects 24 ALICE crates into unified pipelines with 105 cross-crate bridges.
 //!
 //! ```text
 //! Path A (IoT/Sensor):
@@ -21,6 +21,18 @@
 //!
 //! Path F (3D Print Optimization):
 //!   [ALICE-SDF] → [ALICE-Motion] (S-curve) → [ALICE-Print] → .3mf
+//!
+//! Path G (AI Inference):
+//!   [ALICE-ML] → [ALICE-TRT] → [ALICE-SDF] / [ALICE-Physics] / [ALICE-View]
+//!
+//! Path H (Voice Delivery):
+//!   [ALICE-Voice] → [ALICE-Synth] → [ALICE-Codec] → [ALICE-CDN] → [ALICE-Cache]
+//!
+//! Path I (Full-Text Search):
+//!   [ALICE-Text] → [ALICE-Search] → [ALICE-DB] / [ALICE-Browser]
+//!
+//! Path J (DNS + API Gateway):
+//!   [ALICE-DNS] → [ALICE-API] → [ALICE-Auth] / [ALICE-CDN] / [ALICE-Cache]
 //! ```
 
 pub mod pipeline;
@@ -31,11 +43,22 @@ pub mod bridge_motion;
 pub mod bridge_rtos;
 pub mod bridge_vcs;
 pub mod bridge_cross;
+pub mod bridge_voice;
+pub mod bridge_codec;
+pub mod bridge_text;
+pub mod bridge_search;
+pub mod bridge_ml;
+pub mod bridge_trt;
+pub mod bridge_dns;
+pub mod bridge_api;
+pub mod bridge_zip;
 
 // Re-export pipeline API
 pub use pipeline::{
     AlicePipeline, AssetDeliveryResult, CdnNodeConfig, GameTickResult, PipelineConfig,
     SensorIngestResult, MocapResult, AnimeProductionResult, EmbeddedResult, PrintOptResult,
+    AiInferenceResult, VoiceDeliveryResult, FullTextSearchResult, DnsApiGatewayResult,
+    path_g_ai_inference, path_h_voice_delivery, path_i_fulltext_search, path_j_dns_api_gateway,
 };
 
 // Re-export key types from constituent crates

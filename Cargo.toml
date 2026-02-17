@@ -23,13 +23,28 @@ alice-cache = { path = "../ALICE-Cache" }
 alice-physics = { path = "../ALICE-Physics", features = ["replay"] }
 alice-sync = { path = "../ALICE-Sync", features = ["telemetry"] }
 
-# New crate bridges (Synth, VCS, Motion, RTOS, Kinematics, Font)
+# Crate bridges (Synth, VCS, Motion, RTOS, Kinematics, Font)
 alice-font = { path = "../ALICE-Font", features = ["std"] }
 alice-synth = { path = "../ALICE-Synth", features = ["std"] }
 alice-kinematics = { path = "../ALICE-Kinematics", features = ["std", "encoder"] }
 alice-motion = { path = "../ALICE-Motion", features = ["std"] }
 alice-rtos = { path = "../ALICE-RTOS" }
 alice-vcs = { path = "../ALICE-VCS", features = ["std"] }
+
+# Media & Text Processing bridges
+alice-voice = { path = "../ALICE-Voice", default-features = false, features = ["std"] }
+alice-codec = { path = "../ALICE-Codec", default-features = false, features = ["std"] }
+alice-text = { path = "../ALICE-Text", default-features = false }
+alice-search = { path = "../ALICE-Search", default-features = false, features = ["std"] }
+
+# AI & GPU Inference bridges
+alice-ml = { path = "../ALICE-ML", default-features = false, features = ["std"] }
+alice-trt = { path = "../ALICE-TRT", default-features = false }
+
+# Network & Security bridges
+alice-dns = { path = "../ALICE-DNS", default-features = false }
+alice-api = { path = "../ALICE-API", default-features = false, features = ["std"] }
+alice-zip = { path = "../ALICE-Zip/libalice", default-features = false }
 
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"
