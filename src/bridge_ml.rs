@@ -17,6 +17,7 @@ pub struct MlPhysicsControl {
 }
 
 /// Run ternary inference for ALICE-Physics ragdoll controller.
+#[inline]
 pub fn ml_physics_ragdoll(weights: &TernaryWeight, state: &[f32]) -> MlPhysicsControl {
     let rows = weights.out_features();
     let cols = weights.in_features();
@@ -44,18 +45,19 @@ pub struct MlSdfField {
 }
 
 /// Evaluate neural SDF field via ternary inference for ALICE-SDF.
+#[inline]
 pub fn ml_sdf_evaluate(weights: &TernaryWeight, points: &[f32]) -> MlSdfField {
     let rows = weights.out_features();
     let point_count = points.len() / 3;
     let mut distances = Vec::with_capacity(point_count);
+    // Pre-allocate output buffer once (amortize allocation across all points)
+    let mut output = vec![0.0f32; rows];
 
-    for i in 0..point_count {
-        let xyz = &points[i * 3..(i * 3 + 3).min(points.len())];
-        if xyz.len() < 3 { break; }
-        let mut output = vec![0.0f32; rows];
+    for xyz in points.chunks_exact(3).take(point_count) {
+        output.fill(0.0); // reset without realloc
         ternary_matvec(xyz, weights, &mut output);
-        // Take first output as distance
-        distances.push(if output.is_empty() { 0.0 } else { output[0] });
+        // Take first output as distance (branchless via get)
+        distances.push(*output.get(0).unwrap_or(&0.0));
     }
 
     MlSdfField {
@@ -80,18 +82,19 @@ pub struct MlAnimDirection {
 }
 
 /// Run ternary inference for AI-driven anime direction in ALICE-Animation.
+#[inline]
 pub fn ml_animation_direction(weights: &TernaryWeight, scene_features: &[f32]) -> MlAnimDirection {
     let rows = weights.out_features();
     let mut output = vec![0.0f32; rows];
     ternary_matvec(scene_features, weights, &mut output);
 
-    // Map outputs to animation parameters
-    let dx = if !output.is_empty() { output[0].tanh() } else { 0.0 };
-    let dy = if output.len() > 1 { output[1].tanh() } else { 0.0 };
-    let dz = if output.len() > 2 { output[2].tanh() } else { 0.0 };
-    let mood = if output.len() > 3 { output[3].tanh() } else { 0.0 };
-    let cut_prob = if output.len() > 4 { (output[4] * 0.5 + 0.5).clamp(0.0, 1.0) } else { 0.0 };
-    let expr = if output.len() > 5 { (output[5].abs() * 8.0) as u8 } else { 0 };
+    // Map outputs to animation parameters (branchless via get+map_or)
+    let dx = output.get(0).map_or(0.0, |x| x.tanh());
+    let dy = output.get(1).map_or(0.0, |x| x.tanh());
+    let dz = output.get(2).map_or(0.0, |x| x.tanh());
+    let mood = output.get(3).map_or(0.0, |x| x.tanh());
+    let cut_prob = output.get(4).map_or(0.0, |x| (x * 0.5 + 0.5).clamp(0.0, 1.0));
+    let expr = output.get(5).map_or(0u8, |x| (x.abs() * 8.0) as u8);
 
     MlAnimDirection {
         camera_delta: (dx, dy, dz),
@@ -118,6 +121,7 @@ pub struct MlDbRecord {
 }
 
 /// Serialize ML model metadata for ALICE-DB persistence.
+#[inline]
 pub fn ml_to_db_record(weights: &TernaryWeight) -> MlDbRecord {
     let rows = weights.out_features();
     let cols = weights.in_features();
@@ -157,6 +161,7 @@ pub struct MlCacheEntry {
 }
 
 /// Prepare ML model metadata for ALICE-Cache keying.
+#[inline]
 pub fn ml_to_cache_entry(weights: &TernaryWeight) -> MlCacheEntry {
     let rows = weights.out_features();
     let cols = weights.in_features();
@@ -192,6 +197,7 @@ pub struct MlAnalyticsMetrics {
 }
 
 /// Extract inference metrics for ALICE-Analytics monitoring.
+#[inline]
 pub fn ml_to_analytics_metrics(weights: &TernaryWeight) -> MlAnalyticsMetrics {
     let rows = weights.out_features();
     let cols = weights.in_features();

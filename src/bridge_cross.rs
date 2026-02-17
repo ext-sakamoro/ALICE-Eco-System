@@ -29,6 +29,7 @@ pub struct AudioRtosConfig {
 }
 
 /// Configure ALICE-RTOS kernel with audio render task from ALICE-Synth.
+#[inline]
 pub fn synth_rtos_audio_kernel(config: &AudioRtosConfig) -> (Kernel, KernelStats) {
     let mut kernel = Kernel::testing();
     kernel.add_task(
@@ -43,6 +44,7 @@ pub fn synth_rtos_audio_kernel(config: &AudioRtosConfig) -> (Kernel, KernelStats
 }
 
 /// Calculate audio task timing from buffer size and sample rate.
+#[inline]
 pub fn synth_rtos_audio_config(buffer_size: usize, sample_rate: u32) -> AudioRtosConfig {
     let period_us = (buffer_size as u64 * 1_000_000 / sample_rate as u64) as u32;
     let wcet_us = period_us / 4; // 25% CPU budget for audio
@@ -62,16 +64,19 @@ pub struct JointTrajectoryResult {
 }
 
 /// Convert Motion Vec3 to Kinematics Vec3k.
+#[inline(always)]
 pub fn motion_to_kinematics_vec3(v: &Vec3) -> Vec3k {
     Vec3k::new(v.x, v.y, v.z)
 }
 
 /// Convert Kinematics Vec3k to Motion Vec3.
+#[inline(always)]
 pub fn kinematics_to_motion_vec3(v: &Vec3k) -> Vec3 {
     Vec3::new(v.x, v.y, v.z)
 }
 
 /// Drive IK arm along a Bezier trajectory from ALICE-Motion.
+#[inline]
 pub fn motion_kinematics_trajectory(
     curve: &CubicBezier,
     v_max: f32,
@@ -116,6 +121,7 @@ pub struct MotionControlRtosConfig {
 }
 
 /// Configure RTOS kernel for kinematics motion control.
+#[inline]
 pub fn kinematics_rtos_kernel(config: &MotionControlRtosConfig) -> (Kernel, KernelStats) {
     let mut kernel = Kernel::testing();
     kernel.add_task(b"ik_upd", |_| {}, TaskPriority::HIGH, config.ik_period_us, config.ik_wcet_us);
@@ -135,6 +141,7 @@ pub struct TrajectoryRtosResult {
 }
 
 /// Configure RTOS for Motion trajectory execution with deadline guarantees.
+#[inline]
 pub fn motion_rtos_trajectory_kernel(control_hz: f32, traj_wcet_us: u32) -> TrajectoryRtosResult {
     let period_us = (1_000_000.0 / control_hz) as u32;
     let mut kernel = Kernel::testing();
@@ -164,6 +171,7 @@ pub struct ScoreRevision {
 }
 
 /// Convert Score to VCS AstTree for version tracking.
+#[inline]
 pub fn synth_to_vcs_tree(score: &Score) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, "score", 0);
@@ -187,6 +195,7 @@ pub fn synth_to_vcs_tree(score: &Score) -> AstTree {
 }
 
 /// Diff two Score versions using VCS.
+#[inline]
 pub fn vcs_diff_scores(old: &Score, new: &Score) -> ScoreRevision {
     let old_tree = synth_to_vcs_tree(old);
     let new_tree = synth_to_vcs_tree(new);
@@ -207,6 +216,7 @@ pub struct FontRevision {
 }
 
 /// Convert MetaFontParams to VCS AstTree for version tracking.
+#[inline]
 pub fn font_to_vcs_tree(params: &MetaFontParams, name: &str) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, name, 0);
@@ -224,6 +234,7 @@ pub fn font_to_vcs_tree(params: &MetaFontParams, name: &str) -> AstTree {
 }
 
 /// Diff two font parameter versions using VCS.
+#[inline]
 pub fn vcs_diff_fonts(old: &MetaFontParams, new: &MetaFontParams) -> FontRevision {
     let old_tree = font_to_vcs_tree(old, "font_v1");
     let new_tree = font_to_vcs_tree(new, "font_v2");
@@ -249,6 +260,7 @@ pub struct LyricsTiming {
 }
 
 /// Align text characters to Score note events for karaoke-style display.
+#[inline]
 pub fn font_synth_lyrics_timing(text: &str, score: &Score) -> Vec<LyricsTiming> {
     let chars: Vec<char> = text.chars().filter(|c| !c.is_whitespace()).collect();
     let tempo = score.header.tempo_bpm as f32;
@@ -301,6 +313,7 @@ pub struct TrajectoryAnnotation {
 }
 
 /// Create text annotation along a Motion trajectory with ALICE-Font params.
+#[inline]
 pub fn motion_font_annotation(
     curve: &CubicBezier,
     text: &str,
@@ -331,6 +344,7 @@ pub struct MotionAudioTrigger {
 }
 
 /// Convert Kinematics Intent to ALICE-Synth audio trigger.
+#[inline]
 pub fn kinematics_synth_trigger(intent: &alice_kinematics::Intent) -> MotionAudioTrigger {
     let target = intent.target;
     // Map position to note: x → pitch (0.0..1.0 → 48..84)
@@ -360,6 +374,7 @@ pub struct RtosVcsSnapshot {
 }
 
 /// Convert RTOS KernelStats to VCS AstTree for execution versioning.
+#[inline]
 pub fn rtos_to_vcs_tree(stats: &KernelStats) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, "rtos_snapshot", 0);
@@ -371,6 +386,7 @@ pub fn rtos_to_vcs_tree(stats: &KernelStats) -> AstTree {
 }
 
 /// Diff two RTOS execution snapshots using VCS.
+#[inline]
 pub fn vcs_diff_rtos(old: &KernelStats, new: &KernelStats) -> RtosVcsSnapshot {
     let old_tree = rtos_to_vcs_tree(old);
     let new_tree = rtos_to_vcs_tree(new);
@@ -397,6 +413,7 @@ pub struct AnimMangaPanel {
 }
 
 /// Convert Animation SceneGraph snapshot to Manga panel metadata.
+#[inline]
 pub fn animation_to_manga_panel(scene: &alice_animation::SceneGraph, time: f32) -> AnimMangaPanel {
     let actors = scene.actor_count();
     let panel_type = if actors > 3 { "wide" } else if actors > 1 { "standard" } else { "close-up" };
@@ -425,6 +442,7 @@ pub struct AuthCryptoIdentity {
 }
 
 /// Hash Auth identity via Crypto BLAKE3 for secure indexing.
+#[inline]
 pub fn auth_crypto_hash_identity(id: &alice_auth::AliceId) -> AuthCryptoIdentity {
     let id_bytes = *id.as_bytes();
     let blake_hash = alice_crypto::hash(&id_bytes);
@@ -452,7 +470,9 @@ pub struct QueueAnalyticsSnapshot {
 }
 
 /// Extract queue metrics for Analytics monitoring.
+#[inline]
 pub fn queue_analytics_snapshot(msg: &alice_queue::Message, depth: usize) -> QueueAnalyticsSnapshot {
+    #[inline(always)]
     fn fnv1a_local(data: &[u8]) -> u64 {
         let mut h: u64 = 0xcbf29ce484222325;
         for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
@@ -481,6 +501,7 @@ pub struct PrintAnimPreview {
 }
 
 /// Configure animated print preview from SliceResult.
+#[inline]
 pub fn print_animation_preview(result: &alice_print::SliceResult, fps: usize) -> PrintAnimPreview {
     let frames_per_layer = (fps as f32 * result.print_time_seconds / result.layer_count.max(1) as f32).max(1.0) as usize;
     PrintAnimPreview {
@@ -506,6 +527,7 @@ pub struct MangaPrintReady {
 }
 
 /// Configure manga page for physical printing.
+#[inline]
 pub fn manga_print_ready(page: &alice_manga::MangaPage, dpi: u32) -> MangaPrintReady {
     let (w, h) = page.size.dimensions();
     let elements = page.element_count();

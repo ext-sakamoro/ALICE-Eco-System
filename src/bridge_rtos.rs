@@ -22,6 +22,7 @@ pub struct EdgeSensorTask {
 }
 
 /// Create an ALICE-RTOS task for ALICE-Edge sensor acquisition.
+#[inline]
 pub fn rtos_edge_sensor_task(
     name: &[u8],
     period_us: u32,
@@ -33,6 +34,7 @@ pub fn rtos_edge_sensor_task(
 }
 
 /// Configure a sensor acquisition schedule and verify schedulability.
+#[inline]
 pub fn rtos_edge_schedule(tasks: &[EdgeSensorTask]) -> RtosScheduleResult {
     let mut kernel = Kernel::testing();
     let dummy_fn: fn(&mut [u8]) = |_| {};
@@ -71,6 +73,7 @@ pub struct RtosQueueMessage {
 }
 
 /// Convert RTOS SpscRing u32 values to queue messages for ALICE-Queue.
+#[inline]
 pub fn rtos_to_queue_messages(values: &[u32], source_task: u8, base_time_us: u64, period_us: u32) -> Vec<RtosQueueMessage> {
     values
         .iter()
@@ -100,6 +103,7 @@ pub struct RtosContainerLimits {
 }
 
 /// Analyze RTOS kernel for ALICE-Container resource allocation.
+#[inline]
 pub fn rtos_to_container_limits(stats: &KernelStats, task_count: usize, min_period_us: u32) -> RtosContainerLimits {
     RtosContainerLimits {
         memory_bytes: 2048 + task_count * 32, // Kernel + task table
@@ -129,6 +133,7 @@ pub struct RtosTelemetryRecord {
 }
 
 /// Convert KernelStats to telemetry record for ALICE-Analytics DDSketch/HLL.
+#[inline]
 pub fn rtos_to_analytics_telemetry(stats: &KernelStats) -> RtosTelemetryRecord {
     RtosTelemetryRecord {
         duration_us: stats.total_us,
@@ -153,6 +158,7 @@ pub struct RtosDbLogEntry {
 }
 
 /// Convert KernelStats to DB log entries for ALICE-DB.
+#[inline]
 pub fn rtos_to_db_log(stats: &KernelStats, timestamp_us: i64) -> RtosDbLogEntry {
     let compact = ((stats.tasks_executed as u32) << 16 | (stats.context_switches as u32 & 0xFFFF)) as f32;
     RtosDbLogEntry {
@@ -177,6 +183,7 @@ pub struct RtosSyncState {
 }
 
 /// Package RTOS kernel state for ALICE-Sync P2P exchange.
+#[inline]
 pub fn rtos_to_sync_state(stats: &KernelStats) -> RtosSyncState {
     RtosSyncState {
         utilization: stats.utilization,
@@ -199,6 +206,7 @@ pub struct RtosCryptoPayload {
 }
 
 /// Prepare RTOS telemetry for ALICE-Crypto encryption.
+#[inline]
 pub fn rtos_to_crypto_payload(stats: &KernelStats) -> RtosCryptoPayload {
     let mut data = Vec::with_capacity(32);
     data.extend_from_slice(&stats.total_us.to_le_bytes());
@@ -234,6 +242,7 @@ pub struct RtosCacheEntry {
 }
 
 /// Prepare RTOS kernel analysis for ALICE-Cache storage.
+#[inline]
 pub fn rtos_to_cache_entry(stats: &KernelStats, task_count: usize) -> RtosCacheEntry {
     let mut data = Vec::with_capacity(16);
     data.extend_from_slice(&stats.utilization.to_le_bytes());

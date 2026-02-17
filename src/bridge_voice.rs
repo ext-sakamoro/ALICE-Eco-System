@@ -19,12 +19,13 @@ pub struct VoiceSynthParams {
 }
 
 /// Convert ParametricParams to FM synthesis parameters for ALICE-Synth.
+#[inline]
 pub fn voice_to_synth_params(params: &ParametricParams) -> VoiceSynthParams {
     let pitch = params.pitch.f0;
     let voiced = params.pitch.is_voiced;
-    let f1 = if !params.formants.is_empty() { params.formants[0].frequency } else { 500.0 };
-    let f2 = if params.formants.len() > 1 { params.formants[1].frequency } else { 1500.0 };
-    let f3 = if params.formants.len() > 2 { params.formants[2].frequency } else { 2500.0 };
+    let f1 = params.formants.get(0).map_or(500.0, |f| f.frequency);
+    let f2 = params.formants.get(1).map_or(1500.0, |f| f.frequency);
+    let f3 = params.formants.get(2).map_or(2500.0, |f| f.frequency);
     let base = if pitch > 0.0 { pitch } else { 200.0 };
     VoiceSynthParams {
         carrier_freq: pitch,
@@ -51,14 +52,15 @@ pub struct VoiceLipSyncCue {
 }
 
 /// Convert ParametricParams to lip sync cue for ALICE-Animation.
+#[inline]
 pub fn voice_to_animation_lipsync(params: &ParametricParams) -> VoiceLipSyncCue {
-    let f1 = if !params.formants.is_empty() { params.formants[0].frequency } else { 500.0 };
-    let f2 = if params.formants.len() > 1 { params.formants[1].frequency } else { 1500.0 };
-    let f3 = if params.formants.len() > 2 { params.formants[2].frequency } else { 2500.0 };
+    let f1 = params.formants.get(0).map_or(500.0, |f| f.frequency);
+    let f2 = params.formants.get(1).map_or(1500.0, |f| f.frequency);
+    let f3 = params.formants.get(2).map_or(2500.0, |f| f.frequency);
     VoiceLipSyncCue {
-        mouth_open: (f1 / 1000.0).min(1.0),
-        mouth_width: ((f2 - 800.0) / 1700.0).clamp(0.0, 1.0),
-        tongue_pos: ((f3 - 1500.0) / 2000.0).clamp(0.0, 1.0),
+        mouth_open: (f1 * 0.001).min(1.0),
+        mouth_width: ((f2 - 800.0) * (1.0 / 1700.0)).clamp(0.0, 1.0),
+        tongue_pos: ((f3 - 1500.0) * 0.0005).clamp(0.0, 1.0),
         pitch_hz: params.pitch.f0,
         voiced: params.pitch.is_voiced,
     }
@@ -79,6 +81,7 @@ pub struct VoiceTextOverlay {
 }
 
 /// Derive text overlay parameters from voice analysis for ALICE-Font.
+#[inline]
 pub fn voice_to_font_overlay(params: &ParametricParams) -> VoiceTextOverlay {
     let emphasis = (params.lpc.gain * 2.0).min(1.0);
     let pitch = params.pitch.f0;
@@ -108,6 +111,7 @@ pub struct VoiceEdgePayload {
 }
 
 /// Package voice parameters for ALICE-Edge IoT transport.
+#[inline]
 pub fn voice_to_edge_payload(params: &ParametricParams, raw_pcm_bytes: usize) -> VoiceEdgePayload {
     let lpc_order = params.lpc.coeffs.len().min(255) as u8;
     let pitch_period = if params.pitch.f0 > 0.0 { (16000.0 / params.pitch.f0) as u16 } else { 0 };
@@ -138,6 +142,7 @@ pub struct VoiceDbRecord {
 }
 
 /// Serialize ParametricParams for ALICE-DB persistence.
+#[inline]
 pub fn voice_to_db_record(params: &ParametricParams) -> VoiceDbRecord {
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in &params.pitch.f0.to_le_bytes() {
@@ -172,6 +177,7 @@ pub struct VoiceCacheEntry {
 }
 
 /// Prepare ParametricParams for ALICE-Cache storage.
+#[inline]
 pub fn voice_to_cache_entry(params: &ParametricParams) -> VoiceCacheEntry {
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in &params.pitch.f0.to_le_bytes() {

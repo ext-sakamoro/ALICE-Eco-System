@@ -4,6 +4,7 @@
 
 use alice_auth::{AliceId, AliceSig, Identity};
 
+#[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
     for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
@@ -23,6 +24,7 @@ pub struct AuthDbRecord {
 }
 
 /// Serialize identity for ALICE-DB storage.
+#[inline]
 pub fn auth_to_db_record(id: &AliceId) -> AuthDbRecord {
     let bytes = *id.as_bytes();
     let hash = fnv1a(&bytes);
@@ -47,6 +49,7 @@ pub struct AuthCacheToken {
 }
 
 /// Prepare identity for ALICE-Cache session token.
+#[inline]
 pub fn auth_to_cache_token(id: &AliceId, ttl_secs: u32) -> AuthCacheToken {
     let bytes = *id.as_bytes();
     AuthCacheToken { id_bytes: bytes, content_hash: fnv1a(&bytes), ttl_secs }
@@ -65,6 +68,7 @@ pub struct AuthCryptoBackup {
 }
 
 /// Prepare identity seed for ALICE-Crypto SSS backup.
+#[inline]
 pub fn auth_to_crypto_backup(identity: &Identity) -> AuthCryptoBackup {
     let id_bytes = *identity.id().as_bytes();
     let seed = identity.seed();
@@ -84,6 +88,7 @@ pub struct AuthApiGateway {
 }
 
 /// Verify signature for ALICE-API gateway authentication.
+#[inline]
 pub fn auth_to_api_verify(id: &AliceId, message: &[u8], sig: &AliceSig) -> AuthApiGateway {
     let verified = alice_auth::ok(id, message, sig);
     let hex: String = id.as_bytes()[..16].iter().map(|b| format!("{:02x}", b)).collect();
@@ -103,6 +108,7 @@ pub struct AuthCdnToken {
 }
 
 /// Generate authenticated content token for ALICE-CDN.
+#[inline]
 pub fn auth_to_cdn_token(id: &AliceId) -> AuthCdnToken {
     let bytes = *id.as_bytes();
     AuthCdnToken { id_bytes: bytes, content_hash: fnv1a(&bytes), token_size: 32 }
@@ -121,6 +127,7 @@ pub struct AuthEdgeDevice {
 }
 
 /// Configure IoT device authentication for ALICE-Edge.
+#[inline]
 pub fn auth_to_edge_device(id: &AliceId) -> AuthEdgeDevice {
     AuthEdgeDevice { device_id: *id.as_bytes(), challenge_bytes: 32, protocol_version: 1 }
 }
@@ -138,6 +145,7 @@ pub struct AuthDnsFingerprint {
 }
 
 /// Create DNS TXT record fingerprint from ALICE-Auth identity.
+#[inline]
 pub fn auth_to_dns_fingerprint(id: &AliceId) -> AuthDnsFingerprint {
     let bytes = *id.as_bytes();
     let fp: String = bytes[..16].iter().map(|b| format!("{:02x}", b)).collect();
@@ -157,6 +165,7 @@ pub struct AuthSyncSession {
 }
 
 /// Create authenticated session for ALICE-Sync multiplayer.
+#[inline]
 pub fn auth_to_sync_session(id: &AliceId, player_slot: u8) -> AuthSyncSession {
     let bytes = *id.as_bytes();
     AuthSyncSession { id_bytes: bytes, content_hash: fnv1a(&bytes), player_slot }

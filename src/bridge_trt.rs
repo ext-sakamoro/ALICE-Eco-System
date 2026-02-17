@@ -19,6 +19,7 @@ pub struct TrtSdfConfig {
 }
 
 /// Configure GPU neural SDF evaluation pipeline for ALICE-SDF.
+#[inline]
 pub fn trt_sdf_config(hidden_sizes: &[usize]) -> TrtSdfConfig {
     let input_dims = 3;
     let output_dims = 1;
@@ -55,6 +56,7 @@ pub struct TrtPhysicsPolicy {
 }
 
 /// Configure GPU physics control policy for ALICE-Physics.
+#[inline]
 pub fn trt_physics_policy(state_dims: usize, action_dims: usize, hidden: &[usize]) -> TrtPhysicsPolicy {
     let mut param_count = 0;
     let mut flops = 0;
@@ -101,6 +103,7 @@ pub enum TrtUpscaleQuality {
 }
 
 /// Configure neural upscaling pipeline for ALICE-View.
+#[inline]
 pub fn trt_view_upscale(width: usize, height: usize, scale: usize, quality: TrtUpscaleQuality) -> TrtViewUpscale {
     let param_count = match quality {
         TrtUpscaleQuality::Performance => 50_000,

@@ -4,6 +4,7 @@
 
 use alice_crypto::{hash, keyed_hash};
 
+#[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
     for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
@@ -23,6 +24,7 @@ pub struct CryptoDbRecord {
 }
 
 /// Hash data for ALICE-DB content-addressed storage.
+#[inline]
 pub fn crypto_to_db_record(data: &[u8]) -> CryptoDbRecord {
     let h = hash(data);
     let hash_bytes: [u8; 32] = *h.as_bytes();
@@ -46,6 +48,7 @@ pub struct CryptoCacheEntry {
 }
 
 /// Hash data for ALICE-Cache content-addressed keying.
+#[inline]
 pub fn crypto_to_cache_entry(data: &[u8]) -> CryptoCacheEntry {
     let h = hash(data);
     let hash_bytes: [u8; 32] = *h.as_bytes();
@@ -69,6 +72,7 @@ pub struct CryptoCdnPayload {
 }
 
 /// Hash data for ALICE-CDN content-addressed delivery.
+#[inline]
 pub fn crypto_to_cdn_payload(data: &[u8]) -> CryptoCdnPayload {
     let h = hash(data);
     let bytes = h.as_bytes();
@@ -93,6 +97,7 @@ pub struct CryptoVcsBlob {
 }
 
 /// Hash data for ALICE-VCS blob addressing.
+#[inline]
 pub fn crypto_to_vcs_blob(data: &[u8]) -> CryptoVcsBlob {
     let h = hash(data);
     CryptoVcsBlob {
@@ -115,6 +120,7 @@ pub struct CryptoEdgePayload {
 }
 
 /// Hash sensor data for ALICE-Edge with device-specific context.
+#[inline]
 pub fn crypto_to_edge_payload(sensor_data: &[u8], device_id: &str) -> CryptoEdgePayload {
     let h = hash(sensor_data);
     CryptoEdgePayload {
@@ -137,6 +143,7 @@ pub struct CryptoSyncPacket {
 }
 
 /// Authenticate data for ALICE-Sync via keyed BLAKE3 hash.
+#[inline]
 pub fn crypto_to_sync_packet(data: &[u8], shared_key: &[u8; 32], sequence: u64) -> CryptoSyncPacket {
     let mac_hash = keyed_hash(shared_key, data);
     CryptoSyncPacket {
@@ -161,6 +168,7 @@ pub struct CryptoZipArchive {
 }
 
 /// Prepare archive metadata for ALICE-Zip with SSS parameters.
+#[inline]
 pub fn crypto_to_zip_metadata(data: &[u8], shard_count: u8, threshold: u8) -> CryptoZipArchive {
     let h = hash(data);
     CryptoZipArchive {

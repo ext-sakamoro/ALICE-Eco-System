@@ -19,6 +19,7 @@ pub struct TextFontPayload {
 }
 
 /// Decompress ALICE-Text payload for ALICE-Font rendering.
+#[inline]
 pub fn text_to_font_payload(compressed: &[u8]) -> Option<TextFontPayload> {
     let text = decompress_tuned(compressed).ok()?;
     let char_count = text.chars().count();
@@ -47,6 +48,7 @@ pub struct TextMangaDialogue {
 }
 
 /// Compress manga dialogue text for ALICE-Manga page embedding.
+#[inline]
 pub fn text_to_manga_dialogue(dialogue: &str) -> TextMangaDialogue {
     let compressed = compress_tuned(dialogue, CompressionMode::Balanced).unwrap_or_else(|_| dialogue.as_bytes().to_vec());
     let line_count = dialogue.lines().count();
@@ -76,6 +78,7 @@ pub struct TextDbLogRecord {
 }
 
 /// Compress log batch for ALICE-DB storage.
+#[inline]
 pub fn text_to_db_log_batch(logs: &[&str]) -> TextDbLogRecord {
     let combined = logs.join("\n");
     let compressed = compress_tuned(&combined, CompressionMode::Balanced).unwrap_or_else(|_| combined.as_bytes().to_vec());
@@ -108,6 +111,7 @@ pub struct TextBrowserContent {
 }
 
 /// Compress browser DOM text content via ALICE-Text.
+#[inline]
 pub fn text_to_browser_content(dom_text: &str) -> TextBrowserContent {
     let compressed = compress_tuned(dom_text, CompressionMode::Balanced).unwrap_or_else(|_| dom_text.as_bytes().to_vec());
     let saving = if dom_text.is_empty() { 0.0 } else { (1.0 - compressed.len() as f32 / dom_text.len() as f32) * 100.0 };
@@ -134,6 +138,7 @@ pub struct TextQueueMessage {
 }
 
 /// Compress text for ALICE-Queue message delivery.
+#[inline]
 pub fn text_to_queue_message(text: &str) -> TextQueueMessage {
     let compressed = compress_tuned(text, CompressionMode::Fast).unwrap_or_else(|_| text.as_bytes().to_vec());
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -164,6 +169,7 @@ pub struct TextAnalyticsMetrics {
 }
 
 /// Extract compression metrics for ALICE-Analytics.
+#[inline]
 pub fn text_to_analytics_metrics(text: &str) -> TextAnalyticsMetrics {
     let compressed = compress_tuned(text, CompressionMode::Balanced).unwrap_or_else(|_| text.as_bytes().to_vec());
     let ratio = if compressed.is_empty() { 0.0 } else { text.len() as f32 / compressed.len() as f32 };

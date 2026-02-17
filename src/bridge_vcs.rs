@@ -23,6 +23,7 @@ pub struct SdfSceneSnapshot {
 }
 
 /// Convert SdfTree to VCS AstTree for version tracking.
+#[inline]
 pub fn sdf_to_vcs_tree(sdf: &SdfTree) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, "scene", 0);
@@ -67,6 +68,7 @@ fn sdf_node_to_ast(node: &SdfNode, tree: &mut AstTree, parent: NodeId) {
 }
 
 /// Commit an SDF scene to VCS repository and return diff statistics.
+#[inline]
 pub fn vcs_commit_sdf(repo: &mut Repository, sdf: &SdfTree, message: &str) -> SdfSceneSnapshot {
     let tree = sdf_to_vcs_tree(sdf);
     let hash = repo.commit(&tree, message, "ALICE-Eco-System");
@@ -119,6 +121,7 @@ pub struct AnimSceneChange {
 }
 
 /// Track animation scene changes via VCS diff.
+#[inline]
 pub fn vcs_animation_diff(old_tree: &AstTree, new_tree: &AstTree) -> AnimSceneChange {
     let ops = diff_trees(old_tree, new_tree);
     let bytes = patch_size_bytes(&ops);
@@ -146,6 +149,7 @@ pub struct MangaPageRevision {
 }
 
 /// Create a VCS-tracked manga page AST.
+#[inline]
 pub fn vcs_manga_page(page_number: u32, panels: &[(f32, f32, f32, f32)]) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, &format!("page_{}", page_number), 0);
@@ -177,6 +181,7 @@ pub struct VcsSyncPacket {
 }
 
 /// Package VCS diff for ALICE-Sync P2P exchange.
+#[inline]
 pub fn vcs_to_sync_packet(old: &AstTree, new: &AstTree, from_hash: Hash, to_hash: Hash) -> VcsSyncPacket {
     let ops = diff_trees(old, new);
     VcsSyncPacket {
@@ -202,6 +207,7 @@ pub struct VcsDbRecord {
 }
 
 /// Prepare VCS commit for ALICE-DB persistence.
+#[inline]
 pub fn vcs_to_db_record(hash: Hash, message: &str, tree: &AstTree, timestamp: i64) -> VcsDbRecord {
     VcsDbRecord {
         hash,
@@ -233,6 +239,7 @@ pub enum VcsOperation {
 }
 
 /// Create an auth request for VCS repository access.
+#[inline]
 pub fn vcs_auth_request(repo_name: &str, operation: VcsOperation, commit_hash: Option<Hash>) -> VcsAuthRequest {
     VcsAuthRequest {
         repo_name: repo_name.to_string(),
@@ -256,6 +263,7 @@ pub struct VcsCdnPackage {
 }
 
 /// Package VCS tree snapshot for ALICE-CDN distribution.
+#[inline]
 pub fn vcs_to_cdn_package(tree: &AstTree, hash: Hash) -> VcsCdnPackage {
     let node_count = count_ast_nodes(tree);
     let mut data = Vec::new();
@@ -287,6 +295,7 @@ pub struct VcsCacheEntry {
 }
 
 /// Prepare VCS tree snapshot for ALICE-Cache storage.
+#[inline]
 pub fn vcs_to_cache_entry(tree: &AstTree, hash: Hash) -> VcsCacheEntry {
     let node_count = count_ast_nodes(tree);
     let mut data = Vec::new();
@@ -319,6 +328,7 @@ pub struct VcsCryptoPayload {
 }
 
 /// Prepare VCS commit for ALICE-Crypto signing.
+#[inline]
 pub fn vcs_to_crypto_payload(hash: Hash, message: &str, tree: &AstTree) -> VcsCryptoPayload {
     let mut data = Vec::new();
     data.extend_from_slice(&hash.to_le_bytes());
@@ -353,6 +363,7 @@ pub struct VcsPrintRevision {
 }
 
 /// Create print revision metadata from VCS tree.
+#[inline]
 pub fn vcs_to_print_revision(hash: Hash, message: &str, tree: &AstTree) -> VcsPrintRevision {
     VcsPrintRevision {
         commit_hash: hash,
@@ -379,6 +390,7 @@ pub struct VcsViewDiff {
 }
 
 /// Generate diff visualization data for ALICE-View.
+#[inline]
 pub fn vcs_to_view_diff(old: &AstTree, new: &AstTree) -> VcsViewDiff {
     let ops = diff_trees(old, new);
     let bytes = patch_size_bytes(&ops);

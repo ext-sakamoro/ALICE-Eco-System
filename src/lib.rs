@@ -1,6 +1,6 @@
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 31 ALICE crates into unified pipelines with 166 cross-crate bridges.
+//! Connects 31 ALICE crates into unified pipelines with 178 cross-crate bridges (カリカリ optimized).
 //!
 //! ```text
 //! Path A (IoT/Sensor):
@@ -35,6 +35,7 @@
 //!   [ALICE-DNS] → [ALICE-API] → [ALICE-Auth] / [ALICE-CDN] / [ALICE-Cache]
 //! ```
 
+pub mod hash;
 pub mod pipeline;
 pub mod bridge_font;
 pub mod bridge_synth;

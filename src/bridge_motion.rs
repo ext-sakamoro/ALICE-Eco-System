@@ -20,6 +20,7 @@ pub struct TrajectoryPhysicsState {
 }
 
 /// Evaluate MotionPlan at time t and convert to ALICE-Physics Vec3Fix.
+#[inline]
 pub fn motion_to_physics_state(plan: &MotionPlan, t: f32) -> TrajectoryPhysicsState {
     let pos = plan.position(t);
     let vel = plan.velocity(t);
@@ -34,6 +35,7 @@ pub fn motion_to_physics_state(plan: &MotionPlan, t: f32) -> TrajectoryPhysicsSt
 }
 
 /// Convert Physics Vec3Fix to Motion Vec3 (for trajectory feedback).
+#[inline(always)]
 pub fn physics_to_motion_vec3(v: &Vec3Fix) -> Vec3 {
     Vec3::new(v.x.to_f32(), v.y.to_f32(), v.z.to_f32())
 }
@@ -53,6 +55,7 @@ pub struct GcodeMotionSegment {
 }
 
 /// Generate G-code segments from CubicBezier + velocity profile for ALICE-Print.
+#[inline]
 pub fn motion_to_print_segments(
     curve: &CubicBezier,
     v_max: f32,
@@ -62,14 +65,16 @@ pub fn motion_to_print_segments(
     let arc = curve.arc_length(64);
     let profile = TrapezoidalProfile::new(v_max, a_max, arc);
     let dur = profile.duration();
-    let dt = dur / num_segments.max(1) as f32;
+    let rcp_segments = 1.0 / num_segments.max(1) as f32;
+    let dt = dur * rcp_segments;
+    let rcp_arc = 1.0 / arc; // hoist loop-invariant division
     let mut segments = Vec::with_capacity(num_segments);
 
     for i in 0..num_segments {
         let t0 = i as f32 * dt;
         let t1 = ((i + 1) as f32 * dt).min(dur);
-        let s0 = profile.position_at(t0) / arc;
-        let s1 = profile.position_at(t1) / arc;
+        let s0 = profile.position_at(t0) * rcp_arc;
+        let s1 = profile.position_at(t1) * rcp_arc;
         let p0 = curve.position(s0.min(1.0));
         let p1 = curve.position(s1.min(1.0));
         let speed = profile.velocity_at((t0 + t1) / 2.0);
@@ -98,6 +103,7 @@ pub struct AnimPathKeyframe {
 }
 
 /// Sample MotionPlan into animation keyframes for ALICE-Animation.
+#[inline]
 pub fn motion_to_animation_keyframes(plan: &MotionPlan, fps: f32) -> Vec<AnimPathKeyframe> {
     let dur = plan.duration();
     let dt = 1.0 / fps;
@@ -133,6 +139,7 @@ pub struct ActuatorEdgePacket {
 }
 
 /// Package CubicBezier trajectory for ALICE-Edge actuator streaming.
+#[inline]
 pub fn motion_to_edge_packet(curve: &CubicBezier, v_max: f32, duration_ms: u16) -> ActuatorEdgePacket {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
@@ -160,6 +167,7 @@ pub struct MotionSdfSweep {
 }
 
 /// Sample CubicBezier into path points for ALICE-SDF sweep extrusion.
+#[inline]
 pub fn motion_to_sdf_sweep(curve: &CubicBezier, samples: usize) -> MotionSdfSweep {
     let n = samples.max(2);
     let mut path_points = Vec::with_capacity(n);
@@ -196,6 +204,7 @@ pub struct TrajectoryDbRecord {
 }
 
 /// Serialize CubicBezier trajectory for ALICE-DB persistence.
+#[inline]
 pub fn motion_to_db_record(curve: &CubicBezier, v_max: f32, a_max: f32) -> TrajectoryDbRecord {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
@@ -235,6 +244,7 @@ pub struct TrajectorySyncPacket {
 }
 
 /// Package CubicBezier for ALICE-Sync P2P exchange.
+#[inline]
 pub fn motion_to_sync_packet(curve: &CubicBezier, v_max: f32, player_id: u8) -> TrajectorySyncPacket {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
@@ -270,6 +280,7 @@ pub struct TrajectoryCacheEntry {
 }
 
 /// Prepare CubicBezier for ALICE-Cache storage.
+#[inline]
 pub fn motion_to_cache_entry(curve: &CubicBezier) -> TrajectoryCacheEntry {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
@@ -304,6 +315,7 @@ pub struct TrajectoryCryptoPayload {
 }
 
 /// Prepare CubicBezier for ALICE-Crypto encryption.
+#[inline]
 pub fn motion_to_crypto_payload(curve: &CubicBezier) -> TrajectoryCryptoPayload {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];

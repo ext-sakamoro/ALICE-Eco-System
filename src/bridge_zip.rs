@@ -22,6 +22,7 @@ pub struct ZipEdgeSensorData {
 }
 
 /// Fit sensor data to polynomial model for ALICE-Edge compression.
+#[inline]
 pub fn zip_edge_fit_sensor(samples: &[f32], max_degree: usize, error_threshold: f64) -> Option<ZipEdgeSensorData> {
     let data: Vec<f32> = samples.to_vec();
     let (coeffs, degree, error) = generators::fit_polynomial(&data, max_degree, error_threshold)?;
@@ -53,6 +54,7 @@ pub struct ZipDbResidual {
 }
 
 /// Compress model residuals for ALICE-DB persistence.
+#[inline]
 pub fn zip_db_compress_residual(residual: &[f32]) -> ZipDbResidual {
     let compressed = compression::compress_residual_quantized(residual, 8, 3)
         .unwrap_or_else(|_| Vec::new());
@@ -86,6 +88,7 @@ pub struct ZipCryptoPayload {
 }
 
 /// Prepare compressed residual for ALICE-Crypto encryption.
+#[inline]
 pub fn zip_to_crypto_payload(residual: &[f32]) -> ZipCryptoPayload {
     let compressed = compression::compress_residual_quantized(residual, 8, 3)
         .unwrap_or_else(|_| Vec::new());

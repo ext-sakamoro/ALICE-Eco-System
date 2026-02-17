@@ -4,6 +4,7 @@
 
 use alice_print::SliceResult;
 
+#[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
     for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
@@ -27,6 +28,7 @@ pub struct PrintDbRecord {
 }
 
 /// Serialize slice result for ALICE-DB persistence.
+#[inline]
 pub fn print_to_db_record(result: &SliceResult) -> PrintDbRecord {
     let data = [
         result.layer_count.to_le_bytes().as_slice(),
@@ -57,6 +59,7 @@ pub struct PrintCdnPackage {
 }
 
 /// Package G-code for ALICE-CDN delivery.
+#[inline]
 pub fn print_to_cdn_package(result: &SliceResult) -> PrintCdnPackage {
     let hash = fnv1a(result.gcode.as_bytes());
     PrintCdnPackage {
@@ -80,6 +83,7 @@ pub struct PrintCacheEntry {
 }
 
 /// Cache slice result for ALICE-Cache.
+#[inline]
 pub fn print_to_cache_entry(result: &SliceResult) -> PrintCacheEntry {
     let hash = fnv1a(result.gcode.as_bytes());
     PrintCacheEntry {
@@ -104,6 +108,7 @@ pub struct PrintViewConfig {
 }
 
 /// Configure layer preview for ALICE-View.
+#[inline]
 pub fn print_to_view_config(result: &SliceResult) -> PrintViewConfig {
     // Estimate triangles: ~100 per layer for visualization
     let tri_per_layer = 100;
@@ -132,6 +137,7 @@ pub struct PrintAnalyticsMetrics {
 }
 
 /// Extract slice performance metrics for ALICE-Analytics.
+#[inline]
 pub fn print_to_analytics_metrics(result: &SliceResult) -> PrintAnalyticsMetrics {
     PrintAnalyticsMetrics {
         compile_ms: result.compile_ms,
@@ -157,6 +163,7 @@ pub struct PrintMotionConfig {
 }
 
 /// Configure toolpath velocity for ALICE-Motion S-curve planning.
+#[inline]
 pub fn print_to_motion_config(result: &SliceResult) -> PrintMotionConfig {
     let avg_feed = if result.print_time_seconds > 0.0 {
         (result.filament_meters * 1000.0) / result.print_time_seconds

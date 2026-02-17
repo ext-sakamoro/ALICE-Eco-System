@@ -19,6 +19,7 @@ pub struct ApiAuthDecision {
 }
 
 /// Check API rate limit and prepare auth context for ALICE-Auth.
+#[inline]
 pub fn api_auth_check(rate_limiter: &GcraCell, client_id: &str, method: HttpMethod, now_ns: u64) -> ApiAuthDecision {
     let decision = rate_limiter.check(now_ns);
     let allowed = matches!(decision, GcraDecision::Allow { .. });
@@ -51,6 +52,7 @@ pub struct ApiCdnRoute {
 }
 
 /// Route API gateway request to ALICE-CDN for content delivery.
+#[inline]
 pub fn api_to_cdn_route(path: &str, method: HttpMethod, rate_allowed: bool) -> ApiCdnRoute {
     let ext = path.rsplit('.').next().unwrap_or("");
     let content_type_hint = match ext {

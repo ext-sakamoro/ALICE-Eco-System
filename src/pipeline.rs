@@ -726,7 +726,7 @@ impl AlicePipeline {
         let avg_feed: f32 = if segments.is_empty() {
             0.0
         } else {
-            segments.iter().map(|s| s.feed_rate).sum::<f32>() / segments.len() as f32
+            segments.iter().map(|s| s.feed_rate).sum::<f32>() * (1.0 / segments.len() as f32)
         };
 
         Ok(PrintOptResult {

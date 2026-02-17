@@ -4,12 +4,14 @@
 
 use alice_manga::MangaPage;
 
+#[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
     for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
     h
 }
 
+#[inline(always)]
 fn page_hash(page: &MangaPage) -> u64 {
     let size = page.estimate_size();
     let elem = page.element_count();
@@ -30,6 +32,7 @@ pub struct MangaSdfResult {
 }
 
 /// Compile Manga page stats for ALICE-SDF.
+#[inline]
 pub fn manga_to_sdf_page(page: &MangaPage) -> MangaSdfResult {
     let (w, h) = page.size.dimensions();
     MangaSdfResult {
@@ -54,6 +57,7 @@ pub struct MangaCdnPackage {
 }
 
 /// Package manga chapter for ALICE-CDN delivery.
+#[inline]
 pub fn manga_to_cdn_package(pages: &[&MangaPage]) -> MangaCdnPackage {
     let total: usize = pages.iter().map(|p| p.estimate_size()).sum();
     let data = [pages.len().to_le_bytes().as_slice(), &total.to_le_bytes()].concat();
@@ -78,6 +82,7 @@ pub struct MangaCacheEntry {
 }
 
 /// Cache Manga page for ALICE-Cache.
+#[inline]
 pub fn manga_to_cache_entry(page: &MangaPage) -> MangaCacheEntry {
     MangaCacheEntry {
         content_hash: page_hash(page),
@@ -101,6 +106,7 @@ pub struct MangaDbRecord {
 }
 
 /// Serialize manga chapter for ALICE-DB persistence.
+#[inline]
 pub fn manga_to_db_record(pages: &[&MangaPage]) -> MangaDbRecord {
     let total_elements: usize = pages.iter().map(|p| p.element_count()).sum();
     let total_bytes: usize = pages.iter().map(|p| p.estimate_size()).sum();
@@ -126,6 +132,7 @@ pub struct MangaTextPayload {
 }
 
 /// Extract dialogue metadata for ALICE-Text compression.
+#[inline]
 pub fn manga_to_text_payload(page: &MangaPage) -> MangaTextPayload {
     let balloons = page.balloons().len();
     let elements = page.element_count();
@@ -149,6 +156,7 @@ pub struct MangaSearchIndex {
 }
 
 /// Index Manga page metadata for ALICE-Search.
+#[inline]
 pub fn manga_to_search_index(page: &MangaPage) -> MangaSearchIndex {
     MangaSearchIndex {
         element_count: page.element_count(),
@@ -172,6 +180,7 @@ pub struct MangaPrintConfig {
 }
 
 /// Configure Manga page for ALICE-Print output.
+#[inline]
 pub fn manga_to_print_config(page: &MangaPage, dpi: u32) -> MangaPrintConfig {
     let (w, h) = page.size.dimensions();
     let layers = (h / 0.2) as usize; // 0.2mm layer height
@@ -198,6 +207,7 @@ pub struct MangaCodecConfig {
 }
 
 /// Configure image compression for ALICE-Codec.
+#[inline]
 pub fn manga_to_codec_config(page: &MangaPage) -> MangaCodecConfig {
     let (w, h) = page.size.dimensions();
     let px_w = (w * 10.0) as usize; // ~10 pixels per mm at 254 DPI

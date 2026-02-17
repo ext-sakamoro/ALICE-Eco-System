@@ -21,6 +21,7 @@ pub struct SynthAspFrame {
 }
 
 /// Render Score to PCM and package for ALICE-Streaming-Protocol (ASP).
+#[inline]
 pub fn synth_to_asp_frame(score: &Score, sample_rate: u32) -> SynthAspFrame {
     let duration = score.duration_secs();
     let num_samples = (duration * sample_rate as f32) as usize;
@@ -54,6 +55,7 @@ pub struct AnimAudioCue {
 }
 
 /// Extract audio cue timeline from Score for ALICE-Animation.
+#[inline]
 pub fn synth_to_animation_cues(score: &Score) -> Vec<AnimAudioCue> {
     let tempo_bpm = score.header.tempo_bpm as f32;
     let ticks_per_beat = 96.0f32;
@@ -116,6 +118,7 @@ pub struct SynthCodecPayload {
 }
 
 /// Render Score to f32 PCM for ALICE-Codec wavelet compression.
+#[inline]
 pub fn synth_to_codec_payload(score: &Score, sample_rate: u32) -> SynthCodecPayload {
     let duration = score.duration_secs();
     let num_samples = (duration * sample_rate as f32) as usize;
@@ -149,6 +152,7 @@ pub struct ScoreDbRecord {
 }
 
 /// Serialize Score for ALICE-DB persistence.
+#[inline]
 pub fn synth_to_db_record(score: &Score) -> ScoreDbRecord {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -178,6 +182,7 @@ pub struct WaveformView {
 }
 
 /// Render Score to downsampled waveform for ALICE-View display.
+#[inline]
 pub fn synth_to_view_waveform(score: &Score, sample_rate: u32, columns: usize) -> WaveformView {
     let duration = score.duration_secs();
     let num_samples = (duration * sample_rate as f32) as usize;
@@ -198,14 +203,14 @@ pub fn synth_to_view_waveform(score: &Score, sample_rate: u32, columns: usize) -
         let mut lo = f32::MAX;
         let mut hi = f32::MIN;
         for &s in &pcm[start..end] {
-            if s < lo { lo = s; }
-            if s > hi { hi = s; }
+            lo = lo.min(s);
+            hi = hi.max(s);
             sum_sq += s * s;
         }
         peaks.push((lo, hi));
     }
 
-    let rms = if pcm.is_empty() { 0.0 } else { (sum_sq / pcm.len() as f32).sqrt() };
+    let rms = if pcm.is_empty() { 0.0 } else { (sum_sq * (1.0 / pcm.len() as f32)).sqrt() };
     WaveformView { peaks, duration_secs: duration, rms }
 }
 
@@ -224,6 +229,7 @@ pub struct SynthCacheEntry {
 }
 
 /// Prepare Score for ALICE-Cache storage.
+#[inline]
 pub fn synth_to_cache_entry(score: &Score) -> SynthCacheEntry {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -254,6 +260,7 @@ pub struct SynthCdnPackage {
 }
 
 /// Package Score for ALICE-CDN content delivery.
+#[inline]
 pub fn synth_to_cdn_package(score: &Score) -> SynthCdnPackage {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -284,6 +291,7 @@ pub struct SynthSyncPacket {
 }
 
 /// Prepare Score for ALICE-Sync multiplayer synchronization.
+#[inline]
 pub fn synth_to_sync_packet(score: &Score, position_tick: u32) -> SynthSyncPacket {
     SynthSyncPacket {
         score_bytes: score.to_bytes(),
@@ -306,6 +314,7 @@ pub struct SynthCryptoPayload {
 }
 
 /// Prepare Score bytes for ALICE-Crypto encryption.
+#[inline]
 pub fn synth_to_crypto_payload(score: &Score) -> SynthCryptoPayload {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -336,6 +345,7 @@ pub struct SynthQueueMessage {
 }
 
 /// Package Score for ALICE-Queue message delivery.
+#[inline]
 pub fn synth_to_queue_message(score: &Score) -> SynthQueueMessage {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -368,6 +378,7 @@ pub struct SynthAnalyticsMetrics {
 }
 
 /// Extract audio metrics for ALICE-Analytics monitoring.
+#[inline]
 pub fn synth_to_analytics_metrics(score: &Score) -> SynthAnalyticsMetrics {
     let duration = score.duration_secs();
     let events = score.events.len();

@@ -18,6 +18,7 @@ pub struct CodecSynthPayload {
 }
 
 /// Compress Synth PCM via ALICE-Codec wavelet transform.
+#[inline]
 pub fn codec_compress_synth_pcm(pcm: &[f32]) -> CodecSynthPayload {
     if pcm.is_empty() {
         return CodecSynthPayload { original_samples: 0, compressed_bytes: 0, compression_ratio: 0.0 };
@@ -53,6 +54,7 @@ pub struct CodecAnimFrame {
 }
 
 /// Analyze sub-band structure for anime episode compression.
+#[inline]
 pub fn codec_animation_frame_analysis(width: usize, height: usize, frames: usize) -> CodecAnimFrame {
     let subbands = [
         SubBand3D::LLL, SubBand3D::LLH, SubBand3D::LHL, SubBand3D::LHH,
@@ -84,6 +86,7 @@ pub struct CodecSdfVolume {
 }
 
 /// Compress quantized SDF distance field via rANS entropy coding.
+#[inline]
 pub fn codec_compress_sdf_volume(quantized_distances: &[u8]) -> CodecSdfVolume {
     if quantized_distances.is_empty() {
         return CodecSdfVolume { compressed_bytes: 0, voxel_count: 0, bits_per_voxel: 0.0, compression_ratio: 0.0 };
@@ -95,16 +98,17 @@ pub fn codec_compress_sdf_volume(quantized_distances: &[u8]) -> CodecSdfVolume {
     }
     // Use FrequencyTable from histogram
     let _table = FrequencyTable::from_histogram(&freq);
-    // Estimate compressed size from entropy
+    // Estimate compressed size from entropy (reciprocal-hoisted)
     let total = quantized_distances.len() as f64;
+    let rcp_total = 1.0 / total;
     let mut entropy_bits = 0.0f64;
     for &f in &freq {
         if f > 0 {
-            let p = f as f64 / total;
+            let p = f as f64 * rcp_total;
             entropy_bits += -(p * p.log2()) * f as f64;
         }
     }
-    let compressed_bytes = ((entropy_bits / 8.0) as usize).max(1);
+    let compressed_bytes = ((entropy_bits * 0.125) as usize).max(1);
     CodecSdfVolume {
         compressed_bytes,
         voxel_count: quantized_distances.len(),
@@ -128,20 +132,20 @@ pub struct CodecViewFrame {
 }
 
 /// Reconstruct RGB frame from YCoCg-R wavelet decode for ALICE-View.
+#[inline]
 pub fn codec_to_view_frame(y: &[i16], co: &[i16], cg: &[i16], width: usize, height: usize, frame_number: u32) -> CodecViewFrame {
     let n = width * height;
+    let pixel_count = n.min(y.len()).min(co.len()).min(cg.len());
     let mut rgb = vec![0u8; n * 3];
-    for i in 0..n.min(y.len()).min(co.len()).min(cg.len()) {
+    // chunks_exact_mut(3) eliminates per-pixel bounds checks (autovec-friendly)
+    for (i, chunk) in rgb[..pixel_count * 3].chunks_exact_mut(3).enumerate() {
         let yv = y[i] as i32;
         let cov = co[i] as i32;
         let cgv = cg[i] as i32;
         let tmp = yv - cgv;
-        let g = (yv + cgv).clamp(0, 255) as u8;
-        let r = (tmp + cov).clamp(0, 255) as u8;
-        let b = (tmp - cov).clamp(0, 255) as u8;
-        rgb[i * 3] = r;
-        rgb[i * 3 + 1] = g;
-        rgb[i * 3 + 2] = b;
+        chunk[0] = (tmp + cov).clamp(0, 255) as u8; // R
+        chunk[1] = (yv + cgv).clamp(0, 255) as u8;  // G
+        chunk[2] = (tmp - cov).clamp(0, 255) as u8;  // B
     }
     CodecViewFrame { width, height, rgb_pixels: rgb, frame_number }
 }
@@ -161,6 +165,7 @@ pub struct CodecDbRecord {
 }
 
 /// Serialize compressed SDF volume metadata for ALICE-DB persistence.
+#[inline]
 pub fn codec_to_db_record(quantized: &[u8]) -> CodecDbRecord {
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in quantized {
@@ -170,14 +175,15 @@ pub fn codec_to_db_record(quantized: &[u8]) -> CodecDbRecord {
     let mut freq = [0u32; 256];
     for &b in quantized { freq[b as usize] += 1; }
     let total = quantized.len() as f64;
+    let rcp_total = 1.0 / total;
     let mut entropy_bits = 0.0f64;
     for &f in &freq {
         if f > 0 {
-            let p = f as f64 / total;
+            let p = f as f64 * rcp_total;
             entropy_bits += -(p * p.log2()) * f as f64;
         }
     }
-    let compressed_bytes = ((entropy_bits / 8.0) as usize).max(1);
+    let compressed_bytes = ((entropy_bits * 0.125) as usize).max(1);
     CodecDbRecord {
         content_hash: hash,
         voxel_count: quantized.len(),
@@ -201,6 +207,7 @@ pub struct CodecAnalyticsMetrics {
 }
 
 /// Extract compression metrics for ALICE-Analytics.
+#[inline]
 pub fn codec_to_analytics_metrics(data: &[u8]) -> CodecAnalyticsMetrics {
     if data.is_empty() {
         return CodecAnalyticsMetrics { original_bytes: 0, compressed_bytes: 0, compression_ratio: 0.0, entropy_bps: 0.0 };
@@ -208,14 +215,15 @@ pub fn codec_to_analytics_metrics(data: &[u8]) -> CodecAnalyticsMetrics {
     let mut freq = [0u32; 256];
     for &b in data { freq[b as usize] += 1; }
     let total = data.len() as f64;
+    let rcp_total = 1.0 / total;
     let mut entropy = 0.0f64;
     for &f in &freq {
         if f > 0 {
-            let p = f as f64 / total;
+            let p = f as f64 * rcp_total;
             entropy -= p * p.log2();
         }
     }
-    let compressed = ((entropy * total / 8.0) as usize).max(1);
+    let compressed = ((entropy * total * 0.125) as usize).max(1);
     CodecAnalyticsMetrics {
         original_bytes: data.len(),
         compressed_bytes: compressed,

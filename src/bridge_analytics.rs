@@ -4,6 +4,7 @@
 
 use alice_analytics::prelude::*;
 
+#[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
     for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
@@ -27,6 +28,7 @@ pub struct AnalyticsDbRecord {
 }
 
 /// Serialize analytics snapshot for ALICE-DB persistence.
+#[inline]
 pub fn analytics_to_db_record(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsDbRecord {
     let card = hll.cardinality();
     let count = dd.count();
@@ -53,6 +55,7 @@ pub struct AnalyticsCacheEntry {
 }
 
 /// Cache analytics sketch for ALICE-Cache.
+#[inline]
 pub fn analytics_to_cache_entry(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsCacheEntry {
     let card = hll.cardinality();
     let count = dd.count();
@@ -83,6 +86,7 @@ pub struct AnalyticsCdnReport {
 }
 
 /// Package analytics report for ALICE-CDN delivery.
+#[inline]
 pub fn analytics_to_cdn_report(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsCdnReport {
     let card = hll.cardinality();
     let p50 = dd.quantile(0.50);
@@ -117,6 +121,7 @@ pub struct AnalyticsMlFeatures {
 }
 
 /// Extract ML features from analytics for ALICE-ML anomaly detection.
+#[inline]
 pub fn analytics_to_ml_features(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsMlFeatures {
     let card = hll.cardinality();
     let mean = dd.mean();
@@ -148,6 +153,7 @@ pub struct AnalyticsSearchIndex {
 }
 
 /// Index analytics metrics for ALICE-Search.
+#[inline]
 pub fn analytics_to_search_index(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsSearchIndex {
     let card = hll.cardinality();
     let data = card.to_le_bytes();
@@ -178,6 +184,7 @@ pub struct AnalyticsViewConfig {
 }
 
 /// Configure dashboard visualization for ALICE-View.
+#[inline]
 pub fn analytics_to_view_config(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsViewConfig {
     AnalyticsViewConfig {
         cardinality: hll.cardinality(),
@@ -204,6 +211,7 @@ pub struct AnalyticsEdgePayload {
 }
 
 /// Prepare lightweight telemetry for ALICE-Edge devices.
+#[inline]
 pub fn analytics_to_edge_payload(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsEdgePayload {
     let card = hll.cardinality();
     let count = dd.count();

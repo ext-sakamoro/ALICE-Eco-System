@@ -31,6 +31,7 @@ pub struct TextRenderBatch {
 }
 
 /// Convert shaped text + atlas into GPU render commands for ALICE-View.
+#[inline]
 pub fn font_to_view_batch(
     text: &str,
     shaper: &mut TextShaper,
@@ -57,7 +58,7 @@ pub fn font_to_view_batch(
                 });
             }
         }
-        if line.width > max_w { max_w = line.width; }
+        max_w = max_w.max(line.width);
         total_height = line.y_offset;
     }
 
@@ -91,6 +92,7 @@ pub struct DomGlyph {
 }
 
 /// Layout text for ALICE-Browser DOM rendering.
+#[inline]
 pub fn font_to_browser_layout(
     text: &str,
     shaper: &mut TextShaper,
@@ -118,7 +120,7 @@ pub fn font_to_browser_layout(
                 tile_y: ty,
             });
         }
-        if line.width > max_w { max_w = line.width; }
+        max_w = max_w.max(line.width);
         height = line.y_offset;
     }
 
@@ -145,6 +147,7 @@ pub struct FontSdfScene {
 }
 
 /// Convert shaped text to SDF tile data for ALICE-SDF integration.
+#[inline]
 pub fn font_to_sdf_scene(
     text: &str,
     shaper: &mut TextShaper,
@@ -175,8 +178,8 @@ pub fn font_to_sdf_scene(
         }
         let x = g.x * scale;
         let right = x + g.advance * scale;
-        if x < min_x { min_x = x; }
-        if right > max_x { max_x = right; }
+        min_x = min_x.min(x);
+        max_x = max_x.max(right);
         tiles.push(FontSdfTile { ch: g.codepoint, x, y: g.y * scale, sdf_data, advance: g.advance * scale });
     }
 
@@ -203,6 +206,7 @@ pub struct MangaTextLayout {
 }
 
 /// Create vertical manga text layout for ALICE-Manga balloon rendering.
+#[inline]
 pub fn font_to_manga_layout(text: &str, balloon_w: f32, balloon_h: f32, font_size: f32) -> MangaTextLayout {
     let params = MetaFontParams::sans_regular();
     let chars: Vec<char> = text.chars().collect();
@@ -236,6 +240,7 @@ pub struct AnimTextFrame {
 }
 
 /// Generate animated text transition between two font styles.
+#[inline]
 pub fn font_animation_frame(text: &str, from: &MetaFontParams, to: &MetaFontParams, t: f32) -> AnimTextFrame {
     let params = from.lerp(to, t);
     let shaper = TextShaper::new(params);
@@ -254,6 +259,7 @@ pub struct FontCdnPackage {
 }
 
 /// Package font parameters for CDN distribution.
+#[inline]
 pub fn font_to_cdn_package(params: &MetaFontParams) -> FontCdnPackage {
     let bytes = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -264,7 +270,7 @@ pub fn font_to_cdn_package(params: &MetaFontParams) -> FontCdnPackage {
     FontCdnPackage {
         params_bytes: bytes,
         content_hash: hash,
-        compression_ratio: 500_000.0 / 40.0, // ~12,500x vs typical TTF
+        compression_ratio: 12_500.0, // ~12,500x vs typical TTF
     }
 }
 
@@ -283,6 +289,7 @@ pub struct TextEngravingResult {
 }
 
 /// Extract contours from text SDF for ALICE-Print G-code engraving.
+#[inline]
 pub fn font_to_print_contours(text: &str, params: &MetaFontParams, scale_mm: f32, threshold: f32) -> TextEngravingResult {
     let shaper = TextShaper::new(*params);
     let mut atlas = SdfAtlas::new(8, *params);
@@ -310,8 +317,8 @@ pub fn font_to_print_contours(text: &str, params: &MetaFontParams, scale_mm: f32
                     let px = (g.x + col as f32 / GLYPH_SDF_SIZE as f32 * g.advance) * scale_mm;
                     let py = (row as f32 / GLYPH_SDF_SIZE as f32) * scale_mm;
                     pts.push((px, py));
-                    if px < min_x { min_x = px; }
-                    if px > max_x { max_x = px; }
+                    min_x = min_x.min(px);
+                    max_x = max_x.max(px);
                 }
             }
         }
@@ -350,6 +357,7 @@ pub struct FontDbRecord {
 }
 
 /// Serialize MetaFontParams for ALICE-DB persistence.
+#[inline]
 pub fn font_to_db_record(params: &MetaFontParams) -> FontDbRecord {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -378,6 +386,7 @@ pub struct FontCacheEntry {
 }
 
 /// Prepare MetaFontParams for ALICE-Cache storage.
+#[inline]
 pub fn font_to_cache_entry(params: &MetaFontParams) -> FontCacheEntry {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -388,7 +397,7 @@ pub fn font_to_cache_entry(params: &MetaFontParams) -> FontCacheEntry {
     FontCacheEntry {
         content_hash: hash,
         params_bytes: data,
-        compression_ratio: 500_000.0 / 40.0,
+        compression_ratio: 12_500.0,
     }
 }
 
@@ -405,6 +414,7 @@ pub struct FontSyncPacket {
 }
 
 /// Package MetaFontParams for ALICE-Sync P2P exchange.
+#[inline]
 pub fn font_to_sync_packet(params: &MetaFontParams, player_id: u8) -> FontSyncPacket {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -432,6 +442,7 @@ pub struct FontCryptoPayload {
 }
 
 /// Prepare MetaFontParams for ALICE-Crypto encryption.
+#[inline]
 pub fn font_to_crypto_payload(params: &MetaFontParams) -> FontCryptoPayload {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -459,6 +470,7 @@ pub struct FontQueueMessage {
 }
 
 /// Package MetaFontParams for ALICE-Queue message delivery.
+#[inline]
 pub fn font_to_queue_message(params: &MetaFontParams) -> FontQueueMessage {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -490,6 +502,7 @@ pub struct FontAnalyticsMetrics {
 }
 
 /// Extract font usage metrics for ALICE-Analytics.
+#[inline]
 pub fn font_to_analytics_metrics(params: &MetaFontParams) -> FontAnalyticsMetrics {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -502,7 +515,7 @@ pub fn font_to_analytics_metrics(params: &MetaFontParams) -> FontAnalyticsMetric
         serif: params.serif,
         content_hash: hash,
         param_bytes: 40,
-        compression_ratio: 500_000.0 / 40.0,
+        compression_ratio: 12_500.0,
     }
 }
 

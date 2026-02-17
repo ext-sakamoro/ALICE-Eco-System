@@ -4,6 +4,7 @@
 
 use alice_animation::{SceneGraph, Director};
 
+#[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
     for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
@@ -23,6 +24,7 @@ pub struct AnimSdfScene {
 }
 
 /// Evaluate Animation scene for ALICE-SDF integration.
+#[inline]
 pub fn animation_to_sdf_scene(scene: &SceneGraph, _time: f32) -> AnimSdfScene {
     let actors = scene.actor_count();
     AnimSdfScene { node_count: actors, actor_count: actors, duration_secs: 0.0 }
@@ -43,6 +45,7 @@ pub struct AnimCdnPackage {
 }
 
 /// Package episode for ALICE-CDN delivery.
+#[inline]
 pub fn animation_to_cdn_package(director: &Director) -> AnimCdnPackage {
     let dur = director.duration();
     let name = "episode".to_string();
@@ -68,6 +71,7 @@ pub struct AnimCacheEntry {
 }
 
 /// Cache Animation scene state for ALICE-Cache.
+#[inline]
 pub fn animation_to_cache_entry(scene: &SceneGraph, time: f32) -> AnimCacheEntry {
     let actors = scene.actor_count();
     let time_key = (time * 100.0) as u32;
@@ -90,6 +94,7 @@ pub struct AnimDbRecord {
 }
 
 /// Serialize Animation director for ALICE-DB persistence.
+#[inline]
 pub fn animation_to_db_record(director: &Director) -> AnimDbRecord {
     let dur = director.duration();
     let data = dur.to_le_bytes();
@@ -116,6 +121,7 @@ pub struct AnimSyncPacket {
 }
 
 /// Package scene state for ALICE-Sync collaborative editing.
+#[inline]
 pub fn animation_to_sync_packet(scene: &SceneGraph, time: f32, player_slot: u8) -> AnimSyncPacket {
     let actors = scene.actor_count();
     let data = [&actors.to_le_bytes()[..], &time.to_le_bytes()].concat();
@@ -137,6 +143,7 @@ pub struct AnimViewConfig {
 }
 
 /// Configure render pipeline for ALICE-View.
+#[inline]
 pub fn animation_to_view_config(scene: &SceneGraph, time: f32) -> AnimViewConfig {
     AnimViewConfig {
         actor_count: scene.actor_count(),
@@ -161,6 +168,7 @@ pub struct AnimCodecConfig {
 }
 
 /// Configure episode compression for ALICE-Codec.
+#[inline]
 pub fn animation_to_codec_config(director: &Director, fps: usize) -> AnimCodecConfig {
     let dur = director.duration();
     let frames = (dur * fps as f32) as usize;
@@ -187,6 +195,7 @@ pub struct AnimMlFeatures {
 }
 
 /// Extract ML features from Animation scene for AI direction.
+#[inline]
 pub fn animation_to_ml_features(scene: &SceneGraph, time: f32, duration: f32) -> AnimMlFeatures {
     let actors = scene.actor_count() as f32;
     let complexity = actors * 0.1;

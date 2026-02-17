@@ -17,6 +17,7 @@ pub struct DnsBrowserClassification {
 }
 
 /// Classify domain for ALICE-Browser ad blocking via Bloom filter.
+#[inline]
 pub fn dns_browser_classify(engine: &mut DnsBloomEngine, domain: &str) -> DnsBrowserClassification {
     let action = engine.check_domain(domain);
     let (blocked, action_str) = match action {
@@ -32,6 +33,7 @@ pub fn dns_browser_classify(engine: &mut DnsBloomEngine, domain: &str) -> DnsBro
 }
 
 /// Batch classify domains for ALICE-Browser.
+#[inline]
 pub fn dns_browser_classify_batch(engine: &mut DnsBloomEngine, domains: &[&str]) -> Vec<DnsBrowserClassification> {
     domains.iter().map(|d| dns_browser_classify(engine, d)).collect()
 }
@@ -51,6 +53,7 @@ pub struct DnsCacheHint {
 }
 
 /// Generate cache prefetch hint from DNS action for ALICE-Cache.
+#[inline]
 pub fn dns_to_cache_hint(domain: &str, action: DnsAction) -> DnsCacheHint {
     let (should_cache, priority) = match action {
         DnsAction::Block => (false, 0),
@@ -80,6 +83,7 @@ pub struct DnsDbRecord {
 }
 
 /// Serialize DNS classification for ALICE-DB persistence.
+#[inline]
 pub fn dns_to_db_record(engine: &mut DnsBloomEngine, domain: &str) -> DnsDbRecord {
     let action = engine.check_domain(domain);
     let (blocked, action_str) = match action {
