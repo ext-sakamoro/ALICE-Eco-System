@@ -111,7 +111,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.2.0 | Ecosystem Integration Hub | 105 bridges, 11 pipeline paths (A-J), 24 crates connected, 115 tests | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 178 bridges, 10 pipeline paths (A-J), 31 crates connected, 187 tests | MIT |
 
 **Total: 35 components** | AGPL-3.0: 18 | MIT: 8 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
 
@@ -236,7 +236,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **105 cross-crate bridges** across 16 bridge files and 11 pipeline paths, connecting 24 crates with 115 tests. Key bridge categories:
+The ALICE ecosystem contains **178 cross-crate bridges** across 23 bridge files and 10 pipeline paths (A-J), connecting 31 crates with 187 tests. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -262,7 +262,14 @@ The ALICE ecosystem contains **105 cross-crate bridges** across 16 bridge files 
 | **ML/TRT Bridges** | ML→Physics, ML→SDF, ML→Animation, TRT→SDF, TRT→Physics, TRT→View | Ternary AI inference |
 | **DNS/API Bridges** | DNS→Browser, DNS→Cache, API→Auth, API→CDN | DNS ad-blocking + API gateway |
 | **Search Bridges** | Search→DB, Search→Browser, Search→VCS | FM-Index full-text search |
-| **Zip Bridges** | Zip→Edge, Zip→DB | Procedural compression |
+| **Zip Bridges** | Zip→Edge, Zip→DB, Zip→Crypto | Procedural compression + crypto |
+| **Auth Bridges** | Auth→DB, Auth→Cache, Auth→Crypto, Auth→API, Auth→CDN, Auth→Edge, Auth→DNS, Auth→Sync | Ed25519 ZKP identity to ecosystem |
+| **Crypto Bridges** | Crypto→DB, Crypto→Cache, Crypto→CDN, Crypto→VCS, Crypto→Edge, Crypto→Sync, Crypto→Zip | BLAKE3 + XChaCha20 + SSS to ecosystem |
+| **Animation Bridges** | Animation→SDF, Animation→CDN, Animation→Cache, Animation→DB, Animation→Sync, Animation→View, Animation→Codec, Animation→ML | Anime SDF direction to ecosystem |
+| **Manga Bridges** | Manga→SDF, Manga→CDN, Manga→Cache, Manga→DB, Manga→Text, Manga→Search, Manga→Print, Manga→Codec | SDF manga creation to ecosystem |
+| **Print Ext Bridges** | Print→DB, Print→CDN, Print→Cache, Print→View, Print→Analytics, Print→Motion | SDF-to-G-code slicer to ecosystem |
+| **Analytics Bridges** | Analytics→DB, Analytics→Cache, Analytics→CDN, Analytics→ML, Analytics→Search, Analytics→View, Analytics→Edge | Streaming sketches to ecosystem |
+| **Queue Bridges** | Queue→DB, Queue→Edge, Queue→Crypto, Queue→Analytics, Queue→Sync, Queue→Cache | Message queue to ecosystem |
 | **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS | End-to-end cross-crate pipelines |
 
 ### Build Profile Changes

@@ -1,6 +1,6 @@
-//! Voice bridges — ALICE-Voice ↔ Synth, Animation, Font, Edge
+//! Voice bridges — ALICE-Voice ↔ Synth, Animation, Font, Edge, DB, Cache
 //!
-//! 4 bridges connecting parametric voice codec to the ALICE ecosystem.
+//! 6 bridges connecting parametric voice codec to the ALICE ecosystem.
 
 use alice_voice::ParametricParams;
 
@@ -121,6 +121,76 @@ pub fn voice_to_edge_payload(params: &ParametricParams, raw_pcm_bytes: usize) ->
     }
 }
 
+// ── Bridge 5: Voice → DB (voice parameter persistence) ─────────────────
+
+/// Voice parameter record for ALICE-DB persistence.
+pub struct VoiceDbRecord {
+    /// Content hash for deduplication.
+    pub content_hash: u64,
+    /// Pitch frequency (Hz).
+    pub pitch_hz: f32,
+    /// LPC order.
+    pub lpc_order: u8,
+    /// Number of formants.
+    pub formant_count: u8,
+    /// Sample rate.
+    pub sample_rate: u32,
+}
+
+/// Serialize ParametricParams for ALICE-DB persistence.
+pub fn voice_to_db_record(params: &ParametricParams) -> VoiceDbRecord {
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &params.pitch.f0.to_le_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for &b in &params.lpc.gain.to_le_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    VoiceDbRecord {
+        content_hash: hash,
+        pitch_hz: params.pitch.f0,
+        lpc_order: params.lpc.coeffs.len().min(255) as u8,
+        formant_count: params.formants.len().min(255) as u8,
+        sample_rate: params.sample_rate,
+    }
+}
+
+// ── Bridge 6: Voice → Cache (voice parameter caching) ──────────────────
+
+/// Voice parameter cache entry for ALICE-Cache.
+pub struct VoiceCacheEntry {
+    /// Content hash for cache key.
+    pub content_hash: u64,
+    /// Pitch frequency (Hz).
+    pub pitch_hz: f32,
+    /// Voiced flag.
+    pub voiced: bool,
+    /// Payload size estimate.
+    pub payload_bytes: usize,
+}
+
+/// Prepare ParametricParams for ALICE-Cache storage.
+pub fn voice_to_cache_entry(params: &ParametricParams) -> VoiceCacheEntry {
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &params.pitch.f0.to_le_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for &b in &(params.sample_rate as u64).to_le_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    let payload_bytes = 4 + params.lpc.coeffs.len() * 4 + params.formants.len() * 12 + 8;
+    VoiceCacheEntry {
+        content_hash: hash,
+        pitch_hz: params.pitch.f0,
+        voiced: params.pitch.is_voiced,
+        payload_bytes,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -191,5 +261,24 @@ mod tests {
         assert!(e.compression_ratio > 1.0);
         assert_eq!(e.lpc_order, 3);
         assert!(e.pitch_period > 0);
+    }
+
+    #[test]
+    fn test_voice_to_db_record() {
+        let p = test_params();
+        let rec = voice_to_db_record(&p);
+        assert_ne!(rec.content_hash, 0);
+        assert!((rec.pitch_hz - 220.0).abs() < 0.01);
+        assert_eq!(rec.lpc_order, 3);
+        assert_eq!(rec.formant_count, 3);
+    }
+
+    #[test]
+    fn test_voice_to_cache_entry() {
+        let p = test_params();
+        let entry = voice_to_cache_entry(&p);
+        assert_ne!(entry.content_hash, 0);
+        assert!(entry.voiced);
+        assert!(entry.payload_bytes > 0);
     }
 }

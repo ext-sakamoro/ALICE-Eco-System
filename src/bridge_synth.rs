@@ -1,6 +1,6 @@
-//! Synth bridges — ALICE-Synth ↔ Streaming-Protocol, Animation, Codec, DB, View, Cache, CDN, Sync, Crypto
+//! Synth bridges — ALICE-Synth ↔ Streaming-Protocol, Animation, Codec, DB, View, Cache, CDN, Sync, Crypto, Queue, Analytics
 //!
-//! 9 bridges connecting procedural audio to the ALICE ecosystem.
+//! 11 bridges connecting procedural audio to the ALICE ecosystem.
 
 use alice_synth::{
     FmPatch, NoteEventKind, Patch, Score, Synthesizer,
@@ -321,6 +321,66 @@ pub fn synth_to_crypto_payload(score: &Score) -> SynthCryptoPayload {
     }
 }
 
+// ── Bridge 10: Synth → Queue (score delivery via message queue) ─────────
+
+/// Score message for ALICE-Queue delivery.
+pub struct SynthQueueMessage {
+    /// Score bytes (compact wire format).
+    pub score_bytes: Vec<u8>,
+    /// Content hash for deduplication.
+    pub content_hash: u64,
+    /// Event count.
+    pub event_count: usize,
+    /// Tempo BPM.
+    pub tempo_bpm: u16,
+}
+
+/// Package Score for ALICE-Queue message delivery.
+pub fn synth_to_queue_message(score: &Score) -> SynthQueueMessage {
+    let data = score.to_bytes();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    SynthQueueMessage {
+        score_bytes: data,
+        content_hash: hash,
+        event_count: score.events.len(),
+        tempo_bpm: score.header.tempo_bpm,
+    }
+}
+
+// ── Bridge 11: Synth → Analytics (audio metrics) ────────────────────────
+
+/// Audio metrics for ALICE-Analytics monitoring.
+pub struct SynthAnalyticsMetrics {
+    /// Score duration in seconds.
+    pub duration_secs: f32,
+    /// Event count.
+    pub event_count: usize,
+    /// Tempo BPM.
+    pub tempo_bpm: u16,
+    /// Events per second.
+    pub events_per_sec: f32,
+    /// Score bytes (wire size).
+    pub score_bytes: usize,
+}
+
+/// Extract audio metrics for ALICE-Analytics monitoring.
+pub fn synth_to_analytics_metrics(score: &Score) -> SynthAnalyticsMetrics {
+    let duration = score.duration_secs();
+    let events = score.events.len();
+    let eps = if duration > 0.0 { events as f32 / duration } else { 0.0 };
+    SynthAnalyticsMetrics {
+        duration_secs: duration,
+        event_count: events,
+        tempo_bpm: score.header.tempo_bpm,
+        events_per_sec: eps,
+        score_bytes: score.to_bytes().len(),
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -415,5 +475,26 @@ mod tests {
         let crypto = synth_to_crypto_payload(&score);
         assert!(crypto.payload_bytes > 0);
         assert_ne!(crypto.content_hash, 0);
+    }
+
+    #[test]
+    fn test_synth_to_queue_message() {
+        let score = test_score();
+        let msg = synth_to_queue_message(&score);
+        assert!(!msg.score_bytes.is_empty());
+        assert_ne!(msg.content_hash, 0);
+        assert_eq!(msg.event_count, 4);
+        assert_eq!(msg.tempo_bpm, 120);
+    }
+
+    #[test]
+    fn test_synth_to_analytics_metrics() {
+        let score = test_score();
+        let m = synth_to_analytics_metrics(&score);
+        assert!(m.duration_secs > 0.0);
+        assert_eq!(m.event_count, 4);
+        assert_eq!(m.tempo_bpm, 120);
+        assert!(m.events_per_sec > 0.0);
+        assert!(m.score_bytes > 0);
     }
 }

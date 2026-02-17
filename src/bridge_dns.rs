@@ -1,6 +1,6 @@
-//! DNS bridges — ALICE-DNS ↔ Browser, Cache
+//! DNS bridges — ALICE-DNS ↔ Browser, Cache, DB
 //!
-//! 2 bridges connecting Bloom filter DNS ad-blocker to the ALICE ecosystem.
+//! 3 bridges connecting Bloom filter DNS ad-blocker to the ALICE ecosystem.
 
 use alice_dns::{DnsBloomEngine, DnsAction};
 
@@ -65,6 +65,41 @@ pub fn dns_to_cache_hint(domain: &str, action: DnsAction) -> DnsCacheHint {
     }
 }
 
+// ── Bridge 3: DNS → DB (DNS record persistence) ────────────────────────
+
+/// DNS record for ALICE-DB persistence.
+pub struct DnsDbRecord {
+    /// Domain name.
+    pub domain: String,
+    /// Action classification.
+    pub action: &'static str,
+    /// Content hash for deduplication.
+    pub content_hash: u64,
+    /// Whether domain is blocked.
+    pub blocked: bool,
+}
+
+/// Serialize DNS classification for ALICE-DB persistence.
+pub fn dns_to_db_record(engine: &mut DnsBloomEngine, domain: &str) -> DnsDbRecord {
+    let action = engine.check_domain(domain);
+    let (blocked, action_str) = match action {
+        DnsAction::Block => (true, "blocked"),
+        DnsAction::Allow => (false, "allow"),
+        DnsAction::Spoof => (true, "spoof"),
+    };
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in domain.as_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    DnsDbRecord {
+        domain: domain.to_string(),
+        action: action_str,
+        content_hash: hash,
+        blocked,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -103,5 +138,20 @@ mod tests {
         let hint2 = dns_to_cache_hint("ads.com", DnsAction::Block);
         assert!(!hint2.should_cache);
         assert_eq!(hint2.priority, 0);
+    }
+
+    #[test]
+    fn test_dns_to_db_record() {
+        let blocklist = vec!["ads.bad.com".to_string()];
+        let mut engine = DnsBloomEngine::new();
+        engine.load_domains(&blocklist);
+        let rec = dns_to_db_record(&mut engine, "ads.bad.com");
+        assert!(rec.blocked);
+        assert_eq!(rec.action, "blocked");
+        assert_ne!(rec.content_hash, 0);
+
+        let rec2 = dns_to_db_record(&mut engine, "clean.com");
+        assert!(!rec2.blocked);
+        assert_eq!(rec2.action, "allow");
     }
 }

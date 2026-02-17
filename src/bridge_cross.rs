@@ -1,8 +1,9 @@
-//! Cross-bridges — Inter-connections among the 6 new ALICE crates
+//! Cross-bridges — Inter-connections among ALICE crates
 //!
-//! 10 bridges connecting Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS,
+//! 15 bridges connecting Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS,
 //! Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth, Motion→Font,
-//! Kinematics→Synth, RTOS→VCS.
+//! Kinematics→Synth, RTOS→VCS, Animation↔Manga, Auth↔Crypto,
+//! Queue↔Analytics, Print↔Animation, Manga↔Print.
 
 use alice_font::param::MetaFontParams;
 use alice_kinematics::Vec3k;
@@ -381,6 +382,142 @@ pub fn vcs_diff_rtos(old: &KernelStats, new: &KernelStats) -> RtosVcsSnapshot {
     }
 }
 
+// ── Bridge 11: Animation ↔ Manga (scene → manga panel conversion) ─────
+
+/// Manga panel derived from Animation scene state.
+pub struct AnimMangaPanel {
+    /// Actor count in scene.
+    pub actor_count: usize,
+    /// Scene time snapshot.
+    pub time: f32,
+    /// Recommended panel shape.
+    pub panel_type: &'static str,
+    /// Content hash.
+    pub content_hash: u64,
+}
+
+/// Convert Animation SceneGraph snapshot to Manga panel metadata.
+pub fn animation_to_manga_panel(scene: &alice_animation::SceneGraph, time: f32) -> AnimMangaPanel {
+    let actors = scene.actor_count();
+    let panel_type = if actors > 3 { "wide" } else if actors > 1 { "standard" } else { "close-up" };
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &(actors as u64).to_le_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for &b in &time.to_le_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    AnimMangaPanel { actor_count: actors, time, panel_type, content_hash: hash }
+}
+
+// ── Bridge 12: Auth ↔ Crypto (identity → encrypted seed backup) ───────
+
+/// Encrypted identity backup via ALICE-Crypto BLAKE3 hash.
+pub struct AuthCryptoIdentity {
+    /// BLAKE3 hash of identity public key.
+    pub id_hash: [u8; 32],
+    /// Identity public key bytes.
+    pub id_bytes: [u8; 32],
+    /// Hash for cache/DB keying.
+    pub content_hash: u64,
+}
+
+/// Hash Auth identity via Crypto BLAKE3 for secure indexing.
+pub fn auth_crypto_hash_identity(id: &alice_auth::AliceId) -> AuthCryptoIdentity {
+    let id_bytes = *id.as_bytes();
+    let blake_hash = alice_crypto::hash(&id_bytes);
+    let hash_bytes: [u8; 32] = *blake_hash.as_bytes();
+    let mut content_hash: u64 = 0xcbf29ce484222325;
+    for &b in &hash_bytes[..8] {
+        content_hash ^= b as u64;
+        content_hash = content_hash.wrapping_mul(0x100000001b3);
+    }
+    AuthCryptoIdentity { id_hash: hash_bytes, id_bytes, content_hash }
+}
+
+// ── Bridge 13: Queue ↔ Analytics (message queue metrics) ──────────────
+
+/// Queue depth metrics for ALICE-Analytics.
+pub struct QueueAnalyticsSnapshot {
+    /// Current queue depth.
+    pub depth: usize,
+    /// Message payload bytes.
+    pub payload_bytes: usize,
+    /// Sender hash (FNV-1a of sender key).
+    pub sender_hash: u64,
+    /// Sequence number.
+    pub seq: u64,
+}
+
+/// Extract queue metrics for Analytics monitoring.
+pub fn queue_analytics_snapshot(msg: &alice_queue::Message, depth: usize) -> QueueAnalyticsSnapshot {
+    fn fnv1a_local(data: &[u8]) -> u64 {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+        h
+    }
+    QueueAnalyticsSnapshot {
+        depth,
+        payload_bytes: msg.payload.len(),
+        sender_hash: fnv1a_local(&msg.header.sender),
+        seq: msg.header.seq,
+    }
+}
+
+// ── Bridge 14: Print ↔ Animation (3D print → animated preview) ────────
+
+/// Animated print preview configuration.
+pub struct PrintAnimPreview {
+    /// Number of layers.
+    pub layer_count: usize,
+    /// Total print time in seconds.
+    pub print_time_secs: f32,
+    /// Frames per layer (for animation).
+    pub frames_per_layer: usize,
+    /// Total animation frames.
+    pub total_frames: usize,
+}
+
+/// Configure animated print preview from SliceResult.
+pub fn print_animation_preview(result: &alice_print::SliceResult, fps: usize) -> PrintAnimPreview {
+    let frames_per_layer = (fps as f32 * result.print_time_seconds / result.layer_count.max(1) as f32).max(1.0) as usize;
+    PrintAnimPreview {
+        layer_count: result.layer_count,
+        print_time_secs: result.print_time_seconds,
+        frames_per_layer,
+        total_frames: result.layer_count * frames_per_layer,
+    }
+}
+
+// ── Bridge 15: Manga ↔ Print (manga page → print-ready) ──────────────
+
+/// Print-ready manga page configuration.
+pub struct MangaPrintReady {
+    /// Page dimensions (mm).
+    pub page_size_mm: (f32, f32),
+    /// Element count.
+    pub element_count: usize,
+    /// Estimated ink coverage (0.0-1.0).
+    pub ink_coverage: f32,
+    /// DPI setting.
+    pub dpi: u32,
+}
+
+/// Configure manga page for physical printing.
+pub fn manga_print_ready(page: &alice_manga::MangaPage, dpi: u32) -> MangaPrintReady {
+    let (w, h) = page.size.dimensions();
+    let elements = page.element_count();
+    let ink = (elements as f32 * 0.02).min(0.8);
+    MangaPrintReady {
+        page_size_mm: (w, h),
+        element_count: elements,
+        ink_coverage: ink,
+        dpi,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -532,5 +669,58 @@ mod tests {
         let diff = vcs_diff_rtos(&stats1, &stats2);
         assert!(diff.diff_ops > 0);
         assert_eq!(diff.node_count, 5);
+    }
+
+    #[test]
+    fn test_animation_to_manga_panel() {
+        let mut scene = alice_animation::SceneGraph::new();
+        let sdf = alice_sdf::SdfNode::sphere(1.0);
+        scene.add_actor(alice_animation::Actor::new("hero", sdf));
+        let panel = animation_to_manga_panel(&scene, 2.5);
+        assert_eq!(panel.actor_count, 1);
+        assert_eq!(panel.panel_type, "close-up");
+        assert_ne!(panel.content_hash, 0);
+    }
+
+    #[test]
+    fn test_auth_crypto_hash_identity() {
+        let identity = alice_auth::Identity::from_seed(&[42u8; 32]);
+        let result = auth_crypto_hash_identity(&identity.id());
+        assert_ne!(result.id_hash, [0u8; 32]);
+        assert_ne!(result.content_hash, 0);
+    }
+
+    #[test]
+    fn test_queue_analytics_snapshot() {
+        let msg = alice_queue::Message::new([42u8; 32], 1, vec![1, 2, 3]);
+        let snap = queue_analytics_snapshot(&msg, 10);
+        assert_eq!(snap.depth, 10);
+        assert_eq!(snap.payload_bytes, 3);
+        assert_ne!(snap.sender_hash, 0);
+    }
+
+    #[test]
+    fn test_print_animation_preview() {
+        let result = alice_print::SliceResult {
+            gcode: "G28\n".to_string(),
+            layer_count: 100,
+            filament_meters: 5.0,
+            print_time_seconds: 3600.0,
+            compile_ms: 10.0,
+            slice_ms: 50.0,
+            gcode_ms: 5.0,
+        };
+        let preview = print_animation_preview(&result, 30);
+        assert_eq!(preview.layer_count, 100);
+        assert!(preview.total_frames > 0);
+    }
+
+    #[test]
+    fn test_manga_print_ready() {
+        let page = alice_manga::MangaPage::new(alice_manga::PageSize::B4);
+        let ready = manga_print_ready(&page, 300);
+        assert_eq!(ready.dpi, 300);
+        assert!(ready.page_size_mm.0 > 0.0);
+        assert!(ready.page_size_mm.1 > 0.0);
     }
 }

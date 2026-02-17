@@ -1,6 +1,6 @@
-//! Font bridges — ALICE-Font ↔ View, Browser, SDF, Manga, Animation, CDN, Print
+//! Font bridges — ALICE-Font ↔ View, Browser, SDF, Manga, Animation, CDN, Print, DB, Cache, Sync, Crypto, Queue, Analytics
 //!
-//! 11 bridges connecting parametric metafonts to the ALICE ecosystem.
+//! 13 bridges connecting parametric metafonts to the ALICE ecosystem.
 
 use alice_font::glyph::GLYPH_SDF_SIZE;
 use alice_font::param::MetaFontParams;
@@ -446,6 +446,66 @@ pub fn font_to_crypto_payload(params: &MetaFontParams) -> FontCryptoPayload {
     }
 }
 
+// ── Bridge 12: Font → Queue (font params via message queue) ─────────────
+
+/// Font parameter message for ALICE-Queue delivery.
+pub struct FontQueueMessage {
+    /// Font parameter bytes (40 bytes).
+    pub params_bytes: [u8; 40],
+    /// Content hash for deduplication.
+    pub content_hash: u64,
+    /// Payload size.
+    pub payload_bytes: usize,
+}
+
+/// Package MetaFontParams for ALICE-Queue message delivery.
+pub fn font_to_queue_message(params: &MetaFontParams) -> FontQueueMessage {
+    let data = params.encode();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    FontQueueMessage {
+        params_bytes: data,
+        content_hash: hash,
+        payload_bytes: 40,
+    }
+}
+
+// ── Bridge 13: Font → Analytics (font usage metrics) ────────────────────
+
+/// Font usage metrics for ALICE-Analytics monitoring.
+pub struct FontAnalyticsMetrics {
+    /// Font weight value.
+    pub weight: f32,
+    /// Serif amount.
+    pub serif: f32,
+    /// Content hash.
+    pub content_hash: u64,
+    /// Parameter bytes (always 40).
+    pub param_bytes: usize,
+    /// Compression ratio vs TTF.
+    pub compression_ratio: f64,
+}
+
+/// Extract font usage metrics for ALICE-Analytics.
+pub fn font_to_analytics_metrics(params: &MetaFontParams) -> FontAnalyticsMetrics {
+    let data = params.encode();
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &data {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    FontAnalyticsMetrics {
+        weight: params.weight,
+        serif: params.serif,
+        content_hash: hash,
+        param_bytes: 40,
+        compression_ratio: 500_000.0 / 40.0,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -551,5 +611,22 @@ mod tests {
         let crypto = font_to_crypto_payload(&p);
         assert_eq!(crypto.payload_bytes, 40);
         assert_ne!(crypto.content_hash, 0);
+    }
+
+    #[test]
+    fn test_font_to_queue_message() {
+        let p = MetaFontParams::sans_regular();
+        let msg = font_to_queue_message(&p);
+        assert_eq!(msg.payload_bytes, 40);
+        assert_ne!(msg.content_hash, 0);
+    }
+
+    #[test]
+    fn test_font_to_analytics_metrics() {
+        let p = MetaFontParams::serif_regular();
+        let m = font_to_analytics_metrics(&p);
+        assert!(m.weight > 0.0);
+        assert_ne!(m.content_hash, 0);
+        assert!(m.compression_ratio > 10000.0);
     }
 }

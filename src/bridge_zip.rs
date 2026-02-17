@@ -1,6 +1,6 @@
-//! Zip bridges — ALICE-Zip ↔ Edge, DB
+//! Zip bridges — ALICE-Zip ↔ Edge, DB, Crypto
 //!
-//! 2 bridges connecting procedural compression to the ALICE ecosystem.
+//! 3 bridges connecting procedural compression to the ALICE ecosystem.
 
 use alice_core::generators;
 use alice_core::compression;
@@ -71,6 +71,38 @@ pub fn zip_db_compress_residual(residual: &[f32]) -> ZipDbResidual {
     }
 }
 
+// ── Bridge 3: Zip → Crypto (encrypted compressed data) ──────────────────
+
+/// Encrypted compressed data metadata for ALICE-Crypto.
+pub struct ZipCryptoPayload {
+    /// Content hash for integrity.
+    pub content_hash: u64,
+    /// Compressed data bytes.
+    pub compressed_bytes: usize,
+    /// Original data bytes.
+    pub original_bytes: usize,
+    /// Compression ratio achieved before encryption.
+    pub compression_ratio: f32,
+}
+
+/// Prepare compressed residual for ALICE-Crypto encryption.
+pub fn zip_to_crypto_payload(residual: &[f32]) -> ZipCryptoPayload {
+    let compressed = compression::compress_residual_quantized(residual, 8, 3)
+        .unwrap_or_else(|_| Vec::new());
+    let raw_bytes = residual.len() * 4;
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &compressed {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    ZipCryptoPayload {
+        content_hash: hash,
+        compressed_bytes: compressed.len(),
+        original_bytes: raw_bytes,
+        compression_ratio: if compressed.is_empty() { 0.0 } else { raw_bytes as f32 / compressed.len() as f32 },
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -95,5 +127,14 @@ mod tests {
         let result = zip_db_compress_residual(&residual);
         assert!(result.compressed_bytes > 0);
         assert_ne!(result.content_hash, 0);
+    }
+
+    #[test]
+    fn test_zip_to_crypto_payload() {
+        let residual: Vec<f32> = (0..500).map(|i| (i as f32 * 0.02).sin() * 0.05).collect();
+        let payload = zip_to_crypto_payload(&residual);
+        assert!(payload.compressed_bytes > 0);
+        assert_ne!(payload.content_hash, 0);
+        assert_eq!(payload.original_bytes, 2000);
     }
 }

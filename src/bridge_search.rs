@@ -1,6 +1,6 @@
-//! Search bridges — ALICE-Search ↔ DB, Browser, VCS
+//! Search bridges — ALICE-Search ↔ DB, Browser, VCS, Cache, Analytics
 //!
-//! 3 bridges connecting FM-Index full-text search to the ALICE ecosystem.
+//! 5 bridges connecting FM-Index full-text search to the ALICE ecosystem.
 
 use alice_search::AliceIndex;
 
@@ -86,6 +86,66 @@ pub fn search_vcs_commits(commit_log: &str, pattern: &str) -> SearchVcsResult {
     }
 }
 
+// ── Bridge 4: Search → Cache (search result caching) ─────────────────────
+
+/// Cached search result for ALICE-Cache.
+pub struct SearchCacheEntry {
+    /// Content hash for cache key (pattern-based).
+    pub content_hash: u64,
+    /// Match count.
+    pub match_count: usize,
+    /// Pattern length.
+    pub pattern_len: usize,
+    /// Result found.
+    pub found: bool,
+}
+
+/// Cache FM-Index search result for ALICE-Cache.
+pub fn search_to_cache_entry(index: &AliceIndex, pattern: &[u8]) -> SearchCacheEntry {
+    let count = index.count(pattern);
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in pattern {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    SearchCacheEntry {
+        content_hash: hash,
+        match_count: count,
+        pattern_len: pattern.len(),
+        found: count > 0,
+    }
+}
+
+// ── Bridge 5: Search → Analytics (search metrics) ───────────────────────
+
+/// Search metrics for ALICE-Analytics monitoring.
+pub struct SearchAnalyticsMetrics {
+    /// Pattern length.
+    pub pattern_len: usize,
+    /// Match count.
+    pub match_count: usize,
+    /// Search hit ratio (found = 1.0, not found = 0.0).
+    pub hit_ratio: f32,
+    /// Content hash of pattern.
+    pub pattern_hash: u64,
+}
+
+/// Extract search metrics for ALICE-Analytics.
+pub fn search_to_analytics_metrics(index: &AliceIndex, pattern: &[u8]) -> SearchAnalyticsMetrics {
+    let count = index.count(pattern);
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in pattern {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    SearchAnalyticsMetrics {
+        pattern_len: pattern.len(),
+        match_count: count,
+        hit_ratio: if count > 0 { 1.0 } else { 0.0 },
+        pattern_hash: hash,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -117,5 +177,25 @@ mod tests {
         let result = search_vcs_commits(commits, "fix");
         assert_eq!(result.match_count, 2);
         assert_eq!(result.positions.len(), 2);
+    }
+
+    #[test]
+    fn test_search_to_cache_entry() {
+        let text = b"hello world hello ALICE";
+        let index = AliceIndex::build(text, 1);
+        let entry = search_to_cache_entry(&index, b"hello");
+        assert!(entry.found);
+        assert_eq!(entry.match_count, 2);
+        assert_ne!(entry.content_hash, 0);
+    }
+
+    #[test]
+    fn test_search_to_analytics_metrics() {
+        let text = b"the quick brown fox";
+        let index = AliceIndex::build(text, 4);
+        let m = search_to_analytics_metrics(&index, b"quick");
+        assert_eq!(m.match_count, 1);
+        assert!((m.hit_ratio - 1.0).abs() < 0.01);
+        assert_ne!(m.pattern_hash, 0);
     }
 }

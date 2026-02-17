@@ -1,6 +1,6 @@
 [package]
 name = "alice-eco-system"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
 description = "ALICE Ecosystem Integration Hub - 144+ bridges, 6 pipeline paths (IoT/Game/MoCap/Anime/Embedded/Print)"
@@ -45,6 +45,19 @@ alice-trt = { path = "../ALICE-TRT", default-features = false }
 alice-dns = { path = "../ALICE-DNS", default-features = false }
 alice-api = { path = "../ALICE-API", default-features = false, features = ["std"] }
 alice-zip = { path = "../ALICE-Zip/libalice", default-features = false }
+
+# Auth & Crypto bridges
+alice-auth = { path = "../ALICE-Auth", default-features = false, features = ["std"] }
+alice-crypto = { path = "../ALICE-Crypto" }
+
+# Content Creation bridges (Animation, Manga, Print)
+alice-animation = { path = "../ALICE-Animation", default-features = false }
+alice-manga = { path = "../ALICE-Manga", default-features = false }
+alice-print = { path = "../ALICE-Print", default-features = false }
+
+# Telemetry & Messaging bridges
+alice-analytics = { path = "../ALICE-Analytics", default-features = false, features = ["std"] }
+alice-queue = { path = "../ALICE-Queue" }
 
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"

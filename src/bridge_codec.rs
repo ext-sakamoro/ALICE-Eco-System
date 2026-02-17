@@ -1,6 +1,6 @@
-//! Codec bridges — ALICE-Codec ↔ Synth, Animation, SDF, View
+//! Codec bridges — ALICE-Codec ↔ Synth, Animation, SDF, View, DB, Analytics
 //!
-//! 4 bridges connecting 3D wavelet video/audio codec to the ALICE ecosystem.
+//! 6 bridges connecting 3D wavelet video/audio codec to the ALICE ecosystem.
 
 use alice_codec::{Wavelet1D, SubBand3D};
 use alice_codec::rans::FrequencyTable;
@@ -146,6 +146,84 @@ pub fn codec_to_view_frame(y: &[i16], co: &[i16], cg: &[i16], width: usize, heig
     CodecViewFrame { width, height, rgb_pixels: rgb, frame_number }
 }
 
+// ── Bridge 5: Codec → DB (compressed data persistence) ──────────────────
+
+/// Compressed data record for ALICE-DB persistence.
+pub struct CodecDbRecord {
+    /// Content hash for deduplication.
+    pub content_hash: u64,
+    /// Original voxel count.
+    pub voxel_count: usize,
+    /// Compressed bytes.
+    pub compressed_bytes: usize,
+    /// Bits per voxel.
+    pub bits_per_voxel: f32,
+}
+
+/// Serialize compressed SDF volume metadata for ALICE-DB persistence.
+pub fn codec_to_db_record(quantized: &[u8]) -> CodecDbRecord {
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in quantized {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    let mut freq = [0u32; 256];
+    for &b in quantized { freq[b as usize] += 1; }
+    let total = quantized.len() as f64;
+    let mut entropy_bits = 0.0f64;
+    for &f in &freq {
+        if f > 0 {
+            let p = f as f64 / total;
+            entropy_bits += -(p * p.log2()) * f as f64;
+        }
+    }
+    let compressed_bytes = ((entropy_bits / 8.0) as usize).max(1);
+    CodecDbRecord {
+        content_hash: hash,
+        voxel_count: quantized.len(),
+        compressed_bytes,
+        bits_per_voxel: if quantized.is_empty() { 0.0 } else { (compressed_bytes * 8) as f32 / quantized.len() as f32 },
+    }
+}
+
+// ── Bridge 6: Codec → Analytics (compression metrics) ───────────────────
+
+/// Codec compression metrics for ALICE-Analytics.
+pub struct CodecAnalyticsMetrics {
+    /// Original size in bytes.
+    pub original_bytes: usize,
+    /// Compressed size estimate.
+    pub compressed_bytes: usize,
+    /// Compression ratio.
+    pub compression_ratio: f32,
+    /// Shannon entropy (bits per symbol).
+    pub entropy_bps: f32,
+}
+
+/// Extract compression metrics for ALICE-Analytics.
+pub fn codec_to_analytics_metrics(data: &[u8]) -> CodecAnalyticsMetrics {
+    if data.is_empty() {
+        return CodecAnalyticsMetrics { original_bytes: 0, compressed_bytes: 0, compression_ratio: 0.0, entropy_bps: 0.0 };
+    }
+    let mut freq = [0u32; 256];
+    for &b in data { freq[b as usize] += 1; }
+    let total = data.len() as f64;
+    let mut entropy = 0.0f64;
+    for &f in &freq {
+        if f > 0 {
+            let p = f as f64 / total;
+            entropy -= p * p.log2();
+        }
+    }
+    let compressed = ((entropy * total / 8.0) as usize).max(1);
+    CodecAnalyticsMetrics {
+        original_bytes: data.len(),
+        compressed_bytes: compressed,
+        compression_ratio: if compressed > 0 { data.len() as f32 / compressed as f32 } else { 0.0 },
+        entropy_bps: entropy as f32,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -184,5 +262,23 @@ mod tests {
         let frame = codec_to_view_frame(&y, &co, &cg, 2, 2, 0);
         assert_eq!(frame.rgb_pixels.len(), 12);
         assert_eq!(frame.width, 2);
+    }
+
+    #[test]
+    fn test_codec_to_db_record() {
+        let data: Vec<u8> = (0..500).map(|i| (i % 64) as u8).collect();
+        let rec = codec_to_db_record(&data);
+        assert_eq!(rec.voxel_count, 500);
+        assert!(rec.compressed_bytes > 0);
+        assert_ne!(rec.content_hash, 0);
+    }
+
+    #[test]
+    fn test_codec_to_analytics_metrics() {
+        let data: Vec<u8> = (0..1000).map(|i| (i % 128) as u8).collect();
+        let m = codec_to_analytics_metrics(&data);
+        assert_eq!(m.original_bytes, 1000);
+        assert!(m.compression_ratio > 0.0);
+        assert!(m.entropy_bps > 0.0);
     }
 }

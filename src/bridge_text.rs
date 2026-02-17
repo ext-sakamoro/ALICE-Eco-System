@@ -1,6 +1,6 @@
-//! Text bridges — ALICE-Text ↔ Font, Manga, DB, Browser
+//! Text bridges — ALICE-Text ↔ Font, Manga, DB, Browser, Queue, Analytics
 //!
-//! 4 bridges connecting exception-based text compression to the ALICE ecosystem.
+//! 6 bridges connecting exception-based text compression to the ALICE ecosystem.
 
 use alice_text::{compress_tuned, decompress_tuned, CompressionMode};
 
@@ -119,6 +119,63 @@ pub fn text_to_browser_content(dom_text: &str) -> TextBrowserContent {
     }
 }
 
+// ── Bridge 5: Text → Queue (compressed text messages) ────────────────────
+
+/// Compressed text message for ALICE-Queue delivery.
+pub struct TextQueueMessage {
+    /// Compressed payload bytes.
+    pub compressed: Vec<u8>,
+    /// Original text length.
+    pub original_bytes: usize,
+    /// Compressed size.
+    pub compressed_bytes: usize,
+    /// Content hash for deduplication.
+    pub content_hash: u64,
+}
+
+/// Compress text for ALICE-Queue message delivery.
+pub fn text_to_queue_message(text: &str) -> TextQueueMessage {
+    let compressed = compress_tuned(text, CompressionMode::Fast).unwrap_or_else(|_| text.as_bytes().to_vec());
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &compressed {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    TextQueueMessage {
+        original_bytes: text.len(),
+        compressed_bytes: compressed.len(),
+        content_hash: hash,
+        compressed,
+    }
+}
+
+// ── Bridge 6: Text → Analytics (compression metrics) ─────────────────────
+
+/// Text compression metrics for ALICE-Analytics monitoring.
+pub struct TextAnalyticsMetrics {
+    /// Original size in bytes.
+    pub original_bytes: usize,
+    /// Compressed size in bytes.
+    pub compressed_bytes: usize,
+    /// Compression ratio.
+    pub compression_ratio: f32,
+    /// Bandwidth savings percentage.
+    pub bandwidth_saving_pct: f32,
+}
+
+/// Extract compression metrics for ALICE-Analytics.
+pub fn text_to_analytics_metrics(text: &str) -> TextAnalyticsMetrics {
+    let compressed = compress_tuned(text, CompressionMode::Balanced).unwrap_or_else(|_| text.as_bytes().to_vec());
+    let ratio = if compressed.is_empty() { 0.0 } else { text.len() as f32 / compressed.len() as f32 };
+    let saving = if text.is_empty() { 0.0 } else { (1.0 - compressed.len() as f32 / text.len() as f32) * 100.0 };
+    TextAnalyticsMetrics {
+        original_bytes: text.len(),
+        compressed_bytes: compressed.len(),
+        compression_ratio: ratio,
+        bandwidth_saving_pct: saving.max(0.0),
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -160,5 +217,22 @@ mod tests {
         let p = payload.unwrap();
         assert_eq!(p.text, original);
         assert_eq!(p.char_count, 13);
+    }
+
+    #[test]
+    fn test_text_to_queue_message() {
+        let msg = text_to_queue_message("Hello ALICE queue!");
+        assert!(msg.compressed_bytes > 0);
+        assert_ne!(msg.content_hash, 0);
+        assert!(msg.original_bytes > 0);
+    }
+
+    #[test]
+    fn test_text_to_analytics_metrics() {
+        let content = "The quick brown fox jumps over the lazy dog. ".repeat(50);
+        let m = text_to_analytics_metrics(&content);
+        assert!(m.original_bytes > 0);
+        assert!(m.compressed_bytes > 0);
+        assert!(m.compression_ratio > 0.0);
     }
 }
