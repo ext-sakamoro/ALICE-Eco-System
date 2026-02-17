@@ -92,15 +92,21 @@ dependencies = [
 
 [[package]]
 name = "alice-eco-system"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "alice-cache",
  "alice-cdn",
  "alice-db",
  "alice-edge",
+ "alice-font",
+ "alice-kinematics",
+ "alice-motion",
  "alice-physics",
+ "alice-rtos",
  "alice-sdf",
  "alice-sync",
+ "alice-synth",
+ "alice-vcs",
  "alice-view",
  "bincode",
  "crc32fast",
@@ -113,11 +119,27 @@ name = "alice-edge"
 version = "0.1.0"
 
 [[package]]
+name = "alice-font"
+version = "0.1.0"
+
+[[package]]
+name = "alice-kinematics"
+version = "0.1.0"
+
+[[package]]
+name = "alice-motion"
+version = "0.1.0"
+
+[[package]]
 name = "alice-physics"
 version = "0.3.0"
 dependencies = [
  "alice-db",
 ]
+
+[[package]]
+name = "alice-rtos"
+version = "0.1.0"
 
 [[package]]
 name = "alice-sdf"
@@ -150,6 +172,14 @@ dependencies = [
  "serde",
  "wide",
 ]
+
+[[package]]
+name = "alice-synth"
+version = "0.1.0"
+
+[[package]]
+name = "alice-vcs"
+version = "0.1.0"
 
 [[package]]
 name = "alice-view"

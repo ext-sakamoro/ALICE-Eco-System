@@ -1,9 +1,9 @@
 [package]
 name = "alice-eco-system"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration - Edge → CDN → Cache → Physics → Sync → DB Pipeline"
+description = "ALICE Ecosystem Integration Hub - 144+ bridges, 6 pipeline paths (IoT/Game/MoCap/Anime/Embedded/Print)"
 license = "MIT"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
@@ -22,6 +22,14 @@ alice-cache = { path = "../ALICE-Cache" }
 # Game Engine Pipeline
 alice-physics = { path = "../ALICE-Physics", features = ["replay"] }
 alice-sync = { path = "../ALICE-Sync", features = ["telemetry"] }
+
+# New crate bridges (Synth, VCS, Motion, RTOS, Kinematics, Font)
+alice-font = { path = "../ALICE-Font", features = ["std"] }
+alice-synth = { path = "../ALICE-Synth", features = ["std"] }
+alice-kinematics = { path = "../ALICE-Kinematics", features = ["std", "encoder"] }
+alice-motion = { path = "../ALICE-Motion", features = ["std"] }
+alice-rtos = { path = "../ALICE-RTOS" }
+alice-vcs = { path = "../ALICE-VCS", features = ["std"] }
 
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"

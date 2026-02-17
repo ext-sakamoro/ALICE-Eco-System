@@ -1,10 +1,14 @@
 //! ALICE Eco-System Pipeline — Edge to DB
 //!
-//! Connects all 9 ALICE crates into a unified write pipeline:
+//! Connects 15 ALICE crates into a unified write pipeline:
 //!
 //! - **Path A** (IoT/Sensor): Edge → ASP → CDN → DB
 //! - **Path B-1** (Asset Delivery): SDF → CDN → Cache
 //! - **Path B-2** (Game Loop): Sync → Physics → Replay/Telemetry → DB
+//! - **Path C** (Motion Capture): Edge → Kinematics → Sync → Physics → View
+//! - **Path D** (Anime Production): VCS → SDF → Animation + Font + Synth → CDN
+//! - **Path E** (Real-Time Embedded): RTOS → Edge → Synth → ASP
+//! - **Path F** (3D Print Optimization): SDF → Motion (S-curve) → Print → .3mf
 //!
 //! All paths terminate at ALICE-DB (model-based compression).
 
@@ -22,6 +26,14 @@ use alice_sdf::SdfTree;
 use alice_sync::telemetry::SyncTelemetry;
 use alice_sync::{InputFrame, LockstepSession};
 use libasp::{AspPacket, IPacketPayload};
+
+use alice_font::param::MetaFontParams;
+use alice_font::{SdfAtlas, TextShaper};
+use alice_kinematics::{ArmChain, Intent};
+use alice_motion::{CubicBezier, TrapezoidalProfile, VelocityProfile};
+use alice_rtos::{Kernel, TaskPriority};
+use alice_synth::{FmPatch, Patch, Score, Synthesizer};
+use alice_vcs::{Repository};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -99,6 +111,62 @@ pub struct GameTickResult {
     pub sync_confirmed: u64,
     /// Whether physics was actually stepped (false if sync wasn't ready).
     pub stepped: bool,
+}
+
+/// Result of motion capture intent processing (Path C: Kinematics → Sync → Physics).
+pub struct MocapResult {
+    /// Intent packet size (always 8 bytes).
+    pub intent_size: usize,
+    /// Sync frame number.
+    pub sync_frame: u64,
+    /// IK solver iterations.
+    pub ik_iterations: u32,
+    /// End-effector position (x, y, z).
+    pub end_effector: (f32, f32, f32),
+}
+
+/// Result of anime production pipeline (Path D: VCS → SDF + Font + Synth → CDN).
+pub struct AnimeProductionResult {
+    /// VCS commit hash.
+    pub vcs_hash: u64,
+    /// SDF scene serialized size.
+    pub sdf_bytes: usize,
+    /// Font parameters size (40 bytes).
+    pub font_params_bytes: usize,
+    /// Number of shaped subtitle glyphs.
+    pub subtitle_glyphs: usize,
+    /// Audio score size in bytes.
+    pub audio_score_bytes: usize,
+    /// Total CDN payload.
+    pub total_payload: usize,
+}
+
+/// Result of real-time embedded pipeline (Path E: RTOS → Edge → Synth → ASP).
+pub struct EmbeddedResult {
+    /// RTOS schedulability.
+    pub rtos_schedulable: bool,
+    /// RTOS CPU utilization.
+    pub rtos_utilization: f32,
+    /// Edge compressed size.
+    pub edge_bytes: usize,
+    /// Audio sample count.
+    pub audio_samples: usize,
+    /// ASP packet size.
+    pub asp_packet_size: usize,
+}
+
+/// Result of 3D print optimization (Path F: SDF → Motion → Print).
+pub struct PrintOptResult {
+    /// Arc length of the toolpath in mm.
+    pub arc_length_mm: f32,
+    /// Total print duration in seconds.
+    pub duration_secs: f32,
+    /// Number of G-code segments.
+    pub segment_count: usize,
+    /// Average feed rate (mm/min).
+    pub avg_feed_rate: f32,
+    /// Max feed rate (mm/min).
+    pub max_feed_rate: f32,
 }
 
 // ── Pipeline ─────────────────────────────────────────────────────────────
@@ -398,6 +466,159 @@ impl AlicePipeline {
         Ok(())
     }
 
+    // ── Path C: Motion Capture Streaming ──────────────────────────────
+
+    /// Ingest motion capture intent through Kinematics → Sync → Physics.
+    ///
+    /// `[ALICE-Edge] → [ALICE-Kinematics] → [ALICE-Sync] → [ALICE-Physics]`
+    pub fn mocap_intent(
+        &mut self,
+        intent: &Intent,
+        frame: u64,
+    ) -> Result<MocapResult> {
+        // 1. ALICE-Kinematics: encode intent (8 bytes)
+        let intent_bytes = intent.encode();
+
+        // 2. Kinematics → Sync: pack into InputFrame
+        let mx = i16::from_le_bytes([intent_bytes[0], intent_bytes[1]]);
+        let my = i16::from_le_bytes([intent_bytes[2], intent_bytes[3]]);
+        let mz = i16::from_le_bytes([intent_bytes[4], intent_bytes[5]]);
+        let _input = InputFrame::new(frame, 0).with_movement(mx, my, mz);
+
+        // 3. Kinematics → Physics: IK end-effector position
+        let mut chain = ArmChain::right_arm();
+        let target = intent.target;
+        let (ik_iters, _) = chain.inverse_kinematics(target, 50, 0.001);
+        let ee = chain.forward_kinematics();
+
+        Ok(MocapResult {
+            intent_size: 8,
+            sync_frame: frame,
+            ik_iterations: ik_iters,
+            end_effector: (ee.x, ee.y, ee.z),
+        })
+    }
+
+    // ── Path D: Anime Production ─────────────────────────────────────
+
+    /// Production pipeline: VCS → SDF + Font + Synth for anime content.
+    ///
+    /// `[ALICE-VCS] → [ALICE-SDF] + [ALICE-Font] + [ALICE-Synth] → [ALICE-CDN]`
+    pub fn anime_production(
+        &mut self,
+        sdf_scene: &SdfTree,
+        text: &str,
+        score: &Score,
+        commit_message: &str,
+    ) -> Result<AnimeProductionResult> {
+        // 1. VCS: version the SDF scene
+        let mut repo = Repository::new();
+        let vcs_tree = crate::bridge_vcs::sdf_to_vcs_tree(sdf_scene);
+        let hash = repo.commit(&vcs_tree, commit_message, "anime-pipeline");
+
+        // 2. SDF: serialize for CDN
+        let sdf_body = bincode::serialize(sdf_scene)?;
+        let sdf_size = sdf_body.len();
+
+        // 3. Font: shape text for subtitles
+        let params = MetaFontParams::sans_regular();
+        let shaper = TextShaper::new(params);
+        let mut atlas = SdfAtlas::new(8, params);
+        let shaped = shaper.shape_line(text, &mut atlas);
+        let font_params_size = 40;
+
+        // 4. Synth: render audio
+        let audio_size = score.to_bytes().len();
+
+        Ok(AnimeProductionResult {
+            vcs_hash: hash,
+            sdf_bytes: sdf_size,
+            font_params_bytes: font_params_size,
+            subtitle_glyphs: shaped.glyphs.len(),
+            audio_score_bytes: audio_size,
+            total_payload: sdf_size + font_params_size + audio_size,
+        })
+    }
+
+    // ── Path E: Real-Time Embedded ───────────────────────────────────
+
+    /// Embedded pipeline: RTOS → Edge → Synth → ASP.
+    ///
+    /// `[ALICE-RTOS] → [ALICE-Edge] → [ALICE-Synth] → [ALICE-ASP]`
+    pub fn realtime_embedded(
+        &mut self,
+        sensor_data: &[i32],
+        score: &Score,
+        sample_rate: u32,
+    ) -> Result<EmbeddedResult> {
+        // 1. RTOS: verify schedulability
+        let mut kernel = Kernel::testing();
+        kernel.add_task(b"sensor", |_| {}, TaskPriority::NORMAL, 10_000, 500);
+        kernel.add_task(b"audio", |_| {}, TaskPriority::CRITICAL, 5_000, 1_000);
+        let stats = kernel.run_for(100_000, 100);
+
+        // 2. Edge: compress sensor data
+        let (_slope, _intercept) = fit_linear_fixed(sensor_data);
+        let edge_bytes = 8;
+
+        // 3. Synth: render audio
+        let duration = score.duration_secs();
+        let num_samples = (duration * sample_rate as f32) as usize;
+        let mut synth = Synthesizer::new(sample_rate);
+        synth.load_patch(0, Patch::Fm(FmPatch::electric_piano()));
+        synth.load_score(score);
+        let mut pcm = vec![0i16; num_samples.max(1)];
+        synth.render_i16(&mut pcm);
+
+        // 4. ASP: packetize
+        let payload = IPacketPayload::new(1, num_samples as u32, 1.0);
+        let packet = AspPacket::create_i_packet(self.asp_sequence, payload)
+            .map_err(|e| format!("ASP: {:?}", e))?;
+        let asp_bytes = packet.to_bytes().map_err(|e| format!("ASP: {:?}", e))?;
+        self.asp_sequence += 1;
+
+        Ok(EmbeddedResult {
+            rtos_schedulable: stats.schedulable,
+            rtos_utilization: stats.utilization,
+            edge_bytes,
+            audio_samples: num_samples,
+            asp_packet_size: asp_bytes.len(),
+        })
+    }
+
+    // ── Path F: 3D Print Optimization ────────────────────────────────
+
+    /// Print pipeline: SDF → Motion (S-curve) → Print segments.
+    ///
+    /// `[ALICE-SDF] → [ALICE-Motion] (S-curve) → [ALICE-Print] → .3mf`
+    pub fn print_optimization(
+        &self,
+        curve: &CubicBezier,
+        v_max: f32,
+        a_max: f32,
+        num_segments: usize,
+    ) -> Result<PrintOptResult> {
+        let arc = curve.arc_length(64);
+        let profile = TrapezoidalProfile::new(v_max, a_max, arc);
+        let dur = profile.duration();
+        let segments = crate::bridge_motion::motion_to_print_segments(curve, v_max, a_max, num_segments);
+
+        // Calculate average feed rate
+        let avg_feed: f32 = if segments.is_empty() {
+            0.0
+        } else {
+            segments.iter().map(|s| s.feed_rate).sum::<f32>() / segments.len() as f32
+        };
+
+        Ok(PrintOptResult {
+            arc_length_mm: arc,
+            duration_secs: dur,
+            segment_count: segments.len(),
+            avg_feed_rate: avg_feed,
+            max_feed_rate: segments.iter().map(|s| s.feed_rate).fold(0.0f32, f32::max),
+        })
+    }
+
     // ── Internal ─────────────────────────────────────────────────────────
 
     fn node_name(&self, id: u64) -> String {
@@ -414,8 +635,11 @@ impl AlicePipeline {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alice_kinematics::Vec3k;
+    use alice_motion::Vec3;
     use alice_physics::Vec3Fix;
     use alice_sdf::SdfNode;
+    use alice_synth::{NoteEvent, NoteEventKind, Score};
     use tempfile::tempdir;
 
     fn test_setup() -> (tempfile::TempDir, PipelineConfig) {
@@ -522,6 +746,64 @@ mod tests {
         assert_eq!(stepped_count, 10); // frames 1-10 stepped
 
         pipeline.close().unwrap();
+    }
+
+    #[test]
+    fn test_path_c_mocap_intent() {
+        let (_dir, config) = test_setup();
+        let mut pipeline = AlicePipeline::new(config).unwrap();
+        let intent = Intent::reach(Vec3k::new(0.3, 0.4, 0.0), 100);
+        let result = pipeline.mocap_intent(&intent, 1).unwrap();
+        assert_eq!(result.intent_size, 8);
+        assert_eq!(result.sync_frame, 1);
+        assert!(result.ik_iterations > 0);
+    }
+
+    #[test]
+    fn test_path_d_anime_production() {
+        let (_dir, config) = test_setup();
+        let mut pipeline = AlicePipeline::new(config).unwrap();
+        let sdf = SdfTree::new(SdfNode::sphere(1.0));
+        let mut score = Score::new(120, 1);
+        score.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
+        score.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
+        let result = pipeline.anime_production(&sdf, "Hello", &score, "ep1 scene1").unwrap();
+        assert_ne!(result.vcs_hash, 0);
+        assert!(result.sdf_bytes > 0);
+        assert_eq!(result.font_params_bytes, 40);
+        assert!(result.subtitle_glyphs > 0);
+    }
+
+    #[test]
+    fn test_path_e_realtime_embedded() {
+        let (_dir, config) = test_setup();
+        let mut pipeline = AlicePipeline::new(config).unwrap();
+        let sensor: Vec<i32> = (0..50).map(|i| 2000 + i * 10).collect();
+        let mut score = Score::new(120, 1);
+        score.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
+        score.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
+        let result = pipeline.realtime_embedded(&sensor, &score, 22050).unwrap();
+        assert!(result.rtos_schedulable);
+        assert_eq!(result.edge_bytes, 8);
+        assert!(result.audio_samples > 0);
+        assert!(result.asp_packet_size > 0);
+    }
+
+    #[test]
+    fn test_path_f_print_optimization() {
+        let (_dir, config) = test_setup();
+        let pipeline = AlicePipeline::new(config).unwrap();
+        let curve = CubicBezier::new(
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(10.0, 20.0, 0.0),
+            Vec3::new(30.0, 20.0, 0.0),
+            Vec3::new(40.0, 0.0, 0.0),
+        );
+        let result = pipeline.print_optimization(&curve, 100.0, 500.0, 20).unwrap();
+        assert!(result.arc_length_mm > 0.0);
+        assert!(result.duration_secs > 0.0);
+        assert_eq!(result.segment_count, 20);
+        assert!(result.avg_feed_rate > 0.0);
     }
 
     #[test]

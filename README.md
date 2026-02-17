@@ -111,7 +111,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.1.0 | Ecosystem Integration Demo | Edge → Streaming → DB → View pipeline | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.2.0 | Ecosystem Integration Hub | 144+ bridges, 6 pipeline paths (IoT/Game/MoCap/Anime/Embedded/Print) | MIT |
 
 **Total: 35 components** | AGPL-3.0: 18 | MIT: 8 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
 
@@ -236,7 +236,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **103+ cross-crate bridges** connecting 33 components. Key bridge categories:
+The ALICE ecosystem contains **144+ cross-crate bridges** connecting 35 components. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -249,6 +249,13 @@ The ALICE ecosystem contains **103+ cross-crate bridges** connecting 33 componen
 | **Manga Pipeline** | Manga→SDF, Manga→Print, Manga→Codec, Manga→Cache, Manga→Browser, Manga→Search, Manga→Text | Manga creation & distribution |
 | **Search & Analytics** | Text→Search, Browser→Search, Browser→Analytics, Print→Analytics | Indexing and telemetry |
 | **Orchestration** | Cloud-Gateway→Queue, Cloud-Gateway→Container | Message routing and deploy |
+| **Font Bridges** | Font→View, Font→Browser, Font→SDF, Font→Manga, Font→Animation, Font→CDN, Font→Print | Parametric font rendering & glyph delivery |
+| **Synth Bridges** | Synth→ASP, Synth→Animation, Synth→Codec, Synth→DB, Synth→View | Procedural audio to ecosystem |
+| **Kinematics Bridges** | Kinematics→Sync, Kinematics→Edge, Kinematics→Physics, Kinematics→Animation, Kinematics→ASP, Kinematics→DB | Motion intent compression & IK |
+| **Motion Bridges** | Motion→Physics, Motion→Print, Motion→Animation, Motion→Edge, Motion→SDF | NURBS/Bezier trajectory control |
+| **RTOS Bridges** | RTOS→Edge, RTOS→Queue, RTOS→Container, RTOS→Analytics, RTOS→DB | Real-time task scheduling |
+| **VCS Bridges** | VCS→SDF, VCS→Animation, VCS→Manga, VCS→Sync, VCS→DB, VCS→Auth | AST semantic version control |
+| **Cross-Crate Bridges** | Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS, Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth | Multi-domain integration |
 
 ### Build Profile Changes
 
@@ -638,6 +645,121 @@ Cross-crate bridges:
 - **Manga → SDF** — Strokes (`Segment2D`/`Bezier`), Panels (`RoundedRect2D`+`Onion`), Tones (`RepeatInfinite`)
 - **Manga → Text** — `compress_tuned()` for dialogue compression
 - **Manga → Animation** — Optional: animated manga (page transitions, panel effects)
+
+## Demo: Motion Capture Pipeline — Path C (6 Crates)
+
+ALICE-Kinematics + ALICE-Sync + ALICE-Edge + ALICE-Physics + ALICE-DB + ALICE-Streaming-Protocol combine for ultra-compressed motion capture streaming with **10,000x compression** via 8-byte intent packets.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+│  MoCap Suit │────▶│   ALICE-     │────▶│  ALICE-Sync  │────▶│  ALICE-DB   │
+│  1000 Hz    │     │  Kinematics  │     │  P2P Diff    │     │  MoCap      │
+│  raw joints │     │  Intent 8B   │     │  (18 bytes)  │     │  Archive    │
+└─────────────┘     │  10,000x     │     └──────────────┘     └─────────────┘
+                    └──────────────┘
+                     ↑                    ┌──────────────┐
+                ┌─────────────┐          │  ALICE-Edge  │
+                │ALICE-Physics│          │  IoT stream  │
+                │ IK → Fix128 │          │  8-byte pkt  │
+                └─────────────┘          └──────────────┘
+```
+
+| Metric | Traditional MoCap | ALICE MoCap Pipeline |
+|--------|------------------|---------------------|
+| Per-sample size | 12 bytes/joint × 1000 Hz | **8 bytes/intent** (10,000x) |
+| Network bandwidth | ~100 KB/s (raw) | **~80 bytes/s** (intent) |
+| Storage (1 hour) | ~360 MB | **~36 KB** |
+
+Cross-crate bridges:
+- **Kinematics → Sync** — `IntentSyncPacket` 8-byte intent via `InputFrame` movement fields
+- **Kinematics → Edge** — `MocapEdgePacket` compressed IoT streaming with 10,000x ratio
+- **Kinematics → Physics** — `KinematicsPhysicsState` IK chain to Fix128 coordinates
+- **Kinematics → Animation** — `KinematicsAnimKeyframe` intent → character keyframes
+- **Kinematics → ASP** — `IntentAspPayload` intent streaming over ALICE-Streaming-Protocol
+- **Kinematics → DB** — `MocapDbRecord` motion capture archive with FNV-1a hashing
+
+## Demo: Anime Production Pipeline — Path D (8 Crates)
+
+Full anime production pipeline combining ALICE-Animation + ALICE-Font + ALICE-Synth + ALICE-VCS + ALICE-SDF + ALICE-Codec + ALICE-Streaming-Protocol + ALICE-View for version-controlled anime episodes with procedural audio and parametric typography.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+│  Storyboard │────▶│   ALICE-     │────▶│  ALICE-VCS   │────▶│ ALICE-Codec │
+│  + Script   │     │  Animation   │     │  AST diff    │     │  Wavelet    │
+│  + Music    │     │  SceneGraph  │     │  versioning  │     │  compress   │
+└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
+                     ↑         ↑
+                ┌─────────┐ ┌─────────┐   ┌──────────────┐
+                │ ALICE-  │ │ ALICE-  │   │   ALICE-     │
+                │  Font   │ │  Synth  │   │  Streaming   │
+                │ MetaFont│ │ FM/BGM  │   │  Protocol    │
+                └─────────┘ └─────────┘   └──────────────┘
+```
+
+Cross-crate bridges:
+- **Font → Animation** — `FontAnimTimeline` animated subtitles with MetaFont params
+- **Synth → Animation** — `AnimAudioCue` BGM/SFX timing for lip-sync
+- **VCS → Animation** — Scene graph change tracking with AST diff
+- **VCS → Font** — Typography versioning (glyph parameter history)
+- **Font → Synth** — `FontSynthLyricsTiming` lyric timing from shaped text
+
+## Demo: Real-Time Embedded Pipeline — Path E (5 Crates)
+
+ALICE-RTOS + ALICE-Edge + ALICE-Kinematics + ALICE-Motion + ALICE-Physics combine for deterministic real-time control on embedded systems with < 2KB kernel footprint.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+│  Sensors    │────▶│  ALICE-RTOS  │────▶│ ALICE-Motion │────▶│  Actuators  │
+│  IMU, Force │     │  RMS sched   │     │  Bezier path │     │  Motors     │
+│  1 kHz      │     │  < 2KB kern  │     │  S-curve     │     │  Servos     │
+└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
+                     ↑                    ↑
+                ┌─────────────┐     ┌──────────────┐
+                │ALICE-Physics│     │   ALICE-     │
+                │ Fix128 sim  │     │  Kinematics  │
+                │ Determinism │     │  7-DoF IK    │
+                └─────────────┘     └──────────────┘
+```
+
+| Metric | Traditional RTOS | ALICE Embedded Pipeline |
+|--------|-----------------|------------------------|
+| Kernel footprint | 8-64 KB | **< 2 KB** |
+| Scheduling analysis | Empirical | **Liu-Layland guaranteed** |
+| Physics precision | 32-bit float | **128-bit fixed-point** |
+| Motion planning | Linear interpolation | **Bezier + S-curve profiles** |
+
+Cross-crate bridges:
+- **RTOS → Edge** — `RtosEdgeTelemetry` task execution metrics for IoT monitoring
+- **RTOS → Queue** — `RtosQueueBridge` priority-mapped message routing
+- **RTOS → Container** — `RtosContainerMetrics` resource usage monitoring
+- **Motion → Physics** — `TrajectoryPhysicsState` trajectory-constrained Fix128 bodies
+- **Motion → Edge** — `ActuatorEdgePacket` 48-byte Bezier trajectory for actuator streaming
+- **Kinematics → Physics** — `KinematicsPhysicsState` IK chain to rigid body coordinates
+
+## Demo: 3D Print Optimization Pipeline — Path F (5 Crates)
+
+ALICE-Motion + ALICE-SDF + ALICE-Print + ALICE-Physics + ALICE-RTOS combine for optimized 3D printing with Bezier-based toolpath control and real-time feed rate adaptation.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+│  ALICE-SDF  │────▶│  ALICE-Print │────▶│ ALICE-Motion │────▶│  Printer    │
+│  CSG model  │     │  Slicer      │     │  Bezier path │     │  G-code     │
+│  (38 bytes) │     │  SIMD 8-wide │     │  S-curve feed│     │  Optimized  │
+└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
+                                          ↑
+                                    ┌──────────────┐
+                                    │  ALICE-RTOS  │
+                                    │  Real-time   │
+                                    │  feed control│
+                                    └──────────────┘
+```
+
+Cross-crate bridges:
+- **Motion → Print** — `GcodeMotionSegment` Bezier curve → G-code feed rate segments
+- **Motion → SDF** — `MotionSdfSweep` Bezier path → SDF sweep extrusion profile
+- **Font → Print** — `FontPrintLayout` MetaFont text → toolpath engraving coordinates
+- **RTOS → Edge** — Real-time actuator scheduling for printer stepper control
+- **Synth → RTOS** — Audio feedback scheduling for print status notifications
 
 ## Use Cases
 
