@@ -111,7 +111,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 215 bridges, 10 pipeline paths (A-J), 31 crates connected, 227 tests, カリカリ optimized | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 215 bridges, 10 pipeline paths (A-J), 31 crates connected, 227 tests | MIT |
 
 **Total: 35 components** | AGPL-3.0: 18 | MIT: 8 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
 
@@ -236,7 +236,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **215 cross-crate bridges** across 27 bridge files and 10 pipeline paths (A-J), connecting 31 crates with 227 tests. All bridges are **カリカリ optimized** (hardware-native). Key bridge categories:
+The ALICE ecosystem contains **215 cross-crate bridges** across 27 bridge files and 10 pipeline paths (A-J), connecting 31 crates with 227 tests. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -276,9 +276,9 @@ The ALICE ecosystem contains **215 cross-crate bridges** across 27 bridge files 
 | **CDN Ext Bridges** | CDN→Cache, CDN→Physics, CDN→ASP, CDN→Analytics | Extended content delivery integration |
 | **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS | End-to-end cross-crate pipelines |
 
-### カリカリ (Hardware-Native) Optimization
+### Hardware-Native Optimization
 
-All 215 bridge functions are optimized following the ALICE カリカリ methodology:
+All 215 bridge functions are optimized following the ALICE hardware-native methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|

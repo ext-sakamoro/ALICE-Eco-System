@@ -36,7 +36,7 @@ pub struct SdfColliderConfig {
 /// Encodes body position, manifold thresholds, and scale into a descriptor
 /// suitable for passing to ALICE-SDF's collider pipeline.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - Position components extracted via `Vec3Fix::to_f32()` — one call, no branches.
 /// - Scale derived via `f32::max()` — clamps away from zero without branching.
 /// - `broad_phase_radius` = `collision_radius * scale` is a single multiply.
@@ -104,7 +104,7 @@ pub struct PhysicsForceFieldDesc {
 
 /// Build a `PhysicsForceFieldDesc` from an `SdfForceType` and its binding.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - Tag selection is a single integer assignment per match arm — no branches after dispatch.
 /// - All f32 fields are extracted once inside each arm; no secondary calls.
 /// - No heap allocation; all fields are scalars or small fixed-size arrays.
@@ -189,7 +189,7 @@ pub struct PhysicsViewSnapshot {
 
 /// Build a `PhysicsViewSnapshot` from a slice of rigid bodies.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - Single pass over bodies: position, orientation, velocity extracted together.
 /// - Active/sleeping counts incremented branchlessly via `bool as usize` addition.
 /// - First-body position folded into the hash after the loop — no speculative work.
@@ -270,7 +270,7 @@ pub struct PhysicsDbRecord {
 
 /// Build a `PhysicsDbRecord` from a body slice and `PhysicsConfig`.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - Determinism checksum: single XOR-fold pass over `body.position.y.hi`
 ///   (the most significant 64 bits of the vertical coordinate).
 /// - `timestep_secs` = `RCP_60 * inv_substeps` — two reciprocal multiplies,
@@ -342,7 +342,7 @@ pub struct PhysicsCacheEntry {
 
 /// Build a `PhysicsCacheEntry` from body slice and frame index.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - `state_size_bytes` = `body_count << 7` (× 128, shift avoids multiply).
 /// - `eviction_priority`: saturating cast via `min(frame_index, u32::MAX as u64) as u32`.
 /// - State checksum XOR-folds X and Z high-words; complements the DB record's Y fold.
@@ -405,7 +405,7 @@ pub struct PhysicsAnalyticsMetrics {
 
 /// Build `PhysicsAnalyticsMetrics` from a body slice and `PhysicsConfig`.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - Single pass accumulates KE proxy, active count, and max speed together.
 /// - Max speed uses branchless `f32::max()` — no if/else.
 /// - `sim_frequency_hz` = `60.0 * substeps` — one multiply, zero divisions.

@@ -61,16 +61,12 @@ pub fn zip_db_compress_residual(residual: &[f32]) -> ZipDbResidual {
     let compressed = compression::compress_residual_quantized(residual, 8, 3)
         .unwrap_or_else(|_| Vec::new());
     let raw_bytes = residual.len() * 4;
-    let mut hash: u64 = 0xcbf29ce484222325;
-    for &b in &compressed {
-        hash ^= b as u64;
-        hash = hash.wrapping_mul(0x100000001b3);
-    }
+    let content_hash = fnv1a(&compressed);
     ZipDbResidual {
         original_bytes: raw_bytes,
         compressed_bytes: compressed.len(),
         compression_ratio: if compressed.is_empty() { 0.0 } else { raw_bytes as f32 / compressed.len() as f32 },
-        content_hash: hash,
+        content_hash,
         compressed,
     }
 }
@@ -95,13 +91,9 @@ pub fn zip_to_crypto_payload(residual: &[f32]) -> ZipCryptoPayload {
     let compressed = compression::compress_residual_quantized(residual, 8, 3)
         .unwrap_or_else(|_| Vec::new());
     let raw_bytes = residual.len() * 4;
-    let mut hash: u64 = 0xcbf29ce484222325;
-    for &b in &compressed {
-        hash ^= b as u64;
-        hash = hash.wrapping_mul(0x100000001b3);
-    }
+    let content_hash = fnv1a(&compressed);
     ZipCryptoPayload {
-        content_hash: hash,
+        content_hash,
         compressed_bytes: compressed.len(),
         original_bytes: raw_bytes,
         compression_ratio: if compressed.is_empty() { 0.0 } else { raw_bytes as f32 / compressed.len() as f32 },

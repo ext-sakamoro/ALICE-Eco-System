@@ -47,7 +47,7 @@ pub struct EdgeDbSensorModel {
 
 /// Fit a linear model to sensor data and produce an ALICE-DB persistence record.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - Q16 → f32 uses reciprocal multiply (`* RCP_Q16`), not division.
 /// - Fit quality normalisation uses `RCP_ERR_SCALE`, no runtime `/`.
 /// - `should_use_linear` result stored as plain bool (branchless downstream).
@@ -118,7 +118,7 @@ pub struct EdgeViewSensorConfig {
 
 /// Derive a View visualisation config from a fitted edge sensor model.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - `y_range` pre-computed once; avoids repeated subtraction in render loop.
 /// - `update_rate_hz` uses branchless u8 clamp via `min`/`max`.
 /// - Chart type selected via branchless index into a 3-entry array.
@@ -211,7 +211,7 @@ pub struct EdgeAspStreamConfig {
 /// `target_bandwidth_bps` is the channel budget in bytes/sec.
 /// The function selects `AspQualityMode` and payload size to stay within budget.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - Bandwidth fit uses reciprocal multiply to derive packet rate from budget.
 /// - Quality mode selected via branchless array index (no if/else chain).
 #[inline]
@@ -289,7 +289,7 @@ pub struct EdgeAnalyticsMetrics {
 
 /// Derive edge device performance metrics for ALICE-Analytics.
 ///
-/// # カリカリ notes
+/// # Optimization notes
 /// - CPU util: `n * RCP_1024` — reciprocal multiply, no division.
 /// - Compression ratio: `raw / 8` simplified to `n * 4 * (1/8)` = `n * 0.5`.
 ///   Pre-computed as multiply by `RCP_8`.
