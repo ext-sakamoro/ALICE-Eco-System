@@ -111,7 +111,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 178 bridges, 10 pipeline paths (A-J), 31 crates connected, 190 tests, カリカリ optimized | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 215 bridges, 10 pipeline paths (A-J), 31 crates connected, 227 tests, カリカリ optimized | MIT |
 
 **Total: 35 components** | AGPL-3.0: 18 | MIT: 8 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
 
@@ -236,7 +236,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **178 cross-crate bridges** across 23 bridge files and 10 pipeline paths (A-J), connecting 31 crates with 190 tests. All bridges are **カリカリ optimized** (hardware-native). Key bridge categories:
+The ALICE ecosystem contains **215 cross-crate bridges** across 27 bridge files and 10 pipeline paths (A-J), connecting 31 crates with 227 tests. All bridges are **カリカリ optimized** (hardware-native). Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -255,14 +255,14 @@ The ALICE ecosystem contains **178 cross-crate bridges** across 23 bridge files 
 | **Motion Bridges** | Motion→Physics, Motion→Print, Motion→Animation, Motion→Edge, Motion→SDF | NURBS/Bezier trajectory control |
 | **RTOS Bridges** | RTOS→Edge, RTOS→Queue, RTOS→Container, RTOS→Analytics, RTOS→DB | Real-time task scheduling |
 | **VCS Bridges** | VCS→SDF, VCS→Animation, VCS→Manga, VCS→Sync, VCS→DB, VCS→Auth | AST semantic version control |
-| **Cross-Crate Bridges** | Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS, Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth | Multi-domain integration |
+| **Cross-Crate Bridges** | Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS, Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth, RTOS↔ML, ML↔Motion, Print↔Sync, Text↔Sync, Kinematics→Voice, Synth→Search, Motion→Search, VCS→ASP, Cache↔Crypto, View→Text | Multi-domain integration |
 | **Voice Bridges** | Voice→Synth, Voice→Animation, Voice→Font, Voice→Edge | Parametric voice codec to ecosystem |
 | **Codec Bridges** | Codec→Synth, Codec→Animation, Codec→SDF, Codec→View | 3D wavelet codec to ecosystem |
 | **Text Bridges** | Text→Font, Text→Manga, Text→DB, Text→Browser | Exception-based text compression |
-| **ML/TRT Bridges** | ML→Physics, ML→SDF, ML→Animation, TRT→SDF, TRT→Physics, TRT→View | Ternary AI inference |
-| **DNS/API Bridges** | DNS→Browser, DNS→Cache, API→Auth, API→CDN | DNS ad-blocking + API gateway |
+| **ML/TRT Bridges** | ML→Physics, ML→SDF, ML→Animation, TRT→SDF, TRT→Physics, TRT→View, TRT→Kinematics, TRT→Edge | Ternary AI inference |
+| **DNS/API Bridges** | DNS→Browser, DNS→Cache, API→Auth, API→CDN, API→Queue, API→Analytics, API→DB | DNS ad-blocking + API gateway |
 | **Search Bridges** | Search→DB, Search→Browser, Search→VCS | FM-Index full-text search |
-| **Zip Bridges** | Zip→Edge, Zip→DB, Zip→Crypto | Procedural compression + crypto |
+| **Zip Bridges** | Zip→Edge, Zip→DB, Zip→Crypto, Zip→ML, Zip→Cache | Procedural compression + storage |
 | **Auth Bridges** | Auth→DB, Auth→Cache, Auth→Crypto, Auth→API, Auth→CDN, Auth→Edge, Auth→DNS, Auth→Sync | Ed25519 ZKP identity to ecosystem |
 | **Crypto Bridges** | Crypto→DB, Crypto→Cache, Crypto→CDN, Crypto→VCS, Crypto→Edge, Crypto→Sync, Crypto→Zip | BLAKE3 + XChaCha20 + SSS to ecosystem |
 | **Animation Bridges** | Animation→SDF, Animation→CDN, Animation→Cache, Animation→DB, Animation→Sync, Animation→View, Animation→Codec, Animation→ML | Anime SDF direction to ecosystem |
@@ -270,11 +270,15 @@ The ALICE ecosystem contains **178 cross-crate bridges** across 23 bridge files 
 | **Print Ext Bridges** | Print→DB, Print→CDN, Print→Cache, Print→View, Print→Analytics, Print→Motion | SDF-to-G-code slicer to ecosystem |
 | **Analytics Bridges** | Analytics→DB, Analytics→Cache, Analytics→CDN, Analytics→ML, Analytics→Search, Analytics→View, Analytics→Edge | Streaming sketches to ecosystem |
 | **Queue Bridges** | Queue→DB, Queue→Edge, Queue→Crypto, Queue→Analytics, Queue→Sync, Queue→Cache | Message queue to ecosystem |
+| **Physics Bridges** | Physics→SDF, Physics→View, Physics→DB, Physics→Cache, Physics→Analytics, Physics→ForceField | Deterministic 128-bit physics to ecosystem |
+| **ASP Bridges** | ASP→Cache, ASP→Codec, ASP→SDF, ASP→View, ASP→CDN, ASP→Analytics | Streaming protocol to ecosystem |
+| **Edge Ext Bridges** | Edge→DB, Edge→View, Edge→ASP, Edge→Analytics | Extended sensor model integration |
+| **CDN Ext Bridges** | CDN→Cache, CDN→Physics, CDN→ASP, CDN→Analytics | Extended content delivery integration |
 | **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS | End-to-end cross-crate pipelines |
 
 ### カリカリ (Hardware-Native) Optimization
 
-All 178 bridge functions are optimized following the ALICE カリカリ methodology:
+All 215 bridge functions are optimized following the ALICE カリカリ methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|

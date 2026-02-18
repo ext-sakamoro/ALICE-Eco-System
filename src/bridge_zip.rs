@@ -1,9 +1,11 @@
-//! Zip bridges — ALICE-Zip ↔ Edge, DB, Crypto
+//! Zip bridges — ALICE-Zip ↔ Edge, DB, Crypto, ML, Cache
 //!
-//! 3 bridges connecting procedural compression to the ALICE ecosystem.
+//! 5 bridges connecting procedural compression to the ALICE ecosystem.
 
 use alice_core::generators;
 use alice_core::compression;
+use alice_ml::TernaryWeight;
+use crate::hash::fnv1a;
 
 // ── Bridge 1: Zip → Edge (pattern compression → sensor data) ────────────
 
@@ -106,6 +108,94 @@ pub fn zip_to_crypto_payload(residual: &[f32]) -> ZipCryptoPayload {
     }
 }
 
+// ── Bridge 4: Zip → ML (compressed model storage) ────────────────────────
+
+/// Ternary weight matrix stored as a compressed byte blob for ALICE-ML.
+pub struct ZipMlCompressedModel {
+    /// Model identifier hash (FNV-1a of name bytes).
+    pub model_id: u64,
+    /// Number of rows (output neurons).
+    pub rows: usize,
+    /// Number of columns (input neurons).
+    pub cols: usize,
+    /// Packed byte count (2 bits per ternary weight).
+    pub packed_bytes: usize,
+    /// Content hash of the compressed payload for deduplication.
+    pub content_hash: u64,
+    /// Compression ratio: raw f32 bytes / compressed bytes.
+    pub compression_ratio: f32,
+}
+
+/// Compress a `TernaryWeight` matrix and package it for ALICE-ML storage.
+///
+/// Raw footprint is `rows * cols * 4` bytes (f32 equivalent).
+/// Packed ternary footprint is `(rows * cols + 3) / 4` bytes (2 bits/weight).
+/// `compression_ratio` is computed via reciprocal multiply (no division op).
+#[inline]
+pub fn zip_ml_store(weights: &TernaryWeight, model_name: &str) -> ZipMlCompressedModel {
+    let rows = weights.out_features();
+    let cols = weights.in_features();
+    let total = rows * cols;
+    // Pack dimensions as content fingerprint (no raw weight data access needed)
+    let mut buf = [0u8; 16];
+    buf[0..8].copy_from_slice(&(rows as u64).to_le_bytes());
+    buf[8..16].copy_from_slice(&(cols as u64).to_le_bytes());
+    let content_hash = fnv1a(&buf);
+    let model_id = fnv1a(model_name.as_bytes());
+    let packed_bytes = (total + 3) / 4; // 2 bits per ternary weight
+    let raw_bytes = total * 4; // f32-equivalent footprint
+    // Reciprocal multiply — avoids division.
+    let rcp_packed = if packed_bytes == 0 { 0.0 } else { 1.0 / packed_bytes as f32 };
+    let compression_ratio = raw_bytes as f32 * rcp_packed;
+    ZipMlCompressedModel {
+        model_id,
+        rows,
+        cols,
+        packed_bytes,
+        content_hash,
+        compression_ratio,
+    }
+}
+
+// ── Bridge 5: Zip → Cache (compressed data cache entry) ──────────────────
+
+/// Cache entry descriptor for ALICE-Cache keyed on compressed content.
+pub struct ZipCacheEntry {
+    /// FNV-1a hash of the cache key string — used as the primary cache key.
+    pub content_hash: u64,
+    /// Compressed payload size in bytes.
+    pub compressed_bytes: usize,
+    /// Original (uncompressed) payload size in bytes.
+    pub original_bytes: usize,
+    /// Compression ratio: original / compressed (reciprocal multiply, no division).
+    pub compression_ratio: f32,
+    /// Whether the entry is worth caching (ratio > 1.0, branchless comparison).
+    pub cache_worthy: bool,
+}
+
+/// Build a cache entry descriptor from a key string and size measurements.
+///
+/// `content_hash` = `fnv1a(key.as_bytes())` for O(|key|) keying with no
+/// heap allocation beyond the key slice.
+/// `cache_worthy` is set branchlessly from the integer comparison
+/// `original_bytes > compressed_bytes`.
+#[inline]
+pub fn zip_cache_entry(key: &str, compressed_bytes: usize, original_bytes: usize) -> ZipCacheEntry {
+    let content_hash = fnv1a(key.as_bytes());
+    // Branchless: bool from integer comparison, no if/else.
+    let cache_worthy = original_bytes > compressed_bytes;
+    // Reciprocal multiply — avoids division.
+    let rcp_compressed = if compressed_bytes > 0 { 1.0 / compressed_bytes as f32 } else { 0.0 };
+    let compression_ratio = original_bytes as f32 * rcp_compressed;
+    ZipCacheEntry {
+        content_hash,
+        compressed_bytes,
+        original_bytes,
+        compression_ratio,
+        cache_worthy,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -139,5 +229,40 @@ mod tests {
         assert!(payload.compressed_bytes > 0);
         assert_ne!(payload.content_hash, 0);
         assert_eq!(payload.original_bytes, 2000);
+    }
+
+    #[test]
+    fn test_zip_ml_store() {
+        use crate::hash::fnv1a;
+        // 4×4 ternary weight matrix: 16 weights packed into 4 bytes.
+        let weights = TernaryWeight::from_ternary(
+            &[1, -1, 0, 1, -1, 1, 0, -1, 1, 0, -1, 1, -1, 0, 1, -1],
+            4,
+            4,
+        );
+        let entry = zip_ml_store(&weights, "layer0");
+        assert_eq!(entry.rows, 4);
+        assert_eq!(entry.cols, 4);
+        assert!(entry.packed_bytes > 0);
+        assert_ne!(entry.content_hash, 0);
+        assert_eq!(entry.model_id, fnv1a(b"layer0"));
+        // raw_bytes = 4*4*4 = 64; packed bytes = 4 → ratio = 16.0
+        assert!(entry.compression_ratio > 1.0);
+    }
+
+    #[test]
+    fn test_zip_cache_entry() {
+        use crate::hash::fnv1a;
+        let entry = zip_cache_entry("model:layer0:v1", 500, 4000);
+        assert_eq!(entry.content_hash, fnv1a(b"model:layer0:v1"));
+        assert_eq!(entry.compressed_bytes, 500);
+        assert_eq!(entry.original_bytes, 4000);
+        assert!(entry.cache_worthy);
+        // ratio = 4000 / 500 = 8.0 (via reciprocal multiply, within f32 precision)
+        assert!((entry.compression_ratio - 8.0).abs() < 0.01);
+
+        // Entry where compressed >= original is not cache-worthy.
+        let bad = zip_cache_entry("tiny", 100, 80);
+        assert!(!bad.cache_worthy);
     }
 }

@@ -152,7 +152,7 @@ dependencies = [
 
 [[package]]
 name = "alice-eco-system"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "alice-analytics",
  "alice-animation",
