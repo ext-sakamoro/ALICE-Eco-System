@@ -1,6 +1,6 @@
-//! Manga bridges — ALICE-Manga ↔ SDF, CDN, Cache, DB, Text, Search, Print, Codec
+//! Manga bridges — ALICE-Manga ↔ SDF, CDN, Cache, DB, Text, Search, Print, Codec, Font
 //!
-//! 8 bridges connecting SDF manga creation engine to the ALICE ecosystem.
+//! 9 bridges connecting SDF manga creation engine to the ALICE ecosystem.
 
 use alice_manga::MangaPage;
 
@@ -218,6 +218,58 @@ pub fn manga_to_codec_config(page: &MangaPage) -> MangaCodecConfig {
     MangaCodecConfig { width: px_w, height: px_h, element_count: elements, estimated_bits_per_pixel: bpp }
 }
 
+// ── Bridge 9: Manga → Font (balloon glyph metrics request) ──────────────
+
+/// Glyph metrics request from ALICE-Manga to ALICE-Font.
+///
+/// Provides balloon dimensions and text content so that ALICE-Font can
+/// compute optimal font size, line breaks, and vertical column layout
+/// without Manga needing to know font internals.
+pub struct MangaFontMetricsRequest {
+    /// Balloon width in mm.
+    pub balloon_width_mm: f32,
+    /// Balloon height in mm.
+    pub balloon_height_mm: f32,
+    /// Number of characters in the dialogue.
+    pub char_count: usize,
+    /// Content hash for cache lookup.
+    pub content_hash: u64,
+    /// Suggested font size in mm (estimated from balloon area).
+    pub suggested_font_size_mm: f32,
+    /// Estimated column count for vertical layout.
+    pub estimated_columns: usize,
+}
+
+/// Request glyph metrics from ALICE-Font for manga balloon text sizing.
+///
+/// Estimates optimal font size and column layout from balloon dimensions
+/// and character count, using area-based heuristics.
+#[inline]
+pub fn manga_to_font_metrics_request(
+    page: &MangaPage,
+    balloon_width_mm: f32,
+    balloon_height_mm: f32,
+    text: &str,
+) -> MangaFontMetricsRequest {
+    let char_count = text.chars().count();
+    let area = balloon_width_mm * balloon_height_mm;
+    // Estimate font size: sqrt(area / char_count) with 60% fill factor
+    let rcp_chars = 1.0 / (char_count.max(1) as f32);
+    let font_size = (area * rcp_chars * 0.6).sqrt().max(3.0).min(24.0);
+    // Vertical columns: height / (font_size * 1.5 line spacing)
+    let chars_per_col = (balloon_height_mm / (font_size * 1.5)).max(1.0) as usize;
+    let columns = ((char_count + chars_per_col - 1) / chars_per_col).max(1);
+    let hash = page_hash(page);
+    MangaFontMetricsRequest {
+        balloon_width_mm,
+        balloon_height_mm,
+        char_count,
+        content_hash: hash,
+        suggested_font_size_mm: font_size,
+        estimated_columns: columns,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -292,5 +344,18 @@ mod tests {
         assert!(cfg.width > 0);
         assert!(cfg.height > 0);
         assert!(cfg.estimated_bits_per_pixel > 0.0);
+    }
+
+    #[test]
+    fn test_manga_to_font_metrics_request() {
+        let page = test_page();
+        let req = manga_to_font_metrics_request(&page, 60.0, 80.0, "こんにちは世界");
+        assert!((req.balloon_width_mm - 60.0).abs() < 0.01);
+        assert!((req.balloon_height_mm - 80.0).abs() < 0.01);
+        assert_eq!(req.char_count, 7);
+        assert!(req.suggested_font_size_mm >= 3.0);
+        assert!(req.suggested_font_size_mm <= 24.0);
+        assert!(req.estimated_columns >= 1);
+        assert_ne!(req.content_hash, 0);
     }
 }

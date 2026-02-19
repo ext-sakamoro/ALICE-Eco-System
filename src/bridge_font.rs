@@ -1,6 +1,6 @@
 //! Font bridges — ALICE-Font ↔ View, Browser, SDF, Manga, Animation, CDN, Print, DB, Cache, Sync, Crypto, Queue, Analytics
 //!
-//! 13 bridges connecting parametric metafonts to the ALICE ecosystem.
+//! 14 bridges connecting parametric metafonts to the ALICE ecosystem.
 
 use alice_font::glyph::GLYPH_SDF_SIZE;
 use alice_font::param::MetaFontParams;
@@ -519,6 +519,62 @@ pub fn font_to_analytics_metrics(params: &MetaFontParams) -> FontAnalyticsMetric
     }
 }
 
+// ── Bridge 14: Font → Manga (direct SDF glyph atlas for manga panels) ──
+
+/// Pre-built SDF glyph atlas optimized for manga balloon rendering.
+///
+/// Bypasses ALICE-Text to provide a direct Font → Manga pipeline for
+/// Japanese vertical text in speech balloons. The atlas is pre-populated
+/// with all glyphs in the input string.
+pub struct MangaGlyphAtlas {
+    /// Atlas pixel data (SDF values).
+    pub pixels: Vec<f32>,
+    /// Atlas texture size (width = height).
+    pub texture_size: usize,
+    /// Number of glyphs rasterized.
+    pub glyph_count: usize,
+    /// SDF tile size per glyph.
+    pub tile_size: usize,
+    /// Content hash for cache deduplication.
+    pub content_hash: u64,
+}
+
+/// Build a direct SDF glyph atlas for ALICE-Manga balloon text.
+///
+/// Pre-rasterizes all unique glyphs in `text` into an SDF atlas,
+/// ready for GPU-based manga panel compositing without going through
+/// ALICE-Text compression/decompression.
+#[inline]
+pub fn font_to_manga_glyph_atlas(text: &str, params: &MetaFontParams) -> MangaGlyphAtlas {
+    let mut atlas = SdfAtlas::new(8, *params);
+    let mut unique = 0usize;
+    for ch in text.chars() {
+        if atlas.lookup(ch).is_none() {
+            atlas.get_or_insert(ch);
+            unique += 1;
+        }
+    }
+    let pixels = atlas.pixels().to_vec();
+    let tex_size = atlas.texture_size();
+    // FNV-1a over pixel count + glyph count for cache key
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in pixels.len().to_le_bytes().as_slice() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for &b in unique.to_le_bytes().as_slice() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    MangaGlyphAtlas {
+        pixels,
+        texture_size: tex_size,
+        glyph_count: unique,
+        tile_size: GLYPH_SDF_SIZE,
+        content_hash: hash,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -641,5 +697,16 @@ mod tests {
         assert!(m.weight > 0.0);
         assert_ne!(m.content_hash, 0);
         assert!(m.compression_ratio > 10000.0);
+    }
+
+    #[test]
+    fn test_font_to_manga_glyph_atlas() {
+        let p = MetaFontParams::sans_regular();
+        let atlas = font_to_manga_glyph_atlas("AB", &p);
+        assert_eq!(atlas.glyph_count, 2);
+        assert!(atlas.texture_size > 0);
+        assert!(!atlas.pixels.is_empty());
+        assert_eq!(atlas.tile_size, GLYPH_SDF_SIZE);
+        assert_ne!(atlas.content_hash, 0);
     }
 }

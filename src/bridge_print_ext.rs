@@ -1,6 +1,6 @@
-//! Print bridges — ALICE-Print ↔ DB, CDN, Cache, View, Analytics, Motion
+//! Print bridges — ALICE-Print ↔ DB, CDN, Cache, View, Analytics, Motion, Physics
 //!
-//! 6 bridges connecting 3D print slicer to the ALICE ecosystem.
+//! 8 bridges connecting 3D print slicer to the ALICE ecosystem.
 
 use alice_print::SliceResult;
 
@@ -178,6 +178,135 @@ pub fn print_to_motion_config(result: &SliceResult) -> PrintMotionConfig {
     }
 }
 
+// ── Bridge 7: Physics → Print (FEA stress analysis before printing) ──
+
+/// FEA stress analysis result for pre-print structural validation.
+///
+/// Finite Element Analysis estimates whether the sliced geometry can
+/// withstand gravity and handling forces without structural failure.
+pub struct PrintFeaResult {
+    /// Content hash linking to the slice result.
+    pub content_hash: u64,
+    /// Maximum von Mises stress in MPa.
+    pub max_stress_mpa: f32,
+    /// Estimated safety factor (yield_strength / max_stress).
+    pub safety_factor: f32,
+    /// Number of layers analysed.
+    pub layer_count: usize,
+    /// Material density used (kg/m³).
+    pub material_density: f32,
+    /// True if the part passes structural validation (safety_factor >= 1.5).
+    pub passes_validation: bool,
+}
+
+/// Run simplified FEA stress estimate on a print slice.
+///
+/// Uses layer geometry and material properties to estimate whether the
+/// printed part can support its own weight. `yield_strength_mpa` is the
+/// filament material's yield strength (e.g. PLA ≈ 60 MPa, PETG ≈ 50).
+#[inline]
+pub fn physics_to_print_fea(
+    result: &SliceResult,
+    material_density: f32,
+    yield_strength_mpa: f32,
+) -> PrintFeaResult {
+    let data = [
+        result.layer_count.to_le_bytes().as_slice(),
+        &result.gcode.len().to_le_bytes(),
+    ]
+    .concat();
+    let content_hash = fnv1a(&data);
+
+    // Simplified cantilever beam model: σ = ρ·g·L² / (2·t)
+    // where L = total height (layers × layer_height), t = min wall thickness
+    let layer_height_mm = 0.2_f32; // typical
+    let total_height_m = result.layer_count as f32 * layer_height_mm * 0.001;
+    let wall_thickness_m = 0.0012_f32; // 3 perimeters × 0.4mm nozzle
+    let gravity = 9.81_f32;
+
+    // Stress in Pa, then convert to MPa
+    let rcp_wall = 1.0 / wall_thickness_m.max(1e-6);
+    let stress_pa = material_density * gravity * total_height_m * total_height_m * 0.5 * rcp_wall;
+    let max_stress_mpa = stress_pa * 1e-6;
+
+    let rcp_stress = 1.0 / max_stress_mpa.max(1e-9);
+    let safety_factor = yield_strength_mpa * rcp_stress;
+
+    PrintFeaResult {
+        content_hash,
+        max_stress_mpa,
+        safety_factor,
+        layer_count: result.layer_count,
+        material_density,
+        passes_validation: safety_factor >= 1.5,
+    }
+}
+
+// ── Bridge 8: Print → Physics (structural validation request) ────────
+
+/// Structural parameters for ALICE-Physics rigid body simulation.
+///
+/// Provides mass, inertia estimate, and center-of-mass for the printed
+/// part so it can be simulated as a rigid body in the physics engine.
+pub struct PrintPhysicsBody {
+    /// Content hash linking to the slice result.
+    pub content_hash: u64,
+    /// Estimated mass in kg.
+    pub mass_kg: f32,
+    /// Approximate bounding box half-extents [x, y, z] in metres.
+    pub half_extents: [f32; 3],
+    /// Estimated moment of inertia (diagonal, uniform density).
+    pub inertia_diag: [f32; 3],
+    /// Layer count (for LOD selection in physics sim).
+    pub layer_count: usize,
+}
+
+/// Convert a print slice result into ALICE-Physics rigid body parameters.
+///
+/// Assumes a solid rectangular prism approximation from the layer stack.
+/// Uses `material_density` (kg/m³) to estimate mass.
+#[inline]
+pub fn print_to_physics_body(
+    result: &SliceResult,
+    material_density: f32,
+    bed_size_mm: (f32, f32),
+) -> PrintPhysicsBody {
+    let data = [
+        result.layer_count.to_le_bytes().as_slice(),
+        &result.gcode.len().to_le_bytes(),
+    ]
+    .concat();
+    let content_hash = fnv1a(&data);
+
+    let layer_height_m = 0.0002_f32; // 0.2mm
+    let height_m = result.layer_count as f32 * layer_height_m;
+    let width_m = bed_size_mm.0 * 0.001;
+    let depth_m = bed_size_mm.1 * 0.001;
+
+    // Volume estimate: filament_meters × π × (1.75mm/2)² cross section
+    let filament_radius_m = 0.000875; // 1.75mm / 2
+    let volume_m3 = result.filament_meters * std::f32::consts::PI * filament_radius_m * filament_radius_m;
+    let mass_kg = volume_m3 * material_density;
+
+    let hx = width_m * 0.5;
+    let hy = height_m * 0.5;
+    let hz = depth_m * 0.5;
+
+    // Solid box inertia: I = m/12 * (b² + c²) per axis
+    let rcp_12 = 1.0_f32 / 12.0;
+    let ix = mass_kg * rcp_12 * (hy * hy + hz * hz);
+    let iy = mass_kg * rcp_12 * (hx * hx + hz * hz);
+    let iz = mass_kg * rcp_12 * (hx * hx + hy * hy);
+
+    PrintPhysicsBody {
+        content_hash,
+        mass_kg,
+        half_extents: [hx, hy, hz],
+        inertia_diag: [ix, iy, iz],
+        layer_count: result.layer_count,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -236,5 +365,28 @@ mod tests {
         let result = test_result();
         let cfg = print_to_motion_config(&result);
         assert!(cfg.layer_count > 0);
+    }
+
+    #[test]
+    fn test_physics_to_print_fea() {
+        let result = test_result();
+        let fea = physics_to_print_fea(&result, 1250.0, 60.0);
+        assert_ne!(fea.content_hash, 0);
+        assert!(fea.max_stress_mpa >= 0.0);
+        assert!(fea.safety_factor > 0.0);
+        assert!(fea.layer_count > 0);
+        assert!((fea.material_density - 1250.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_print_to_physics_body() {
+        let result = test_result();
+        let body = print_to_physics_body(&result, 1250.0, (220.0, 220.0));
+        assert_ne!(body.content_hash, 0);
+        assert!(body.mass_kg >= 0.0);
+        assert!(body.half_extents[0] > 0.0);
+        assert!(body.half_extents[1] > 0.0);
+        assert!(body.half_extents[2] > 0.0);
+        assert!(body.layer_count > 0);
     }
 }
