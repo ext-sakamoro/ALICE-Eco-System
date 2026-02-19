@@ -927,6 +927,64 @@ ALICE:       Store "f(x) = x" for x in [1,10]       → 8 bytes
 
 For sensor data that follows physical laws (temperature gradients, pressure decay, etc.), the mathematical model is often trivially small compared to the raw data.
 
+## Continuous Integration — O(N) Hierarchical Feature Flag Testing
+
+The ALICE ecosystem uses a **5-tier hierarchical testing strategy** to prevent feature flag combination explosions (2^N problem) while maintaining comprehensive coverage.
+
+### Testing Tier System
+
+| Tier | Strategy | Purpose |
+|------|----------|---------|
+| **T0** | `--no-default-features` | Bare minimum compilation — catches missing `#[cfg]` guards |
+| **T1** | Default features | Standard build — the configuration most users run |
+| **T2** | Meta-feature groups | Domain-specific bundles (`mobile`, `unity`, `aaa`, `edge-pipeline`) |
+| **T3** | Individual leaf features (build-only) | Per-feature compilation check — catches broken `dep:` references |
+| **T4** | `full` / `alice-full` / `enterprise-full` | All features enabled — integration test for maximum configuration |
+
+### Per-Crate CI Coverage
+
+| Crate | Features | CI Tests | Tiers | Platform |
+|-------|----------|----------|-------|----------|
+| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | 25 | 9 | T0-T4 | macOS, Linux, Windows |
+| [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | 15 | 7 | T0-T2 | macOS, Linux |
+| [ALICE-Browser](https://github.com/ext-sakamoro/ALICE-Browser) | 14 | 8 | T0-T4 | macOS, Linux |
+| [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | 13 | 7 | T0-T3 | macOS, Linux |
+| [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | 12 | 6 | T0-T3 | macOS, Linux |
+| [ALICE-Streaming-Protocol-Commercial](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol-Commercial) | 12 | 5 | T0-T4 | macOS, Linux |
+| [ALICE-Animation](https://github.com/ext-sakamoro/ALICE-Animation) | 11 | 9 | T0-T3 | macOS, Linux |
+| [ALICE-Manga](https://github.com/ext-sakamoro/ALICE-Manga) | 11 | 8 | T0-T3 | macOS, Linux |
+
+**Total: 59 feature flag test configurations across 8 crates.**
+
+### CI Job Structure
+
+Each crate runs three parallel CI jobs:
+
+1. **test** — Multi-platform feature flag matrix (T0-T4)
+2. **clippy** — Lint check with dependency stubs
+3. **fmt** — `cargo fmt --check` formatting enforcement
+
+### Dependency Stub Pattern
+
+Cross-crate `path = "../ALICE-*"` dependencies are resolved in CI by creating lightweight stubs:
+
+```yaml
+- name: Create dependency stubs
+  run: |
+    mkdir -p ../ALICE-Physics/src
+    cat > ../ALICE-Physics/Cargo.toml << 'TOML'
+    [package]
+    name = "alice-physics"
+    version = "0.1.0"
+    edition = "2021"
+    [lib]
+    path = "src/lib.rs"
+    TOML
+    echo "" > ../ALICE-Physics/src/lib.rs
+```
+
+This enables each crate to build independently in CI without requiring the full 35-component workspace.
+
 ## License Strategy — 3-Layer Monetization Architecture
 
 The ALICE ecosystem employs a **3-layer license strategy** designed to maximize adoption while protecting high-value authoring tools.
