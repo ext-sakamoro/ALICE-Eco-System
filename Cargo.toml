@@ -50,10 +50,10 @@ alice-zip = { path = "../ALICE-Zip/libalice", default-features = false }
 alice-auth = { path = "../ALICE-Auth", default-features = false, features = ["std"] }
 alice-crypto = { path = "../ALICE-Crypto" }
 
-# Content Creation bridges (Animation, Manga, Print)
-alice-animation = { path = "../ALICE-Animation", default-features = false }
-alice-manga = { path = "../ALICE-Manga", default-features = false }
-alice-print = { path = "../ALICE-Print", default-features = false }
+# Content Creation bridges (Animation, Manga, Print) — Proprietary, optional
+alice-animation = { path = "../ALICE-Animation", default-features = false, optional = true }
+alice-manga = { path = "../ALICE-Manga", default-features = false, optional = true }
+alice-print = { path = "../ALICE-Print", default-features = false, optional = true }
 
 # Container & Commercial bridges
 alice-container = { path = "../ALICE-Container", default-features = false, features = ["std"] }
@@ -86,6 +86,13 @@ path = "examples/sdf_delivery.rs"
 [[example]]
 name = "game_pipeline"
 path = "examples/game_pipeline.rs"
+
+[features]
+default = []
+animation = ["dep:alice-animation"]
+manga = ["dep:alice-manga"]
+print = ["dep:alice-print"]
+content-creation = ["animation", "manga", "print"]
 
 [profile.release]
 opt-level = 3

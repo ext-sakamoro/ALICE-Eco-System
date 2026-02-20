@@ -411,6 +411,7 @@ pub fn vcs_diff_rtos(old: &KernelStats, new: &KernelStats) -> RtosVcsSnapshot {
 
 // ── Bridge 11: Animation ↔ Manga (scene → manga panel conversion) ─────
 
+#[cfg(all(feature = "animation", feature = "manga"))]
 /// Manga panel derived from Animation scene state.
 pub struct AnimMangaPanel {
     /// Actor count in scene.
@@ -423,6 +424,7 @@ pub struct AnimMangaPanel {
     pub content_hash: u64,
 }
 
+#[cfg(all(feature = "animation", feature = "manga"))]
 /// Convert Animation SceneGraph snapshot to Manga panel metadata.
 #[inline]
 pub fn animation_to_manga_panel(scene: &alice_animation::SceneGraph, time: f32) -> AnimMangaPanel {
@@ -487,6 +489,7 @@ pub fn queue_analytics_snapshot(msg: &alice_queue::Message, depth: usize) -> Que
 
 // ── Bridge 14: Print ↔ Animation (3D print → animated preview) ────────
 
+#[cfg(feature = "print")]
 /// Animated print preview configuration.
 pub struct PrintAnimPreview {
     /// Number of layers.
@@ -499,6 +502,7 @@ pub struct PrintAnimPreview {
     pub total_frames: usize,
 }
 
+#[cfg(feature = "print")]
 /// Configure animated print preview from SliceResult.
 #[inline]
 pub fn print_animation_preview(result: &alice_print::SliceResult, fps: usize) -> PrintAnimPreview {
@@ -513,6 +517,7 @@ pub fn print_animation_preview(result: &alice_print::SliceResult, fps: usize) ->
 
 // ── Bridge 15: Manga ↔ Print (manga page → print-ready) ──────────────
 
+#[cfg(all(feature = "manga", feature = "print"))]
 /// Print-ready manga page configuration.
 pub struct MangaPrintReady {
     /// Page dimensions (mm).
@@ -525,6 +530,7 @@ pub struct MangaPrintReady {
     pub dpi: u32,
 }
 
+#[cfg(all(feature = "manga", feature = "print"))]
 /// Configure manga page for physical printing.
 #[inline]
 pub fn manga_print_ready(page: &alice_manga::MangaPage, dpi: u32) -> MangaPrintReady {
@@ -633,6 +639,7 @@ pub fn ml_motion_predict_curve(
 
 // ── Bridge 18: Print ↔ Sync (multi-printer sync via InputFrame) ──────────
 
+#[cfg(feature = "print")]
 /// Replicated print state transmitted as an ALICE-Sync InputFrame.
 ///
 /// Each printer node encodes its current layer progress and filament usage
@@ -649,6 +656,7 @@ pub struct PrintSyncFrame {
     pub content_hash: u64,
 }
 
+#[cfg(feature = "print")]
 /// Encode SliceResult progress into an ALICE-Sync InputFrame for replication.
 #[inline]
 pub fn print_sync_frame(
@@ -1106,6 +1114,7 @@ mod tests {
         assert_eq!(diff.node_count, 5);
     }
 
+    #[cfg(all(feature = "animation", feature = "manga"))]
     #[test]
     fn test_animation_to_manga_panel() {
         let mut scene = alice_animation::SceneGraph::new();
@@ -1134,6 +1143,7 @@ mod tests {
         assert_ne!(snap.sender_hash, 0);
     }
 
+    #[cfg(feature = "print")]
     #[test]
     fn test_print_animation_preview() {
         let result = alice_print::SliceResult {
@@ -1150,6 +1160,7 @@ mod tests {
         assert!(preview.total_frames > 0);
     }
 
+    #[cfg(all(feature = "manga", feature = "print"))]
     #[test]
     fn test_manga_print_ready() {
         let page = alice_manga::MangaPage::new(alice_manga::PageSize::B4);
@@ -1196,6 +1207,7 @@ mod tests {
 
     // ── Bridge 18 test ───────────────────────────────────────────────────
 
+    #[cfg(feature = "print")]
     #[test]
     fn test_print_sync_frame() {
         let result = alice_print::SliceResult {

@@ -56,8 +56,11 @@ pub mod bridge_api;
 pub mod bridge_zip;
 pub mod bridge_auth;
 pub mod bridge_crypto_ext;
+#[cfg(feature = "animation")]
 pub mod bridge_animation;
+#[cfg(feature = "manga")]
 pub mod bridge_manga;
+#[cfg(feature = "print")]
 pub mod bridge_print_ext;
 pub mod bridge_analytics;
 pub mod bridge_queue;
