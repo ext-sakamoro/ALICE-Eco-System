@@ -291,7 +291,7 @@ pub fn font_synth_lyrics_timing(text: &str, score: &Score) -> Vec<LyricsTiming> 
                     note_starts.push((start, t));
                 }
             }
-            _ => {}
+            NoteEventKind::PitchBend | NoteEventKind::ControlChange => {}
         }
     }
 

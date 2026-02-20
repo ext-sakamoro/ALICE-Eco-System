@@ -86,7 +86,7 @@ pub fn synth_to_animation_cues(score: &Score) -> Vec<AnimAudioCue> {
                     });
                 }
             }
-            _ => {}
+            NoteEventKind::PitchBend | NoteEventKind::ControlChange => {}
         }
     }
     // Close any remaining notes

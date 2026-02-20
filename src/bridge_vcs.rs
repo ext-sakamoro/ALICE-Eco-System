@@ -33,6 +33,7 @@ pub fn sdf_to_vcs_tree(sdf: &SdfTree) -> AstTree {
 
 fn sdf_node_to_ast(node: &SdfNode, tree: &mut AstTree, parent: NodeId) {
     match node {
+        // Named primitives (common shapes get descriptive labels)
         SdfNode::Sphere { radius } => {
             tree.add_node(AstNodeKind::Primitive, &format!("sphere_{}", (*radius * 100.0) as i32), parent);
         }
@@ -42,27 +43,83 @@ fn sdf_node_to_ast(node: &SdfNode, tree: &mut AstTree, parent: NodeId) {
         SdfNode::Cylinder { radius, half_height } => {
             tree.add_node(AstNodeKind::Primitive, &format!("cyl_{}_{}", (*radius * 100.0) as i32, (*half_height * 100.0) as i32), parent);
         }
-        SdfNode::Union { a, b } => {
-            let op = tree.add_node(AstNodeKind::CsgOp, "union", parent);
+
+        // CSG operations (24 variants — all have { a, b } children to recurse)
+        SdfNode::Union { a, b, .. }
+        | SdfNode::Intersection { a, b, .. }
+        | SdfNode::Subtraction { a, b, .. }
+        | SdfNode::SmoothUnion { a, b, .. }
+        | SdfNode::SmoothIntersection { a, b, .. }
+        | SdfNode::SmoothSubtraction { a, b, .. }
+        | SdfNode::ChamferUnion { a, b, .. }
+        | SdfNode::ChamferIntersection { a, b, .. }
+        | SdfNode::ChamferSubtraction { a, b, .. }
+        | SdfNode::StairsUnion { a, b, .. }
+        | SdfNode::StairsIntersection { a, b, .. }
+        | SdfNode::StairsSubtraction { a, b, .. }
+        | SdfNode::XOR { a, b }
+        | SdfNode::Morph { a, b, .. }
+        | SdfNode::ColumnsUnion { a, b, .. }
+        | SdfNode::ColumnsIntersection { a, b, .. }
+        | SdfNode::ColumnsSubtraction { a, b, .. }
+        | SdfNode::Pipe { a, b, .. }
+        | SdfNode::Engrave { a, b, .. }
+        | SdfNode::Groove { a, b, .. }
+        | SdfNode::Tongue { a, b, .. }
+        | SdfNode::ExpSmoothUnion { a, b, .. }
+        | SdfNode::ExpSmoothIntersection { a, b, .. }
+        | SdfNode::ExpSmoothSubtraction { a, b, .. }
+        => {
+            let op = tree.add_node(AstNodeKind::CsgOp, "csg_op", parent);
             sdf_node_to_ast(a, tree, op);
             sdf_node_to_ast(b, tree, op);
         }
-        SdfNode::Subtraction { a, b } => {
-            let op = tree.add_node(AstNodeKind::CsgOp, "subtract", parent);
-            sdf_node_to_ast(a, tree, op);
-            sdf_node_to_ast(b, tree, op);
-        }
-        SdfNode::Intersection { a, b } => {
-            let op = tree.add_node(AstNodeKind::CsgOp, "intersect", parent);
-            sdf_node_to_ast(a, tree, op);
-            sdf_node_to_ast(b, tree, op);
-        }
-        SdfNode::Translate { child, offset } => {
-            let t = tree.add_node(AstNodeKind::Transform, &format!("translate_{}_{}_{}", (offset.x * 100.0) as i32, (offset.y * 100.0) as i32, (offset.z * 100.0) as i32), parent);
+
+        // Transforms (7 variants — all have { child } to recurse)
+        SdfNode::Translate { child, .. }
+        | SdfNode::Rotate { child, .. }
+        | SdfNode::Scale { child, .. }
+        | SdfNode::ScaleNonUniform { child, .. }
+        | SdfNode::ProjectiveTransform { child, .. }
+        | SdfNode::LatticeDeform { child, .. }
+        | SdfNode::SdfSkinning { child, .. }
+        => {
+            let t = tree.add_node(AstNodeKind::Transform, "transform", parent);
             sdf_node_to_ast(child, tree, t);
         }
+
+        // Modifiers (23 variants — all have { child } to recurse)
+        SdfNode::Twist { child, .. }
+        | SdfNode::Bend { child, .. }
+        | SdfNode::RepeatInfinite { child, .. }
+        | SdfNode::RepeatFinite { child, .. }
+        | SdfNode::Noise { child, .. }
+        | SdfNode::Round { child, .. }
+        | SdfNode::Onion { child, .. }
+        | SdfNode::Elongate { child, .. }
+        | SdfNode::Mirror { child, .. }
+        | SdfNode::Revolution { child, .. }
+        | SdfNode::Extrude { child, .. }
+        | SdfNode::SweepBezier { child, .. }
+        | SdfNode::Taper { child, .. }
+        | SdfNode::Displacement { child, .. }
+        | SdfNode::PolarRepeat { child, .. }
+        | SdfNode::OctantMirror { child, .. }
+        | SdfNode::Shear { child, .. }
+        | SdfNode::Animated { child, .. }
+        | SdfNode::WithMaterial { child, .. }
+        | SdfNode::IcosahedralSymmetry { child, .. }
+        | SdfNode::IFS { child, .. }
+        | SdfNode::HeightmapDisplacement { child, .. }
+        | SdfNode::SurfaceRoughness { child, .. }
+        => {
+            let m = tree.add_node(AstNodeKind::Custom, "modifier", parent);
+            sdf_node_to_ast(child, tree, m);
+        }
+
+        // Remaining 72 primitives (leaf nodes, no children to recurse)
         _ => {
-            tree.add_node(AstNodeKind::Custom, "other", parent);
+            tree.add_node(AstNodeKind::Primitive, "primitive", parent);
         }
     }
 }

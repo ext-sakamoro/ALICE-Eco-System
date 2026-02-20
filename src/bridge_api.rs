@@ -29,7 +29,7 @@ pub fn api_auth_check(rate_limiter: &GcraCell, client_id: &str, method: HttpMeth
         HttpMethod::Get | HttpMethod::Head => "read",
         HttpMethod::Post | HttpMethod::Put | HttpMethod::Patch => "write",
         HttpMethod::Delete => "delete",
-        _ => "other",
+        HttpMethod::Options | HttpMethod::Connect | HttpMethod::Trace | HttpMethod::Unknown => "other",
     };
     ApiAuthDecision {
         rate_allowed: allowed,
@@ -69,7 +69,12 @@ pub fn api_to_cdn_route(path: &str, method: HttpMethod, rate_allowed: bool) -> A
         HttpMethod::Post => "POST",
         HttpMethod::Put => "PUT",
         HttpMethod::Delete => "DELETE",
-        _ => "OTHER",
+        HttpMethod::Patch => "PATCH",
+        HttpMethod::Head => "HEAD",
+        HttpMethod::Options => "OPTIONS",
+        HttpMethod::Connect => "CONNECT",
+        HttpMethod::Trace => "TRACE",
+        HttpMethod::Unknown => "OTHER",
     };
     ApiCdnRoute {
         asset_path: path.to_string(),
@@ -107,13 +112,16 @@ pub fn api_to_queue_message(
     let path_hash = fnv1a(path.as_bytes());
     // Branchless method byte: map variant index to byte constant via small array.
     let method_byte: u8 = match method {
-        HttpMethod::Get    => b'G',
-        HttpMethod::Post   => b'P',
-        HttpMethod::Put    => b'U',
-        HttpMethod::Delete => b'D',
-        HttpMethod::Patch  => b'A',
-        HttpMethod::Head   => b'H',
-        _                  => b'?',
+        HttpMethod::Get     => b'G',
+        HttpMethod::Post    => b'P',
+        HttpMethod::Put     => b'U',
+        HttpMethod::Delete  => b'D',
+        HttpMethod::Patch   => b'A',
+        HttpMethod::Head    => b'H',
+        HttpMethod::Options => b'O',
+        HttpMethod::Connect => b'C',
+        HttpMethod::Trace   => b'T',
+        HttpMethod::Unknown => b'?',
     };
     // 9-byte payload: method_byte ++ path_hash (LE u64)
     let mut payload = [0u8; 9];
@@ -156,13 +164,16 @@ pub fn api_analytics_record(
     path: &str,
 ) -> ApiAnalyticsRecord {
     let method = match method {
-        HttpMethod::Get    => "GET",
-        HttpMethod::Post   => "POST",
-        HttpMethod::Put    => "PUT",
-        HttpMethod::Delete => "DELETE",
-        HttpMethod::Patch  => "PATCH",
-        HttpMethod::Head   => "HEAD",
-        _                  => "OTHER",
+        HttpMethod::Get     => "GET",
+        HttpMethod::Post    => "POST",
+        HttpMethod::Put     => "PUT",
+        HttpMethod::Delete  => "DELETE",
+        HttpMethod::Patch   => "PATCH",
+        HttpMethod::Head    => "HEAD",
+        HttpMethod::Options => "OPTIONS",
+        HttpMethod::Connect => "CONNECT",
+        HttpMethod::Trace   => "TRACE",
+        HttpMethod::Unknown => "OTHER",
     };
     ApiAnalyticsRecord {
         method,
@@ -198,13 +209,16 @@ pub fn api_db_log(
     client_id: &str,
 ) -> ApiDbLogRecord {
     let method = match method {
-        HttpMethod::Get    => "GET",
-        HttpMethod::Post   => "POST",
-        HttpMethod::Put    => "PUT",
-        HttpMethod::Delete => "DELETE",
-        HttpMethod::Patch  => "PATCH",
-        HttpMethod::Head   => "HEAD",
-        _                  => "OTHER",
+        HttpMethod::Get     => "GET",
+        HttpMethod::Post    => "POST",
+        HttpMethod::Put     => "PUT",
+        HttpMethod::Delete  => "DELETE",
+        HttpMethod::Patch   => "PATCH",
+        HttpMethod::Head    => "HEAD",
+        HttpMethod::Options => "OPTIONS",
+        HttpMethod::Connect => "CONNECT",
+        HttpMethod::Trace   => "TRACE",
+        HttpMethod::Unknown => "OTHER",
     };
     ApiDbLogRecord {
         method,

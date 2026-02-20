@@ -142,7 +142,7 @@ pub struct AspSdfDescriptor {
 pub fn asp_i_packet_to_sdf(packet: &AspPacket) -> Option<AspSdfDescriptor> {
     let ip = match &packet.payload {
         AspPayload::IPacket(p) => p,
-        _ => return None,
+        AspPayload::DPacket(_) | AspPayload::CPacket(_) | AspPayload::SPacket(_) => return None,
     };
 
     // Reciprocals for normalized center computation
@@ -216,7 +216,9 @@ pub fn asp_to_view_config(stats: &StreamStats, last_i_packet: Option<&AspPacket>
             AspPayload::IPacket(ip) => {
                 (ip.width, ip.height, ip.fps, ip.quality)
             }
-            _ => (1280, 720, 30.0, QualityLevel::Medium),
+            AspPayload::DPacket(_) | AspPayload::CPacket(_) | AspPayload::SPacket(_) => {
+                (1280, 720, 30.0, QualityLevel::Medium)
+            }
         },
         None => (1280, 720, 30.0, QualityLevel::Medium),
     };
