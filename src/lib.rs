@@ -68,6 +68,11 @@ pub mod bridge_container;
 pub mod bridge_firewall;
 pub mod bridge_browser;
 pub mod bridge_cloud_gateway;
+pub mod bridge_view;
+pub mod bridge_db;
+pub mod bridge_sync;
+pub mod bridge_cache;
+pub mod bridge_sdf;
 
 // Re-export pipeline API
 pub use pipeline::{

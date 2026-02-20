@@ -55,6 +55,11 @@ alice-animation = { path = "../ALICE-Animation", default-features = false }
 alice-manga = { path = "../ALICE-Manga", default-features = false }
 alice-print = { path = "../ALICE-Print", default-features = false }
 
+# Container & Commercial bridges
+alice-container = { path = "../ALICE-Container", default-features = false, features = ["std"] }
+alice-streaming-protocol-commercial = { path = "../ALICE-Streaming-Protocol-Commercial", package = "libasp-enterprise", optional = true, default-features = false }
+alice-edge-commercial = { path = "../ALICE-Edge-Commercial", package = "alice-edge-enterprise", optional = true, default-features = false }
+
 # Telemetry & Messaging bridges
 alice-analytics = { path = "../ALICE-Analytics", default-features = false, features = ["std"] }
 alice-queue = { path = "../ALICE-Queue" }

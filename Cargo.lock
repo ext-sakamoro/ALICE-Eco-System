@@ -115,6 +115,13 @@ name = "alice-codec"
 version = "0.1.0"
 
 [[package]]
+name = "alice-container"
+version = "0.2.0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "alice-crypto"
 version = "0.1.0"
 dependencies = [
@@ -163,10 +170,12 @@ dependencies = [
  "alice-cache",
  "alice-cdn",
  "alice-codec",
+ "alice-container",
  "alice-crypto",
  "alice-db",
  "alice-dns",
  "alice-edge",
+ "alice-edge-enterprise",
  "alice-font",
  "alice-kinematics",
  "alice-manga",
@@ -189,12 +198,22 @@ dependencies = [
  "bincode",
  "crc32fast",
  "libasp",
+ "libasp-enterprise",
  "tempfile",
 ]
 
 [[package]]
 name = "alice-edge"
 version = "0.1.0"
+
+[[package]]
+name = "alice-edge-enterprise"
+version = "1.0.0"
+dependencies = [
+ "alice-edge",
+ "log",
+ "rayon",
+]
 
 [[package]]
 name = "alice-font"
@@ -2381,6 +2400,16 @@ dependencies = [
  "serde_bytes",
  "thiserror 2.0.18",
  "wide",
+]
+
+[[package]]
+name = "libasp-enterprise"
+version = "1.0.0"
+dependencies = [
+ "libasp",
+ "log",
+ "rayon",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
