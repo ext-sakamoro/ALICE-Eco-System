@@ -8,7 +8,8 @@
 //! `category()` introspection API, which is the public surface exposed by
 //! ALICE-SDF without requiring internal field access.
 
-use alice_sdf::{SdfNode, SdfTree, SdfCategory};
+use alice_sdf::{SdfNode, SdfTree};
+use alice_sdf::types::SdfCategory;
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -34,6 +35,12 @@ fn tree_category_counts(root: &SdfNode) -> (u32, u32, u32) {
             let ops = 1 + total / 3; // rough: every 3 primitives ≈ 1 op
             let prims = total.saturating_sub(ops);
             (prims, ops, 0)
+        }
+        SdfCategory::Transform => {
+            // Transform wraps child nodes; estimate similar to operations.
+            let transforms = 1 + total / 4;
+            let prims = total.saturating_sub(transforms);
+            (prims, transforms, 0)
         }
         SdfCategory::Modifier => {
             let mods = 1 + total / 4;
@@ -88,11 +95,12 @@ pub fn sdf_to_view_descriptor(tree: &SdfTree) -> SdfViewDescriptor {
     let bounding_radius = (node_count as f32).sqrt().max(1.0);
     let surface_epsilon = bounding_radius * 0.001;
 
-    // Root category tag: 0=primitive, 1=operation, 2=modifier.
+    // Root category tag: 0=primitive, 1=operation, 2=modifier, 3=transform.
     let root_category = match tree.root.category() {
         SdfCategory::Primitive => 0u8,
         SdfCategory::Operation => 1u8,
         SdfCategory::Modifier  => 2u8,
+        SdfCategory::Transform => 3u8,
     };
 
     SdfViewDescriptor {
@@ -358,6 +366,7 @@ pub fn sdf_to_db_version_record(
         SdfCategory::Primitive => 0u8,
         SdfCategory::Operation => 1u8,
         SdfCategory::Modifier  => 2u8,
+        SdfCategory::Transform => 3u8,
     };
     SdfDbVersionRecord {
         tree_hash,

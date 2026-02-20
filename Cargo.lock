@@ -87,6 +87,7 @@ name = "alice-api"
 version = "0.1.0"
 dependencies = [
  "libc",
+ "log",
 ]
 
 [[package]]
@@ -359,6 +360,7 @@ dependencies = [
  "egui-winit",
  "glam",
  "image",
+ "log",
  "mimalloc",
  "noise",
  "pollster 0.3.0",
