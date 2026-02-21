@@ -67,6 +67,8 @@ pub mod bridge_queue;
 pub mod bridge_asp;
 pub mod bridge_edge_ext;
 pub mod bridge_cdn_ext;
+pub mod bridge_cdn;
+pub mod bridge_edge;
 pub mod bridge_container;
 #[cfg(feature = "firewall")]
 pub mod bridge_firewall;
@@ -78,6 +80,10 @@ pub mod bridge_sync;
 pub mod bridge_cache;
 pub mod bridge_sdf;
 pub mod bridge_semantic_telemetry;
+#[cfg(feature = "edge-commercial")]
+pub mod bridge_edge_commercial;
+#[cfg(feature = "streaming-protocol-commercial")]
+pub mod bridge_asp_commercial;
 
 // Re-export pipeline API
 pub use pipeline::{

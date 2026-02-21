@@ -219,16 +219,24 @@ pub struct DnsApiGatewayResult {
 
 // ── Path G: AI Inference ─────────────────────────────────────────────
 
-/// AI inference pipeline: ML ternary inference → TRT GPU config.
+/// AI inference pipeline: ML ternary inference → TRT GPU analytics.
 ///
-/// `[ALICE-ML] → [ALICE-TRT] → [ALICE-SDF] / [ALICE-Physics] / [ALICE-View]`
+/// `[ALICE-ML] → [ALICE-TRT] → [ALICE-Analytics] / [ALICE-DB] / [ALICE-View]`
 pub fn path_g_ai_inference(state_dims: usize, action_dims: usize, hidden: &[usize]) -> AiInferenceResult {
-    let trt_config = crate::bridge_trt::trt_physics_policy(state_dims, action_dims, hidden);
+    // Build layer geometry: input→hidden[0], hidden[i]→hidden[i+1], hidden[-1]→output.
+    let mut shapes: Vec<(usize, usize)> = Vec::with_capacity(hidden.len() + 1);
+    let mut prev = state_dims;
+    for &h in hidden {
+        shapes.push((h, prev));
+        prev = h;
+    }
+    shapes.push((action_dims, prev));
+    let metrics = crate::bridge_trt::trt_to_analytics_metrics(&shapes);
     AiInferenceResult {
         ml_joint_count: action_dims,
         ml_inference_ops: state_dims * action_dims,
-        trt_param_count: trt_config.param_count,
-        trt_flops: trt_config.flops_per_inference,
+        trt_param_count: metrics.param_count,
+        trt_flops: metrics.mac_ops,
     }
 }
 

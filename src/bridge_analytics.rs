@@ -225,6 +225,162 @@ pub fn analytics_to_edge_payload(hll: &HyperLogLog12, dd: &DDSketch256) -> Analy
     }
 }
 
+// ── Bridge 8: API → Analytics (rate-limit metrics) ───────────────────────
+
+/// Rate-limit window metrics from ALICE-API for Analytics ingestion.
+pub struct ApiAnalyticsMetrics {
+    /// Content hash over the window interval endpoints.
+    pub content_hash: u64,
+    /// Total requests observed in the window.
+    pub total_requests: u64,
+    /// Number of requests rejected by the rate limiter.
+    pub rate_limited: u64,
+    /// Average end-to-end request latency in microseconds.
+    pub avg_latency_us: f64,
+    /// Total error responses (status >= 500) in the window.
+    pub error_count: u64,
+    /// Window start timestamp in nanoseconds.
+    pub window_start_ns: u64,
+    /// Window end timestamp in nanoseconds.
+    pub window_end_ns: u64,
+}
+
+/// Build API rate-limit window metrics for ALICE-Analytics ingestion.
+///
+/// `avg_latency_us` is derived from `total_latency_ns` using reciprocal
+/// multiply — no bare `/` in the hot path.
+#[inline]
+pub fn api_to_analytics_metrics(
+    total_requests: u64,
+    rate_limited: u64,
+    total_latency_ns: u64,
+    error_count: u64,
+    window_start_ns: u64,
+    window_end_ns: u64,
+) -> ApiAnalyticsMetrics {
+    // Reciprocal of request count — hoisted so all per-request averages share it.
+    let rcp_requests = 1.0 / total_requests.max(1) as f64;
+    // Reciprocal: 1 / 1_000.0 converts ns → us; combine with rcp_requests.
+    const RCP_NS_TO_US: f64 = 1.0 / 1_000.0;
+    let avg_latency_us = total_latency_ns as f64 * RCP_NS_TO_US * rcp_requests;
+
+    // Hash over window endpoints so each window gets a unique key.
+    let mut key = [0u8; 16];
+    key[0..8].copy_from_slice(&window_start_ns.to_le_bytes());
+    key[8..16].copy_from_slice(&window_end_ns.to_le_bytes());
+    ApiAnalyticsMetrics {
+        content_hash: fnv1a(&key),
+        total_requests,
+        rate_limited,
+        avg_latency_us,
+        error_count,
+        window_start_ns,
+        window_end_ns,
+    }
+}
+
+// ── Bridge 9: Motion → Analytics (trajectory metrics) ────────────────────
+
+/// Trajectory planning metrics from ALICE-Motion for Analytics ingestion.
+pub struct MotionAnalyticsMetrics {
+    /// Content hash over the metric values.
+    pub content_hash: u64,
+    /// Number of trajectories computed in the reporting period.
+    pub trajectories_computed: u64,
+    /// Average number of path segments per trajectory.
+    pub avg_segments: f64,
+    /// Average trajectory duration in milliseconds.
+    pub avg_duration_ms: f64,
+    /// Maximum jerk observed across all trajectories (mm/s³).
+    pub max_jerk: f32,
+    /// Average trajectory planning time in microseconds.
+    pub planning_time_us: f64,
+}
+
+/// Build trajectory planning metrics for ALICE-Analytics ingestion.
+///
+/// All averages use reciprocal multiply against `trajectories_computed`
+/// to avoid repeated division.
+#[inline]
+pub fn motion_to_analytics_metrics(
+    trajectories_computed: u64,
+    total_segments: u64,
+    total_duration_ms: f64,
+    max_jerk: f32,
+    total_planning_time_us: f64,
+) -> MotionAnalyticsMetrics {
+    // Reciprocal of count — shared across all average computations.
+    let rcp_count = 1.0 / trajectories_computed.max(1) as f64;
+    let avg_segments = total_segments as f64 * rcp_count;
+    let avg_duration_ms = total_duration_ms * rcp_count;
+    let planning_time_us = total_planning_time_us * rcp_count;
+
+    // Hash over the core metrics.
+    let mut key = [0u8; 24];
+    key[0..8].copy_from_slice(&trajectories_computed.to_le_bytes());
+    key[8..16].copy_from_slice(&total_segments.to_le_bytes());
+    key[16..20].copy_from_slice(&max_jerk.to_le_bytes());
+    key[20..24].copy_from_slice(&(avg_duration_ms.to_bits() as u32).to_le_bytes());
+    MotionAnalyticsMetrics {
+        content_hash: fnv1a(&key),
+        trajectories_computed,
+        avg_segments,
+        avg_duration_ms,
+        max_jerk,
+        planning_time_us,
+    }
+}
+
+// ── Bridge 10: Edge → Analytics (sensor compression metrics) ─────────────
+
+/// Sensor compression metrics from ALICE-Edge for Analytics ingestion.
+pub struct EdgeAnalyticsMetrics {
+    /// Content hash over the metric values.
+    pub content_hash: u64,
+    /// Total sensor samples processed in the reporting period.
+    pub samples_processed: u64,
+    /// Average compression ratio (raw bytes / transmitted bytes).
+    pub avg_compression_ratio: f32,
+    /// Number of distinct sensor channels active in the period.
+    pub sensor_count: u32,
+    /// Number of anomalies detected across all sensor channels.
+    pub anomalies_detected: u64,
+}
+
+/// Build sensor compression metrics for ALICE-Analytics ingestion.
+///
+/// `avg_compression_ratio` uses reciprocal multiply against `sensor_count`
+/// to sum per-channel ratios without repeated division.
+#[inline]
+pub fn edge_to_analytics_metrics(
+    samples_processed: u64,
+    total_compression_ratio: f32,
+    sensor_count: u32,
+    anomalies_detected: u64,
+) -> EdgeAnalyticsMetrics {
+    // Reciprocal of sensor_count — one division hoisted outside the logical loop.
+    const RCP_FALLBACK: f32 = 1.0;
+    let rcp_sensors = if sensor_count > 0 {
+        1.0 / sensor_count as f32
+    } else {
+        RCP_FALLBACK
+    };
+    let avg_compression_ratio = total_compression_ratio * rcp_sensors;
+
+    // Hash over the primary metric tuple.
+    let mut key = [0u8; 20];
+    key[0..8].copy_from_slice(&samples_processed.to_le_bytes());
+    key[8..12].copy_from_slice(&sensor_count.to_le_bytes());
+    key[12..20].copy_from_slice(&anomalies_detected.to_le_bytes());
+    EdgeAnalyticsMetrics {
+        content_hash: fnv1a(&key),
+        samples_processed,
+        avg_compression_ratio,
+        sensor_count,
+        anomalies_detected,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -296,5 +452,87 @@ mod tests {
         let payload = analytics_to_edge_payload(&hll, &dd);
         assert_ne!(payload.content_hash, 0);
         assert_eq!(payload.estimated_bytes, 16);
+    }
+
+    #[test]
+    fn test_api_to_analytics_metrics() {
+        // 1000 requests, 50 rate-limited, total latency 500 ms (500_000_000 ns),
+        // 10 errors, window [1_000_000_000, 2_000_000_000].
+        let m = api_to_analytics_metrics(
+            1_000,
+            50,
+            500_000_000,
+            10,
+            1_000_000_000,
+            2_000_000_000,
+        );
+        assert_ne!(m.content_hash, 0);
+        assert_eq!(m.total_requests, 1_000);
+        assert_eq!(m.rate_limited, 50);
+        assert_eq!(m.error_count, 10);
+        // avg_latency_us = (500_000_000 / 1000) / 1000 = 500 µs
+        assert!((m.avg_latency_us - 500.0).abs() < 0.01,
+            "avg_latency_us = {}", m.avg_latency_us);
+        assert_eq!(m.window_start_ns, 1_000_000_000);
+        assert_eq!(m.window_end_ns, 2_000_000_000);
+    }
+
+    #[test]
+    fn test_api_to_analytics_metrics_zero_requests() {
+        // Zero-request window must not panic (denom saturated to 1).
+        let m = api_to_analytics_metrics(0, 0, 0, 0, 0, 1_000_000);
+        assert_eq!(m.total_requests, 0);
+        assert_eq!(m.avg_latency_us, 0.0);
+        // Hash over window endpoints must still be non-zero.
+        assert_ne!(m.content_hash, 0);
+    }
+
+    #[test]
+    fn test_motion_to_analytics_metrics() {
+        // 100 trajectories, 500 total segments, 2000.0 ms total, max_jerk 5.0, 300 µs total planning.
+        let m = motion_to_analytics_metrics(100, 500, 2_000.0, 5.0, 300.0);
+        assert_ne!(m.content_hash, 0);
+        assert_eq!(m.trajectories_computed, 100);
+        // avg_segments = 500 / 100 = 5.0
+        assert!((m.avg_segments - 5.0).abs() < 0.001,
+            "avg_segments = {}", m.avg_segments);
+        // avg_duration_ms = 2000 / 100 = 20.0
+        assert!((m.avg_duration_ms - 20.0).abs() < 0.001,
+            "avg_duration_ms = {}", m.avg_duration_ms);
+        assert!((m.max_jerk - 5.0).abs() < 0.001);
+        // planning_time_us = 300 / 100 = 3.0
+        assert!((m.planning_time_us - 3.0).abs() < 0.001,
+            "planning_time_us = {}", m.planning_time_us);
+    }
+
+    #[test]
+    fn test_motion_to_analytics_metrics_zero_trajectories() {
+        // Zero-trajectory case must not panic (rcp_count uses max(1)).
+        let m = motion_to_analytics_metrics(0, 0, 0.0, 0.0, 0.0);
+        assert_eq!(m.trajectories_computed, 0);
+        assert_eq!(m.avg_segments, 0.0);
+        assert_eq!(m.avg_duration_ms, 0.0);
+    }
+
+    #[test]
+    fn test_edge_to_analytics_metrics_bridge() {
+        // 4 sensors, total compression ratio sum = 16.0 (avg 4.0x per sensor),
+        // 8000 samples, 3 anomalies.
+        let m = edge_to_analytics_metrics(8_000, 16.0, 4, 3);
+        assert_ne!(m.content_hash, 0);
+        assert_eq!(m.samples_processed, 8_000);
+        assert_eq!(m.sensor_count, 4);
+        assert_eq!(m.anomalies_detected, 3);
+        // avg_compression_ratio = 16.0 / 4 = 4.0
+        assert!((m.avg_compression_ratio - 4.0).abs() < 0.001,
+            "avg_compression_ratio = {}", m.avg_compression_ratio);
+    }
+
+    #[test]
+    fn test_edge_to_analytics_metrics_zero_sensors() {
+        // Zero-sensor case must not panic; ratio falls back to total * 1.0.
+        let m = edge_to_analytics_metrics(0, 0.0, 0, 0);
+        assert_eq!(m.sensor_count, 0);
+        assert_eq!(m.avg_compression_ratio, 0.0);
     }
 }
