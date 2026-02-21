@@ -1,6 +1,6 @@
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 38 ALICE crates into unified pipelines with 240 cross-crate bridges.
+//! Connects 51 ALICE crates into unified pipelines with 300 cross-crate bridges.
 //!
 //! ```text
 //! Path A (IoT/Sensor):
@@ -36,6 +36,33 @@
 //!
 //! Path K (Financial Trading):
 //!   [ALICE-FIX] → [ALICE-Risk] → [ALICE-Ledger] → [ALICE-Settlement] → [ALICE-DB]
+//!
+//! Path L (Molecular Biology):
+//!   [ALICE-Bio] → [ALICE-SDF] (molecular SDF) → [ALICE-Analytics] / [ALICE-DB] / [ALICE-Cache]
+//!
+//! Path M (Legal Compliance):
+//!   [ALICE-Legal] → [ALICE-Analytics] (statute/contract metrics) → [ALICE-DB] (audit trail)
+//!
+//! Path N (Energy Grid):
+//!   [ALICE-Energy] → [ALICE-Analytics] (grid balance) → [ALICE-Edge] (phase correction) → [ALICE-DB] / [ALICE-Cache]
+//!
+//! Path O (Deep-Space Communication):
+//!   [ALICE-Space] → [ALICE-Edge] (differential telemetry) → [ALICE-Analytics] / [ALICE-DB] / [ALICE-Cache]
+//!
+//! Path P (Brain-Computer Interface):
+//!   [ALICE-Neural] → [ALICE-Analytics] (spike rates) → [ALICE-Edge] (intent telemetry) → [ALICE-DB] / [ALICE-Cache]
+//!
+//! Path Q (Planetary Climate):
+//!   [ALICE-Climate] → [ALICE-Analytics] (observation/field metrics) → [ALICE-Edge] (anomaly alerts) → [ALICE-DB] / [ALICE-Cache]
+//!
+//! Path R (Inverse Entropy Restoration):
+//!   [ALICE-History] → [ALICE-Analytics] (degradation/quality metrics) → [ALICE-DB] (restoration records) → [ALICE-Cache]
+//!
+//! Path S (Molecular Compilation):
+//!   [ALICE-Atoms] → [ALICE-Analytics] (crystal/band/property metrics) → [ALICE-DB] (compilation records) → [ALICE-Cache]
+//!
+//! Path U (Presence Protocol):
+//!   [ALICE-Presence] → [ALICE-Edge] (event telemetry) → [ALICE-Analytics] (crossing/proximity) → [ALICE-DB] / [ALICE-Cache]
 //! ```
 
 pub mod hash;
@@ -91,6 +118,17 @@ pub mod bridge_settlement_ext;
 pub mod bridge_edge_commercial;
 #[cfg(feature = "streaming-protocol-commercial")]
 pub mod bridge_asp_commercial;
+pub mod bridge_bio;
+pub mod bridge_legal;
+pub mod bridge_energy;
+pub mod bridge_space;
+#[cfg(feature = "neural")]
+pub mod bridge_neural;
+pub mod bridge_climate;
+pub mod bridge_history;
+#[cfg(feature = "atoms")]
+pub mod bridge_atoms;
+pub mod bridge_presence;
 
 // Re-export pipeline API
 pub use pipeline::{
@@ -119,3 +157,14 @@ pub use alice_ledger::{OrderBook, Order, OrderId, Side, Fill, Position, Position
 pub use alice_risk::{PreTradeChecker, RiskLimits, RiskReject, MarginCalculator, CircuitBreaker};
 pub use alice_fix::{FixMessage, FixBuilder, FixSession};
 pub use alice_settlement::{Trade, SettlementStatus, NettingEngine, ClearingHouse, SettlementJournal};
+
+// Re-export science & domain-specific types (Path L-Q)
+pub use alice_bio::{AminoAcid, Residue, ProteinSdf, TotalEnergy};
+pub use alice_legal::{StatuteTree, Contract, AuditLog, AuditEntry};
+pub use alice_energy::{PowerGrid, PowerNode, BatteryState, PhaseCorrection};
+pub use alice_space::{CommLink, ModelDifferential, MissionEvent, ControlDecision};
+pub use alice_climate::{WeatherStation, Observation, ClimateResponse, AnomalyKind};
+
+// Re-export advanced domain types (Path R-U)
+pub use alice_history::{Fragment, FragmentKind, RestorationResult, InversionConfig};
+pub use alice_presence::{VivaldiCoord, PresenceEvent, CrossingRecord, CrossingStatus};

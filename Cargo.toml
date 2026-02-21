@@ -3,7 +3,7 @@ name = "alice-eco-system"
 version = "0.3.0"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration Hub - 255 bridges, 11 pipeline paths (A-K), 41 bridge modules, 42 crates"
+description = "ALICE Ecosystem Integration Hub - 300 bridges, 20 pipeline paths (A-U), 50 bridge modules, 51 crates"
 license = "MIT"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
@@ -80,6 +80,19 @@ alice-risk = { path = "../ALICE-Risk" }
 alice-fix = { path = "../ALICE-FIX" }
 alice-settlement = { path = "../ALICE-Settlement" }
 
+# Science & Domain-Specific bridges (Path L-Q)
+alice-bio = { path = "../ALICE-Bio" }
+alice-legal = { path = "../ALICE-Legal" }
+alice-energy = { path = "../ALICE-Energy" }
+alice-space = { path = "../ALICE-Space" }
+alice-neural = { path = "../ALICE-Neural", optional = true }
+alice-climate = { path = "../ALICE-Climate" }
+
+# Advanced domain bridges (Path R-U)
+alice-history = { path = "../ALICE-History" }
+alice-atoms = { path = "../ALICE-Atoms", optional = true }
+alice-presence = { path = "../ALICE-Presence" }
+
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"
 crc32fast = "1"
@@ -112,6 +125,8 @@ content-creation = ["animation", "manga", "print"]
 firewall = ["dep:alice-edge-firewall"]
 edge-commercial = ["dep:alice-edge-commercial"]
 streaming-protocol-commercial = ["dep:alice-streaming-protocol-commercial"]
+neural = ["dep:alice-neural"]
+atoms = ["dep:alice-atoms"]
 enterprise = ["edge-commercial", "streaming-protocol-commercial"]
 
 [profile.release]

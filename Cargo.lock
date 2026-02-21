@@ -181,12 +181,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-atoms"
+version = "0.1.0"
+
+[[package]]
 name = "alice-auth"
 version = "0.4.0"
 dependencies = [
  "ed25519-dalek",
  "getrandom 0.2.17",
 ]
+
+[[package]]
+name = "alice-bio"
+version = "0.1.0"
 
 [[package]]
 name = "alice-browser"
@@ -215,6 +223,10 @@ dependencies = [
 [[package]]
 name = "alice-cdn"
 version = "0.2.0"
+
+[[package]]
+name = "alice-climate"
+version = "0.1.0"
 
 [[package]]
 name = "alice-cloud-gateway"
@@ -289,10 +301,13 @@ dependencies = [
  "alice-analytics",
  "alice-animation",
  "alice-api",
+ "alice-atoms",
  "alice-auth",
+ "alice-bio",
  "alice-browser",
  "alice-cache",
  "alice-cdn",
+ "alice-climate",
  "alice-cloud-gateway",
  "alice-codec",
  "alice-container",
@@ -302,14 +317,19 @@ dependencies = [
  "alice-edge",
  "alice-edge-enterprise",
  "alice-edge-firewall",
+ "alice-energy",
  "alice-fix",
  "alice-font",
+ "alice-history",
  "alice-kinematics",
  "alice-ledger",
+ "alice-legal",
  "alice-manga",
  "alice-ml",
  "alice-motion",
+ "alice-neural",
  "alice-physics",
+ "alice-presence",
  "alice-print",
  "alice-queue",
  "alice-risk",
@@ -318,6 +338,7 @@ dependencies = [
  "alice-search",
  "alice-semantic-telemetry",
  "alice-settlement",
+ "alice-space",
  "alice-sync",
  "alice-synth",
  "alice-text",
@@ -355,6 +376,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-energy"
+version = "0.1.0"
+
+[[package]]
 name = "alice-fix"
 version = "0.1.0"
 dependencies = [
@@ -363,6 +388,10 @@ dependencies = [
 
 [[package]]
 name = "alice-font"
+version = "0.1.0"
+
+[[package]]
+name = "alice-history"
 version = "0.1.0"
 
 [[package]]
@@ -375,6 +404,10 @@ version = "0.1.0"
 dependencies = [
  "alice-sync",
 ]
+
+[[package]]
+name = "alice-legal"
+version = "0.1.0"
 
 [[package]]
 name = "alice-manga"
@@ -395,11 +428,19 @@ name = "alice-motion"
 version = "0.1.0"
 
 [[package]]
+name = "alice-neural"
+version = "0.1.0"
+
+[[package]]
 name = "alice-physics"
 version = "0.3.0"
 dependencies = [
  "alice-db",
 ]
+
+[[package]]
+name = "alice-presence"
+version = "0.1.0"
 
 [[package]]
 name = "alice-print"
@@ -463,6 +504,10 @@ version = "0.1.0"
 dependencies = [
  "alice-ledger",
 ]
+
+[[package]]
+name = "alice-space"
+version = "0.1.0"
 
 [[package]]
 name = "alice-sync"
