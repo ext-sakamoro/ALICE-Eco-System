@@ -33,6 +33,9 @@
 //!
 //! Path J (DNS + API Gateway):
 //!   [ALICE-DNS] → [ALICE-API] → [ALICE-Auth] / [ALICE-CDN] / [ALICE-Cache]
+//!
+//! Path K (Financial Trading):
+//!   [ALICE-FIX] → [ALICE-Risk] → [ALICE-Ledger] → [ALICE-Settlement] → [ALICE-DB]
 //! ```
 
 pub mod hash;
@@ -80,6 +83,10 @@ pub mod bridge_sync;
 pub mod bridge_cache;
 pub mod bridge_sdf;
 pub mod bridge_semantic_telemetry;
+pub mod bridge_ledger;
+pub mod bridge_risk_ext;
+pub mod bridge_fix_ext;
+pub mod bridge_settlement_ext;
 #[cfg(feature = "edge-commercial")]
 pub mod bridge_edge_commercial;
 #[cfg(feature = "streaming-protocol-commercial")]
@@ -106,3 +113,9 @@ pub use alice_kinematics::{ArmChain, Intent, Vec3k};
 pub use alice_motion::{CubicBezier, MotionPlan, Vec3 as MotionVec3};
 pub use alice_rtos::{Kernel, Task};
 pub use alice_vcs::{Repository, AstNodeKind};
+
+// Re-export financial domain types
+pub use alice_ledger::{OrderBook, Order, OrderId, Side, Fill, Position, PositionTracker};
+pub use alice_risk::{PreTradeChecker, RiskLimits, RiskReject, MarginCalculator, CircuitBreaker};
+pub use alice_fix::{FixMessage, FixBuilder, FixSession};
+pub use alice_settlement::{Trade, SettlementStatus, NettingEngine, ClearingHouse, SettlementJournal};

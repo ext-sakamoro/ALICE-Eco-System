@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (35 Components)                     │
+│                          ALICE Ecosystem (42 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -21,10 +21,10 @@
 │  │ RTOS              │  └────────────────┘  │ Eco-System             │  │
 │  └───────────────────┘                       └────────────────────────┘  │
 │                                                                             │
-│  ┌──── Motion & VCS ─┐                                                     │
-│  │ Motion  VCS      │                                                     │
-│  │ Kinematics       │                                                     │
-│  └───────────────────┘                                                     │
+│  ┌──── Motion & VCS ─┐  ┌─── Financial ───┐                               │
+│  │ Motion  VCS      │  │ Ledger   Risk   │                               │
+│  │ Kinematics       │  │ FIX   Settlement│                               │
+│  └───────────────────┘  └────────────────┘                               │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -91,6 +91,15 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-VCS](https://github.com/ext-sakamoro/ALICE-VCS) | v0.1.0 | AST Semantic Version Control | Tree diff, 3-way merge, content-addressed snapshots, FNV-1a Merkle | AGPL-3.0 |
 | [ALICE-Kinematics](https://github.com/ext-sakamoro/ALICE-Kinematics) | v0.1.0 | Human Motion Intent Compression | 7-DoF arm, jerk minimization, 8-byte intent packets, 10,000x compression | Open Core (MIT decoder) |
 
+### Financial Trading
+
+| Component | Version | Description | Feature | License |
+|-----------|---------|-------------|---------|---------|
+| [ALICE-Ledger](https://github.com/ext-sakamoro/ALICE-Ledger) | v0.1.0 | Price-Time Priority Order Book | BTreeMap LOB, FIFO matching, FOK/IOC/GTC/GTD, position tracking, i128 PnL | AGPL-3.0 |
+| [ALICE-Risk](https://github.com/ext-sakamoro/ALICE-Risk) | v0.1.0 | Pre-Trade Risk Engine | Position/notional/order limits, margin calculator, circuit breaker, i128 bps | AGPL-3.0 |
+| [ALICE-FIX](https://github.com/ext-sakamoro/ALICE-FIX) | v0.1.0 | FIX Protocol 4.4/5.0 Engine | SOH parser, checksum validation, session sequence tracking, Ledger type conversion | MIT |
+| [ALICE-Settlement](https://github.com/ext-sakamoro/ALICE-Settlement) | v0.1.0 | Post-Trade Settlement Engine | Bilateral netting, clearing house, margin checks, append-only journal, i128 net payments | AGPL-3.0 |
+
 ### Analytics & Visualization
 
 | Component | Version | Description | Feature | License |
@@ -111,9 +120,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 235 bridges, 10 pipeline paths (A-J), 31 crates connected, 227 tests | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 255 bridges, 11 pipeline paths (A-K), 42 crates connected, 409 tests | MIT |
 
-**Total: 35 components** | AGPL-3.0: 18 | MIT: 8 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
+**Total: 39 components** | AGPL-3.0: 21 | MIT: 9 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
 
 ## Quick Start
 
@@ -236,7 +245,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **235 cross-crate bridges** across 31 bridge files and 10 pipeline paths (A-J), connecting 31 crates with 227 tests. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **255 cross-crate bridges** across 41 bridge files and 11 pipeline paths (A-K), connecting 42 crates with 409 tests. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -274,11 +283,15 @@ The ALICE ecosystem contains **235 cross-crate bridges** across 31 bridge files 
 | **ASP Bridges** | ASP→Cache, ASP→Codec, ASP→SDF, ASP→View, ASP→CDN, ASP→Analytics | Streaming protocol to ecosystem |
 | **Edge Ext Bridges** | Edge→DB, Edge→View, Edge→ASP, Edge→Analytics | Extended sensor model integration |
 | **CDN Ext Bridges** | CDN→Cache, CDN→Physics, CDN→ASP, CDN→Analytics | Extended content delivery integration |
-| **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS | End-to-end cross-crate pipelines |
+| **Ledger Bridges** | Ledger→Analytics (Order, Fill, PnL), Ledger→DB (Fill), Ledger→Cache (Position) | Order book event integration |
+| **Risk Bridges** | Risk→Analytics (Reject), Risk→Cache (Limits), Risk→Semantic (Reject severity) | Pre-trade risk telemetry |
+| **FIX Bridges** | FIX→Analytics (Message), Ledger→FIX (ExecReport), FIX→Semantic (Session) | FIX protocol integration |
+| **Settlement Bridges** | Settlement→DB (Trade), Settlement→Analytics (Journal), Settlement→Queue (Obligation), Settlement→Semantic (Trade) | Post-trade settlement integration |
+| **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS, **K: Financial Trading** | End-to-end cross-crate pipelines |
 
 ### Hardware-Native Optimization
 
-All 235 bridge functions are optimized following the ALICE hardware-native methodology:
+All 255 bridge functions are optimized following the ALICE hardware-native methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|
@@ -793,6 +806,50 @@ Cross-crate bridges:
 - **RTOS → Edge** — Real-time actuator scheduling for printer stepper control
 - **Synth → RTOS** — Audio feedback scheduling for print status notifications
 
+## Demo: Financial Trading Pipeline — Path K (4 Crates)
+
+ALICE-FIX + ALICE-Risk + ALICE-Ledger + ALICE-Settlement combine for a full-stack financial trading pipeline from FIX protocol ingestion through order matching, risk management, and post-trade settlement.
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+│  FIX Client │────▶│  ALICE-FIX   │────▶│  ALICE-Risk  │────▶│ALICE-Ledger │
+│  NewOrder   │     │  Parser +    │     │  PreTrade    │     │  OrderBook  │
+│  MsgType D  │     │  Session mgmt│     │  Limits/CB   │     │  LOB Match  │
+└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
+                                                                     │
+                                                                     │ Fill
+                                                                     ▼
+                    ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
+                    │  ALICE-FIX   │◀────│  ALICE-      │◀────│  Position   │
+                    │  ExecReport  │     │  Settlement  │     │  Tracker    │
+                    │  MsgType 8   │     │  Netting +   │     │  PnL calc   │
+                    └──────────────┘     │  Clearing    │     └─────────────┘
+                                        └──────────────┘
+```
+
+| Metric | Traditional | ALICE Financial Pipeline |
+|--------|-----------|------------------------|
+| Order matching | String-based FIX parsing | **BTreeMap LOB** price-time priority |
+| Risk check | External risk system | **Inline** pre-trade check (branchless) |
+| Price arithmetic | 64-bit float (drift) | **i64 ticks** (deterministic) |
+| PnL calculation | Float accumulation | **i128 intermediate** (no overflow) |
+| Netting | End-of-day batch | **Real-time** bilateral netting |
+
+Cross-crate bridges (15 total):
+- **FIX → Analytics** — `fix_message_to_analytics()` protocol metrics (msg_type_hash, field_count)
+- **FIX → Semantic** — `fix_session_to_semantic()` session lifecycle telemetry
+- **Ledger → FIX** — `ledger_fill_to_fix_exec()` Fill → ExecutionReport (branchless exec_type)
+- **Ledger → Analytics** — `ledger_order_to_analytics()`, `ledger_fill_to_analytics()`, `ledger_position_to_analytics()`
+- **Ledger → DB** — `ledger_fill_to_db_record()` fill persistence with symbol_hash
+- **Ledger → Cache** — `ledger_position_to_cache()` branchless TTL (volatile=5s, stable=30s)
+- **Risk → Analytics** — `risk_reject_to_analytics()` reject code telemetry
+- **Risk → Cache** — `risk_limits_to_cache()` limit configuration caching (TTL=3600s)
+- **Risk → Semantic** — `risk_reject_to_semantic()` severity-classified reject events
+- **Settlement → DB** — `settlement_trade_to_db()` trade record persistence
+- **Settlement → Analytics** — `settlement_journal_entry_to_analytics()` journal event telemetry
+- **Settlement → Queue** — `settlement_obligation_to_queue()` high-priority clearing messages
+- **Settlement → Semantic** — `settlement_trade_to_semantic()` trade lifecycle telemetry
+
 ## Use Cases
 
 ### IoT / Edge Computing
@@ -818,6 +875,13 @@ Cross-crate bridges:
 - CSG operations natively supported (no boolean mesh repair)
 - Bambu Lab .3mf packaging for one-click print
 - LLM-assisted model generation (ALICE-SDF `llm_schema` → ALICE-Print)
+
+### Financial Trading
+- Deterministic order matching with price-time priority (BTreeMap LOB)
+- Pre-trade risk management with circuit breakers and margin calculation
+- FIX protocol 4.4/5.0 session management with sequence tracking
+- Post-trade bilateral netting and clearing house settlement
+- Audit trail via append-only settlement journal
 
 ### Benefits
 - **Bandwidth**: 99% reduction in data transmission
@@ -910,6 +974,14 @@ Cross-crate bridges:
 │  ║  │ALICE-Kinematics   │  7-DoF arm, jerk min., 8-byte intent packets    ║   │
 │  ║  │ MIT decoder       │  Open Core (encoder = AGPL-3.0)                  ║   │
 │  ║  └───────────────────┘                                                  ║   │
+│  ║                                                                          ║   │
+│  ║  LAYER 1b: Financial Trading                                            ║   │
+│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌─────────────┐  ║   │
+│  ║  │ALICE-Ledger   │ │  ALICE-Risk   │ │  ALICE-FIX    │ │  ALICE-     │  ║   │
+│  ║  │ BTreeMap LOB  │ │ PreTrade     │ │ FIX 4.4/5.0  │ │ Settlement  │  ║   │
+│  ║  │ Price-Time    │ │ CircuitBreak │ │ SOH parser   │ │ Netting +   │  ║   │
+│  ║  │ i64 tick, i128│ │ i128 margin  │ │ Session mgmt │ │ Clearing    │  ║   │
+│  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
 │  ╚══════════════════════════════════════════════════════════════════════════╝   │
 │                                                                                  │
 │  All components: Rust | no_std compatible | Zero allocation | Deterministic      │
@@ -983,7 +1055,7 @@ Cross-crate `path = "../ALICE-*"` dependencies are resolved in CI by creating li
     echo "" > ../ALICE-Physics/src/lib.rs
 ```
 
-This enables each crate to build independently in CI without requiring the full 35-component workspace.
+This enables each crate to build independently in CI without requiring the full 42-component workspace.
 
 ## License Strategy — 3-Layer Monetization Architecture
 
@@ -1008,6 +1080,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  │ ALICE-Container  ALICE-ML  ALICE-TRT  ALICE-Physics     │     │
 │  │ ALICE-Sync  ALICE-Cloud-Gateway  ALICE-Analytics        │     │
 │  │ ALICE-DNS  ALICE-Codec  ALICE-RTOS  ALICE-VCS           │     │
+│  │ ALICE-Ledger  ALICE-Risk  ALICE-Settlement              │     │
 │  │ Distribution servers / Infrastructure / Backend         │     │
 │  │ AGPL requires source disclosure if used in SaaS         │     │
 │  └─────────────────────────────────────────────────────────┘     │
@@ -1016,7 +1089,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  ┌─────────────────────────────────────────────────────────┐     │
 │  │ ALICE-SDF  ALICE-Edge  ALICE-Voice  ALICE-View          │     │
 │  │ ALICE-Streaming-Protocol  ALICE-Eco-System              │     │
-│  │ ALICE-Synth  ALICE-Motion  ALICE-Font                    │     │
+│  │ ALICE-Synth  ALICE-Motion  ALICE-Font  ALICE-FIX        │     │
 │  │ Format definitions / Viewers / Renderers / Decoders     │     │
 │  │ MIT = maximum adoption, anyone can build readers        │     │
 │  └─────────────────────────────────────────────────────────┘     │
@@ -1037,6 +1110,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 - **Anime**: Netflix, Amazon Prime Video, Crunchyroll — ALICE-Animation replaces 200-500 MB episodes with 20-50 KB ASDF packages
 - **Manga**: ピッコマ, LINE Manga, Kindle — ALICE-Manga replaces 2-5 MB raster pages with 2-10 KB resolution-independent SDF pages
 - **3D Printing**: Bambu Lab, Prusa — ALICE-Print skips mesh intermediary entirely
+- **Financial Trading**: Hedge funds, prop trading firms — ALICE-Ledger/Risk/FIX/Settlement provide deterministic i64/i128 matching + settlement (MIT FIX decoder for adoption, AGPL infrastructure for SaaS protection)
 
 ### Revenue Model
 

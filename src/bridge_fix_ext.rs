@@ -1,0 +1,379 @@
+//! FIX extension bridges — ALICE-FIX ↔ Analytics, Ledger, Semantic Telemetry
+//!
+//! 3 bridges connecting ALICE-FIX to the ALICE ecosystem:
+//!
+//! - Bridge 1: FIX Message → Analytics (protocol metrics)
+//! - Bridge 2: Ledger Fill → FIX ExecutionReport (outbound notification)
+//! - Bridge 3: FIX Session → Semantic Telemetry (session lifecycle events)
+
+use alice_fix::{FixMessage, FixSession};
+use alice_ledger::Fill;
+
+// ---------------------------------------------------------------------------
+// FNV-1a hash — deterministic, branch-free, no external dependency
+// ---------------------------------------------------------------------------
+
+#[inline(always)]
+fn fnv1a(data: &[u8]) -> u64 {
+    let mut h: u64 = 0xcbf29ce484222325;
+    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    h
+}
+
+// ---------------------------------------------------------------------------
+// Bridge 1: FIX Message → Analytics (protocol metrics)
+// ---------------------------------------------------------------------------
+
+/// Protocol metrics derived from a parsed FIX message, ready for
+/// ALICE-Analytics ingestion.
+pub struct FixAnalyticsMessageEvent {
+    /// Content hash over msg_type bytes and field_count bytes.
+    pub content_hash: u64,
+    /// FNV-1a hash of the message type string (e.g. "D", "8", "A").
+    pub msg_type_hash: u64,
+    /// Number of tag/value fields present in the message.
+    pub field_count: u32,
+    /// Timestamp supplied by the caller in nanoseconds since the Unix epoch.
+    pub timestamp_ns: u64,
+}
+
+/// Convert a parsed [`FixMessage`] into an analytics event.
+///
+/// `content_hash` is computed over the concatenation of the msg_type bytes
+/// and the little-endian bytes of `field_count`, giving a compact fingerprint
+/// that distinguishes message types and payload sizes.
+#[inline]
+pub fn fix_message_to_analytics(msg: &FixMessage, timestamp_ns: u64) -> FixAnalyticsMessageEvent {
+    let field_count = msg.fields.len() as u32;
+    let msg_type_hash = fnv1a(msg.msg_type.as_bytes());
+
+    // Hash input: msg_type bytes || field_count as 4-byte LE
+    let field_count_bytes = field_count.to_le_bytes();
+    let hash_data: Vec<u8> = msg.msg_type.as_bytes()
+        .iter()
+        .copied()
+        .chain(field_count_bytes.iter().copied())
+        .collect();
+
+    FixAnalyticsMessageEvent {
+        content_hash: fnv1a(&hash_data),
+        msg_type_hash,
+        field_count,
+        timestamp_ns,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Bridge 2: Ledger Fill → FIX ExecutionReport (outbound notification)
+// ---------------------------------------------------------------------------
+
+/// FIX ExecutionReport (MsgType "8") data derived from a ledger fill event.
+///
+/// This struct carries the minimum fields required to construct an outbound
+/// ExecutionReport notification without referencing the full FIX wire format.
+pub struct LedgerFixExecReport {
+    /// Content hash over maker_id, taker_id, price, and quantity bytes.
+    pub content_hash: u64,
+    /// Inner u64 of the maker [`OrderId`](alice_ledger::OrderId).
+    pub maker_id: u64,
+    /// Inner u64 of the taker [`OrderId`](alice_ledger::OrderId).
+    pub taker_id: u64,
+    /// Execution price in ticks (maker's limit price).
+    pub fill_price: i64,
+    /// Quantity matched in this fill event.
+    pub fill_qty: u64,
+    /// ExecType tag value: 1 = PartialFill, 2 = Fill.
+    pub exec_type: u8,
+}
+
+/// Convert a ledger [`Fill`] into a FIX ExecutionReport event.
+///
+/// `exec_type` is computed branchlessly: `1 + fully_filled as u8` yields
+/// `1` (PartialFill) when `fully_filled` is `false` and `2` (Fill) when
+/// `fully_filled` is `true`.
+#[inline]
+pub fn ledger_fill_to_fix_exec(fill: &Fill, fully_filled: bool) -> LedgerFixExecReport {
+    let maker_id = fill.maker_id.0;
+    let taker_id = fill.taker_id.0;
+
+    // Branchless ExecType: false → 1 (PartialFill), true → 2 (Fill).
+    let exec_type = 1 + fully_filled as u8;
+
+    // Hash input: maker_id || taker_id || price || qty (all little-endian)
+    let mut hash_data = [0u8; 32];
+    hash_data[0..8].copy_from_slice(&maker_id.to_le_bytes());
+    hash_data[8..16].copy_from_slice(&taker_id.to_le_bytes());
+    hash_data[16..24].copy_from_slice(&fill.price.to_le_bytes());
+    hash_data[24..32].copy_from_slice(&fill.quantity.to_le_bytes());
+
+    LedgerFixExecReport {
+        content_hash: fnv1a(&hash_data),
+        maker_id,
+        taker_id,
+        fill_price: fill.price,
+        fill_qty: fill.quantity,
+        exec_type,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Bridge 3: FIX Session → Semantic Telemetry (session lifecycle events)
+// ---------------------------------------------------------------------------
+
+/// Semantic telemetry event derived from a FIX session snapshot.
+///
+/// Because [`FixSession`] does not expose its sender/target component IDs or
+/// sequence numbers through public getters, `sender_hash` and `target_hash`
+/// are set to `0` and `outgoing_seq`/`incoming_seq` are set to `0`. The
+/// `content_hash` is computed over `timestamp_ns` and the session state
+/// discriminant, providing a unique fingerprint per lifecycle transition.
+pub struct FixSessionSemanticEvent {
+    /// Content hash over timestamp and session state discriminant.
+    pub content_hash: u64,
+    /// FNV-1a hash of the sender component ID, or `0` if not accessible.
+    pub sender_hash: u64,
+    /// FNV-1a hash of the target component ID, or `0` if not accessible.
+    pub target_hash: u64,
+    /// Next outgoing sequence number, or `0` if not accessible.
+    pub outgoing_seq: u64,
+    /// Next incoming sequence number expected, or `0` if not accessible.
+    pub incoming_seq: u64,
+    /// Timestamp supplied by the caller in nanoseconds since the Unix epoch.
+    pub timestamp_ns: u64,
+}
+
+/// Convert a [`FixSession`] snapshot into a semantic telemetry event.
+///
+/// Only the session state is accessible through the public API.  The state
+/// discriminant (0 = Disconnected, 1 = LogonSent, 2 = Active, 3 = LogoutSent)
+/// is packed with `timestamp_ns` to form the `content_hash`.
+#[inline]
+pub fn fix_session_to_semantic(session: &FixSession, timestamp_ns: u64) -> FixSessionSemanticEvent {
+    use alice_fix::SessionState;
+
+    // Map SessionState to a u8 discriminant for hashing.
+    let state_disc: u8 = match session.state() {
+        SessionState::Disconnected => 0,
+        SessionState::LogonSent    => 1,
+        SessionState::Active       => 2,
+        SessionState::LogoutSent   => 3,
+    };
+
+    // Hash input: timestamp_ns (8 bytes) || state discriminant (1 byte)
+    let mut hash_data = [0u8; 9];
+    hash_data[0..8].copy_from_slice(&timestamp_ns.to_le_bytes());
+    hash_data[8] = state_disc;
+
+    FixSessionSemanticEvent {
+        content_hash: fnv1a(&hash_data),
+        sender_hash:  0,
+        target_hash:  0,
+        outgoing_seq: 0,
+        incoming_seq: 0,
+        timestamp_ns,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alice_fix::{FixMessage, FixSession};
+    use alice_ledger::{Fill, OrderId};
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    fn make_fix_message(msg_type: &str, fields: &[(u32, &str)]) -> FixMessage {
+        let mut msg = FixMessage::new("FIX.4.4", msg_type);
+        for &(tag, val) in fields {
+            msg.set(tag, val);
+        }
+        msg
+    }
+
+    fn make_fill(maker: u64, taker: u64, price: i64, qty: u64) -> Fill {
+        Fill {
+            maker_id: OrderId(maker),
+            taker_id: OrderId(taker),
+            price,
+            quantity: qty,
+            timestamp_ns: 0,
+        }
+    }
+
+    // ── Bridge 1: FIX Message → Analytics ──────────────────────────────
+
+    #[test]
+    fn test_message_to_analytics() {
+        let msg = make_fix_message("D", &[
+            (49, "ALICE"),
+            (56, "BROKER"),
+            (34, "1"),
+            (11, "42"),
+            (55, "BTCUSD"),
+        ]);
+        let ts = 1_700_000_000_000_000_000u64;
+        let ev = fix_message_to_analytics(&msg, ts);
+
+        // content_hash must be non-zero and deterministic.
+        assert_ne!(ev.content_hash, 0);
+        assert_eq!(ev.timestamp_ns, ts);
+        assert_eq!(ev.field_count, 5);
+
+        // msg_type_hash must equal fnv1a(b"D").
+        let expected_type_hash = {
+            let mut h: u64 = 0xcbf29ce484222325;
+            h ^= b'D' as u64;
+            h = h.wrapping_mul(0x100000001b3);
+            h
+        };
+        assert_eq!(ev.msg_type_hash, expected_type_hash);
+
+        // Different message types must produce different type hashes.
+        let msg2 = make_fix_message("8", &[(49, "A"), (56, "B")]);
+        let ev2 = fix_message_to_analytics(&msg2, ts);
+        assert_ne!(ev.msg_type_hash, ev2.msg_type_hash);
+
+        // Different field counts must produce different content hashes.
+        assert_ne!(ev.content_hash, ev2.content_hash);
+    }
+
+    #[test]
+    fn test_message_to_analytics_empty_message() {
+        let msg = make_fix_message("0", &[]);
+        let ev = fix_message_to_analytics(&msg, 0);
+        assert_eq!(ev.field_count, 0);
+        // Hash over "0" bytes + 0u32 LE must be non-zero.
+        assert_ne!(ev.content_hash, 0);
+    }
+
+    #[test]
+    fn test_message_to_analytics_deterministic() {
+        let msg = make_fix_message("A", &[(49, "ALICE"), (56, "BROKER"), (34, "1")]);
+        let ev1 = fix_message_to_analytics(&msg, 12345);
+        let ev2 = fix_message_to_analytics(&msg, 12345);
+        assert_eq!(ev1.content_hash, ev2.content_hash);
+        assert_eq!(ev1.msg_type_hash, ev2.msg_type_hash);
+        assert_eq!(ev1.field_count, ev2.field_count);
+    }
+
+    // ── Bridge 2: Ledger Fill → FIX ExecutionReport ─────────────────────
+
+    #[test]
+    fn test_fill_to_fix_exec_partial() {
+        let fill = make_fill(1, 2, 50_000, 5);
+        let ev = ledger_fill_to_fix_exec(&fill, false);
+
+        assert_ne!(ev.content_hash, 0);
+        assert_eq!(ev.maker_id, 1);
+        assert_eq!(ev.taker_id, 2);
+        assert_eq!(ev.fill_price, 50_000);
+        assert_eq!(ev.fill_qty, 5);
+        // PartialFill = 1
+        assert_eq!(ev.exec_type, 1);
+    }
+
+    #[test]
+    fn test_fill_to_fix_exec_full() {
+        let fill = make_fill(10, 20, 99_999, 100);
+        let ev = ledger_fill_to_fix_exec(&fill, true);
+
+        assert_ne!(ev.content_hash, 0);
+        assert_eq!(ev.maker_id, 10);
+        assert_eq!(ev.taker_id, 20);
+        assert_eq!(ev.fill_price, 99_999);
+        assert_eq!(ev.fill_qty, 100);
+        // Fill = 2
+        assert_eq!(ev.exec_type, 2);
+    }
+
+    #[test]
+    fn test_fill_exec_type_branchless_invariant() {
+        // Verify that exec_type = 1 + fully_filled as u8 holds for both cases.
+        let fill = make_fill(1, 2, 100, 1);
+        let partial = ledger_fill_to_fix_exec(&fill, false);
+        let full    = ledger_fill_to_fix_exec(&fill, true);
+        assert_eq!(partial.exec_type, 1);
+        assert_eq!(full.exec_type,    2);
+    }
+
+    #[test]
+    fn test_fill_content_hash_changes_with_price() {
+        let fill1 = make_fill(1, 2, 50_000, 10);
+        let fill2 = make_fill(1, 2, 51_000, 10);
+        let ev1 = ledger_fill_to_fix_exec(&fill1, false);
+        let ev2 = ledger_fill_to_fix_exec(&fill2, false);
+        assert_ne!(ev1.content_hash, ev2.content_hash);
+    }
+
+    #[test]
+    fn test_fill_content_hash_changes_with_qty() {
+        let fill1 = make_fill(3, 4, 10_000, 5);
+        let fill2 = make_fill(3, 4, 10_000, 6);
+        let ev1 = ledger_fill_to_fix_exec(&fill1, false);
+        let ev2 = ledger_fill_to_fix_exec(&fill2, false);
+        assert_ne!(ev1.content_hash, ev2.content_hash);
+    }
+
+    // ── Bridge 3: FIX Session → Semantic Telemetry ──────────────────────
+
+    #[test]
+    fn test_session_to_semantic_disconnected() {
+        let session = FixSession::new("ALICE", "BROKER", "FIX.4.4");
+        let ts = 1_000_000u64;
+        let ev = fix_session_to_semantic(&session, ts);
+
+        assert_ne!(ev.content_hash, 0);
+        assert_eq!(ev.timestamp_ns, ts);
+        // Fields not accessible through public API default to 0.
+        assert_eq!(ev.sender_hash,  0);
+        assert_eq!(ev.target_hash,  0);
+        assert_eq!(ev.outgoing_seq, 0);
+        assert_eq!(ev.incoming_seq, 0);
+    }
+
+    #[test]
+    fn test_session_to_semantic_logon_sent() {
+        let mut session = FixSession::new("ALICE", "BROKER", "FIX.4.4");
+        let _ = session.build_logon();
+        let ts = 2_000_000u64;
+        let ev = fix_session_to_semantic(&session, ts);
+
+        assert_ne!(ev.content_hash, 0);
+        assert_eq!(ev.timestamp_ns, ts);
+    }
+
+    #[test]
+    fn test_session_to_semantic_different_timestamps_differ() {
+        let session = FixSession::new("ALICE", "BROKER", "FIX.4.4");
+        let ev1 = fix_session_to_semantic(&session, 1_000);
+        let ev2 = fix_session_to_semantic(&session, 2_000);
+        // Different timestamps must produce different content hashes.
+        assert_ne!(ev1.content_hash, ev2.content_hash);
+    }
+
+    #[test]
+    fn test_session_to_semantic_state_change_changes_hash() {
+        let mut session = FixSession::new("ALICE", "BROKER", "FIX.4.4");
+        let ts = 5_000u64;
+
+        let ev_disconnected = fix_session_to_semantic(&session, ts);
+        let _ = session.build_logon();
+        let ev_logon_sent = fix_session_to_semantic(&session, ts);
+
+        // Same timestamp but different state must produce different hashes.
+        assert_ne!(ev_disconnected.content_hash, ev_logon_sent.content_hash);
+    }
+
+    #[test]
+    fn test_session_to_semantic_deterministic() {
+        let session = FixSession::new("X", "Y", "FIX.4.4");
+        let ts = 9_999u64;
+        let ev1 = fix_session_to_semantic(&session, ts);
+        let ev2 = fix_session_to_semantic(&session, ts);
+        assert_eq!(ev1.content_hash, ev2.content_hash);
+    }
+}

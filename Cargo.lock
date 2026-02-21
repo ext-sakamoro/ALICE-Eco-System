@@ -302,18 +302,22 @@ dependencies = [
  "alice-edge",
  "alice-edge-enterprise",
  "alice-edge-firewall",
+ "alice-fix",
  "alice-font",
  "alice-kinematics",
+ "alice-ledger",
  "alice-manga",
  "alice-ml",
  "alice-motion",
  "alice-physics",
  "alice-print",
  "alice-queue",
+ "alice-risk",
  "alice-rtos",
  "alice-sdf",
  "alice-search",
  "alice-semantic-telemetry",
+ "alice-settlement",
  "alice-sync",
  "alice-synth",
  "alice-text",
@@ -351,12 +355,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-fix"
+version = "0.1.0"
+dependencies = [
+ "alice-ledger",
+]
+
+[[package]]
 name = "alice-font"
 version = "0.1.0"
 
 [[package]]
 name = "alice-kinematics"
 version = "0.1.0"
+
+[[package]]
+name = "alice-ledger"
+version = "0.1.0"
+dependencies = [
+ "alice-sync",
+]
 
 [[package]]
 name = "alice-manga"
@@ -402,6 +420,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-risk"
+version = "0.1.0"
+dependencies = [
+ "alice-ledger",
+]
+
+[[package]]
 name = "alice-rtos"
 version = "0.1.0"
 
@@ -431,6 +456,13 @@ version = "0.1.0"
 [[package]]
 name = "alice-semantic-telemetry"
 version = "0.1.0"
+
+[[package]]
+name = "alice-settlement"
+version = "0.1.0"
+dependencies = [
+ "alice-ledger",
+]
 
 [[package]]
 name = "alice-sync"
