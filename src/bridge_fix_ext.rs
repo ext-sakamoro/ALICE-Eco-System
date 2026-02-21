@@ -175,6 +175,75 @@ pub fn fix_session_to_semantic(session: &FixSession, timestamp_ns: u64) -> FixSe
 }
 
 // ---------------------------------------------------------------------------
+// Bridge 4: FixMessage → Risk pre-trade check input
+// ---------------------------------------------------------------------------
+
+/// Pre-trade risk check input derived from a parsed FIX NewOrderSingle message.
+///
+/// Extracts the order quantity, price, side, and symbol hash from the FIX
+/// message fields so the risk layer can perform checks without inspecting
+/// the raw tag/value map on the hot path.
+pub struct FixRiskInput {
+    /// Content hash over order_qty, price, side, and symbol_hash bytes.
+    pub content_hash: u64,
+    /// Order quantity from FIX tag 38 (OrderQty), or 0 if absent.
+    pub order_qty: u64,
+    /// Limit price from FIX tag 44 (Price) as f64 ticks, or 0.0 if absent.
+    pub price: f64,
+    /// Side byte from FIX tag 54: b'1' = Buy, b'2' = Sell, 0 if absent.
+    pub side: u8,
+    /// FNV-1a hash of the symbol string from FIX tag 55, or 0 if absent.
+    pub symbol_hash: u64,
+    /// True when order_qty > 1000 or price > 10000.0, indicating that a
+    /// margin check is required before the order may proceed.
+    pub requires_margin_check: bool,
+}
+
+/// Convert a parsed [`FixMessage`] into a [`FixRiskInput`] for pre-trade risk evaluation.
+///
+/// FIX tag mapping:
+/// - Tag 38 (OrderQty)  → `order_qty`
+/// - Tag 44 (Price)     → `price`
+/// - Tag 54 (Side)      → `side` (first byte of the value string)
+/// - Tag 55 (Symbol)    → `symbol_hash` (FNV-1a of the symbol string)
+///
+/// `content_hash` is computed over `order_qty || price || side || symbol_hash`
+/// in little-endian byte order.
+#[inline]
+pub fn fix_message_to_risk(msg: &FixMessage) -> FixRiskInput {
+    use alice_fix::tag;
+
+    let order_qty: u64 = msg.get_u64(tag::ORDER_QTY).unwrap_or(0);
+    let price: f64 = msg.get(tag::PRICE)
+        .and_then(|s| s.parse::<f64>().ok())
+        .unwrap_or(0.0);
+    let side: u8 = msg.get(tag::SIDE)
+        .and_then(|s| s.bytes().next())
+        .unwrap_or(0);
+    let symbol_hash: u64 = msg.get(tag::SYMBOL)
+        .map(|s| fnv1a(s.as_bytes()))
+        .unwrap_or(0);
+
+    let requires_margin_check = order_qty > 1000 || price > 10000.0;
+
+    // Hash input: order_qty (8) || price bits (8) || side (1) || symbol_hash (8)
+    let mut hash_data = [0u8; 25];
+    hash_data[0..8].copy_from_slice(&order_qty.to_le_bytes());
+    hash_data[8..16].copy_from_slice(&price.to_bits().to_le_bytes());
+    hash_data[16] = side;
+    hash_data[17..25].copy_from_slice(&symbol_hash.to_le_bytes());
+
+    FixRiskInput {
+        content_hash: fnv1a(&hash_data),
+        order_qty,
+        price,
+        side,
+        symbol_hash,
+        requires_margin_check,
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -375,5 +444,99 @@ mod tests {
         let ev1 = fix_session_to_semantic(&session, ts);
         let ev2 = fix_session_to_semantic(&session, ts);
         assert_eq!(ev1.content_hash, ev2.content_hash);
+    }
+
+    // ── Bridge 4: FIX Message → Risk pre-trade check input ──────────────
+
+    #[test]
+    fn test_fix_message_to_risk_standard_order() {
+        let mut msg = FixMessage::new("FIX.4.4", "D");
+        msg.set(38, "500");      // OrderQty
+        msg.set(44, "9500.0");   // Price
+        msg.set(54, "1");        // Side: Buy
+        msg.set(55, "BTCUSD");   // Symbol
+
+        let ri = fix_message_to_risk(&msg);
+
+        assert_ne!(ri.content_hash, 0);
+        assert_eq!(ri.order_qty, 500);
+        assert_eq!(ri.price, 9500.0);
+        assert_eq!(ri.side, b'1');
+        // symbol_hash must be non-zero for a non-empty symbol.
+        assert_ne!(ri.symbol_hash, 0);
+        // qty=500 <= 1000 and price=9500 <= 10000 → no margin check.
+        assert!(!ri.requires_margin_check);
+    }
+
+    #[test]
+    fn test_fix_message_to_risk_large_qty_triggers_margin() {
+        let mut msg = FixMessage::new("FIX.4.4", "D");
+        msg.set(38, "1001");     // OrderQty > 1000
+        msg.set(44, "100.0");    // Price
+        msg.set(54, "2");        // Side: Sell
+        msg.set(55, "ETHUSD");
+
+        let ri = fix_message_to_risk(&msg);
+
+        assert_eq!(ri.order_qty, 1001);
+        assert_eq!(ri.side, b'2');
+        // qty > 1000 → requires_margin_check = true.
+        assert!(ri.requires_margin_check);
+    }
+
+    #[test]
+    fn test_fix_message_to_risk_high_price_triggers_margin() {
+        let mut msg = FixMessage::new("FIX.4.4", "D");
+        msg.set(38, "10");       // OrderQty <= 1000
+        msg.set(44, "10001.0");  // Price > 10000.0
+        msg.set(54, "1");
+        msg.set(55, "SOLUSD");
+
+        let ri = fix_message_to_risk(&msg);
+
+        assert_eq!(ri.order_qty, 10);
+        assert_eq!(ri.price, 10001.0);
+        // price > 10000 → requires_margin_check = true.
+        assert!(ri.requires_margin_check);
+    }
+
+    #[test]
+    fn test_fix_message_to_risk_missing_fields_default_to_zero() {
+        let msg = FixMessage::new("FIX.4.4", "D");
+
+        let ri = fix_message_to_risk(&msg);
+
+        assert_eq!(ri.order_qty, 0);
+        assert_eq!(ri.price, 0.0);
+        assert_eq!(ri.side, 0);
+        assert_eq!(ri.symbol_hash, 0);
+        assert!(!ri.requires_margin_check);
+    }
+
+    #[test]
+    fn test_fix_message_to_risk_deterministic() {
+        let mut msg = FixMessage::new("FIX.4.4", "D");
+        msg.set(38, "200").set(44, "5000.0").set(54, "1").set(55, "XRPUSD");
+
+        let ri1 = fix_message_to_risk(&msg);
+        let ri2 = fix_message_to_risk(&msg);
+
+        assert_eq!(ri1.content_hash, ri2.content_hash);
+        assert_eq!(ri1.symbol_hash,  ri2.symbol_hash);
+    }
+
+    #[test]
+    fn test_fix_message_to_risk_different_symbols_differ() {
+        let mut msg1 = FixMessage::new("FIX.4.4", "D");
+        msg1.set(38, "10").set(44, "100.0").set(54, "1").set(55, "BTCUSD");
+
+        let mut msg2 = FixMessage::new("FIX.4.4", "D");
+        msg2.set(38, "10").set(44, "100.0").set(54, "1").set(55, "ETHUSD");
+
+        let ri1 = fix_message_to_risk(&msg1);
+        let ri2 = fix_message_to_risk(&msg2);
+
+        assert_ne!(ri1.symbol_hash,  ri2.symbol_hash);
+        assert_ne!(ri1.content_hash, ri2.content_hash);
     }
 }

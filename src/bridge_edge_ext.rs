@@ -337,6 +337,106 @@ pub fn edge_to_analytics_metrics(data: &[i32]) -> EdgeAnalyticsMetrics {
     }
 }
 
+// ── Bridge 5: Edge sensor data → Kinematics target position ───────────────
+
+/// Kinematics target position derived from edge sensor data.
+///
+/// Maps a sensor reading to a 3D target position for ALICE-Kinematics,
+/// enabling sensor-driven motion control without intermediate conversion layers.
+pub struct EdgeKinematicsTarget {
+    /// FNV-1a content hash of the sensor identifier and position bytes.
+    pub content_hash: u64,
+    /// Target X position in sensor units.
+    pub target_x: f32,
+    /// Target Y position in sensor units.
+    pub target_y: f32,
+    /// Target Z position in sensor units.
+    pub target_z: f32,
+    /// Sensor timestamp in nanoseconds.
+    pub timestamp_ns: u64,
+    /// True when all position components are finite (not NaN or infinite).
+    pub is_valid: bool,
+}
+
+/// Build a kinematics target position from edge sensor data.
+///
+/// `is_valid` is computed branchlessly from the IEEE 754 finite check so that
+/// the kinematics planner can reject corrupt sensor readings without branching.
+#[inline]
+pub fn edge_to_kinematics_target(
+    sensor_id: u32,
+    x: f32,
+    y: f32,
+    z: f32,
+    timestamp_ns: u64,
+) -> EdgeKinematicsTarget {
+    // Hash sensor_id + position bytes + timestamp.
+    let mut key = [0u8; 24];
+    key[0..4].copy_from_slice(&sensor_id.to_le_bytes());
+    key[4..8].copy_from_slice(&x.to_bits().to_le_bytes());
+    key[8..12].copy_from_slice(&y.to_bits().to_le_bytes());
+    key[12..16].copy_from_slice(&z.to_bits().to_le_bytes());
+    key[16..24].copy_from_slice(&timestamp_ns.to_le_bytes());
+    let content_hash = crate::hash::fnv1a(&key);
+    let is_valid = x.is_finite() && y.is_finite() && z.is_finite();
+    EdgeKinematicsTarget {
+        content_hash,
+        target_x: x,
+        target_y: y,
+        target_z: z,
+        timestamp_ns,
+        is_valid,
+    }
+}
+
+// ── Bridge 6: Edge sensor data → Synth trigger ────────────────────────────
+
+/// Synthesizer trigger derived from edge sensor data for ALICE-Synth.
+///
+/// Maps a sensor value to synthesizer parameters (amplitude, frequency) so
+/// that the ALICE-Synth engine can sonify sensor events in real time.
+/// Frequency is mapped linearly across a musically useful range (220–1100 Hz).
+pub struct EdgeSynthTrigger {
+    /// FNV-1a content hash of the sensor identifier and value bytes.
+    pub content_hash: u64,
+    /// Sensor identifier.
+    pub sensor_id: u32,
+    /// Amplitude in [0.0, 1.0] (absolute sensor value, clamped).
+    pub amplitude: f32,
+    /// Frequency in Hz: 220.0 + |value| * 880.0, mapping sensor value to pitch.
+    pub frequency_hz: f32,
+    /// Sensor timestamp in nanoseconds.
+    pub timestamp_ns: u64,
+}
+
+/// Build a synth trigger event from edge sensor data for ALICE-Synth.
+///
+/// `amplitude` is `value.abs().min(1.0)` — a branchless clamp to unit range.
+/// `frequency_hz` maps `|value|` linearly from 220 Hz (silence) to 1100 Hz
+/// (max value = 1.0), covering a musically useful two-octave span.
+#[inline]
+pub fn edge_to_synth_trigger(
+    sensor_id: u32,
+    value: f32,
+    timestamp_ns: u64,
+) -> EdgeSynthTrigger {
+    let amplitude = value.abs().min(1.0);
+    let frequency_hz = 220.0 + value.abs() * 880.0;
+    // Hash sensor_id + value bits + timestamp.
+    let mut key = [0u8; 16];
+    key[0..4].copy_from_slice(&sensor_id.to_le_bytes());
+    key[4..8].copy_from_slice(&value.to_bits().to_le_bytes());
+    key[8..16].copy_from_slice(&timestamp_ns.to_le_bytes());
+    let content_hash = crate::hash::fnv1a(&key);
+    EdgeSynthTrigger {
+        content_hash,
+        sensor_id,
+        amplitude,
+        frequency_hz,
+        timestamp_ns,
+    }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -439,5 +539,70 @@ mod tests {
         let big: Vec<i32> = (0..2048).map(|i| i * 5).collect();
         let m2 = edge_to_analytics_metrics(&big);
         assert_eq!(m2.cpu_utilisation, 1.0);
+    }
+
+    #[test]
+    fn test_edge_to_kinematics_target_valid() {
+        let tgt = edge_to_kinematics_target(42, 1.0, 2.5, -0.3, 1_000_000_000);
+        assert_ne!(tgt.content_hash, 0);
+        assert!((tgt.target_x - 1.0).abs() < f32::EPSILON);
+        assert!((tgt.target_y - 2.5).abs() < f32::EPSILON);
+        assert!((tgt.target_z - (-0.3)).abs() < f32::EPSILON);
+        assert_eq!(tgt.timestamp_ns, 1_000_000_000);
+        assert!(tgt.is_valid, "finite values → valid");
+    }
+
+    #[test]
+    fn test_edge_to_kinematics_target_invalid_nan() {
+        let tgt = edge_to_kinematics_target(1, f32::NAN, 0.0, 0.0, 0);
+        assert!(!tgt.is_valid, "NaN position → not valid");
+    }
+
+    #[test]
+    fn test_edge_to_kinematics_target_invalid_inf() {
+        let tgt = edge_to_kinematics_target(2, f32::INFINITY, 0.0, 0.0, 0);
+        assert!(!tgt.is_valid, "infinite position → not valid");
+    }
+
+    #[test]
+    fn test_edge_to_kinematics_target_different_ids_different_hash() {
+        let t1 = edge_to_kinematics_target(1, 0.0, 0.0, 0.0, 0);
+        let t2 = edge_to_kinematics_target(2, 0.0, 0.0, 0.0, 0);
+        assert_ne!(t1.content_hash, t2.content_hash, "different sensor_id → different hash");
+    }
+
+    #[test]
+    fn test_edge_to_synth_trigger_zero_value() {
+        let trig = edge_to_synth_trigger(10, 0.0, 500_000);
+        assert_ne!(trig.content_hash, 0);
+        assert_eq!(trig.sensor_id, 10);
+        assert!((trig.amplitude).abs() < f32::EPSILON, "zero value → zero amplitude");
+        assert!((trig.frequency_hz - 220.0).abs() < f32::EPSILON, "zero value → 220 Hz");
+        assert_eq!(trig.timestamp_ns, 500_000);
+    }
+
+    #[test]
+    fn test_edge_to_synth_trigger_unit_value() {
+        // value = 1.0 → amplitude = 1.0, frequency = 220 + 880 = 1100 Hz
+        let trig = edge_to_synth_trigger(5, 1.0, 0);
+        assert!((trig.amplitude - 1.0).abs() < f32::EPSILON);
+        assert!((trig.frequency_hz - 1100.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_edge_to_synth_trigger_amplitude_clamped() {
+        // value = 2.0 → amplitude clamped to 1.0
+        let trig = edge_to_synth_trigger(3, 2.0, 0);
+        assert!((trig.amplitude - 1.0).abs() < f32::EPSILON, "amplitude clamped to 1.0");
+    }
+
+    #[test]
+    fn test_edge_to_synth_trigger_negative_value_maps_like_positive() {
+        let pos = edge_to_synth_trigger(7, 0.5, 0);
+        let neg = edge_to_synth_trigger(7, -0.5, 0);
+        // |0.5| and |-0.5| produce same amplitude and frequency, but different hashes.
+        assert!((pos.amplitude - neg.amplitude).abs() < f32::EPSILON);
+        assert!((pos.frequency_hz - neg.frequency_hz).abs() < f32::EPSILON);
+        assert_ne!(pos.content_hash, neg.content_hash, "sign differs → different hash");
     }
 }

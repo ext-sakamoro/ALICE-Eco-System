@@ -232,6 +232,48 @@ pub fn codec_to_analytics_metrics(data: &[u8]) -> CodecAnalyticsMetrics {
     }
 }
 
+// ── Bridge 7: Codec → CDN (codec output → CDN content package) ──────────
+
+/// CDN content package derived from codec output for ALICE-CDN delivery.
+pub struct CodecCdnPackage {
+    /// Content hash for deduplication and CDN cache keying.
+    pub content_hash: u64,
+    /// Encoded payload size in bytes.
+    pub encoded_bytes: usize,
+    /// Codec identifier (0 = wavelet/rANS default).
+    pub codec_id: u8,
+    /// Estimated bitrate in kilobits per second (assumes 30 fps delivery).
+    pub bitrate_kbps: u32,
+    /// Whether the payload is suitable for HTTP streaming delivery (always true).
+    pub is_streamable: bool,
+}
+
+/// Build a CDN content package from encoded codec output data.
+///
+/// `codec_id` is fixed at 0 (ALICE wavelet+rANS codec).
+/// `bitrate_kbps` is estimated from `encoded_bytes` assuming 30 fps delivery.
+/// `is_streamable` is always `true`: codec output is always streamable for CDN.
+#[inline]
+pub fn codec_to_cdn_package(encoded: &[u8]) -> CodecCdnPackage {
+    // FNV-1a hash for CDN cache keying (inline — no shared fnv1a in this file).
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in encoded {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    // bitrate_kbps: encoded_bytes * 8 bits / 1000 bits-per-kbit / (1/30 s per frame)
+    // = encoded_bytes * 8 * 30 / 1000 = encoded_bytes * 240 / 1000.
+    const RCP_1000: f64 = 1.0 / 1000.0;
+    let bitrate_kbps = (encoded.len() as f64 * 240.0 * RCP_1000) as u32;
+    CodecCdnPackage {
+        content_hash: hash,
+        encoded_bytes: encoded.len(),
+        codec_id: 0,
+        bitrate_kbps,
+        is_streamable: true,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -288,5 +330,27 @@ mod tests {
         assert_eq!(m.original_bytes, 1000);
         assert!(m.compression_ratio > 0.0);
         assert!(m.entropy_bps > 0.0);
+    }
+
+    #[test]
+    fn test_codec_to_cdn_package() {
+        let encoded: Vec<u8> = (0..2000).map(|i| (i % 255) as u8).collect();
+        let pkg = codec_to_cdn_package(&encoded);
+        assert_eq!(pkg.encoded_bytes, 2000);
+        assert_eq!(pkg.codec_id, 0);
+        assert!(pkg.is_streamable);
+        assert!(pkg.bitrate_kbps > 0);
+        assert_ne!(pkg.content_hash, 0);
+        // Deterministic: same data → same hash.
+        let pkg2 = codec_to_cdn_package(&encoded);
+        assert_eq!(pkg.content_hash, pkg2.content_hash);
+    }
+
+    #[test]
+    fn test_codec_to_cdn_package_empty() {
+        let pkg = codec_to_cdn_package(&[]);
+        assert_eq!(pkg.encoded_bytes, 0);
+        assert_eq!(pkg.bitrate_kbps, 0);
+        assert!(pkg.is_streamable);
     }
 }

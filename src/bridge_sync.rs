@@ -319,6 +319,51 @@ pub fn sync_to_analytics_session_health(
     }
 }
 
+// ── Bridge 8: Sync → Physics (input frame force event) ────────────────────
+
+/// Physics force event for ALICE-Physics derived from an input frame.
+///
+/// Maps analog stick movement from an `InputFrame` to a directional force
+/// vector so that the physics engine can apply controller input as forces
+/// in the simulation without coupling directly to the input layer.
+pub struct SyncPhysicsEvent {
+    /// FNV-1a hash of the frame tick and movement payload — deduplication key.
+    pub content_hash: u64,
+    /// Simulation tick (frame number) at which the force is applied.
+    pub tick: u64,
+    /// Horizontal force component, directly mapped from movement[0].
+    pub force_x: f32,
+    /// Vertical force component, directly mapped from movement[1].
+    pub force_y: f32,
+    /// True when any force or button input is non-zero.
+    pub is_active: bool,
+}
+
+/// Convert an `InputFrame` into a physics force event for ALICE-Physics.
+///
+/// `force_x` and `force_y` are direct casts from the i16 movement axes so
+/// that the physics engine receives the raw analog magnitude without
+/// normalisation — callers should apply their own force scaling.
+#[inline]
+pub fn sync_to_physics_event(frame: &InputFrame) -> SyncPhysicsEvent {
+    let force_x = frame.movement[0] as f32;
+    let force_y = frame.movement[1] as f32;
+    // Hash tick + movement bytes for deduplication.
+    let mut data = [0u8; 12];
+    data[0..8].copy_from_slice(&frame.frame.to_le_bytes());
+    data[8..10].copy_from_slice(&frame.movement[0].to_le_bytes());
+    data[10..12].copy_from_slice(&frame.movement[1].to_le_bytes());
+    let content_hash = fnv1a(&data);
+    let is_active = force_x != 0.0 || force_y != 0.0 || frame.actions != 0;
+    SyncPhysicsEvent {
+        content_hash,
+        tick: frame.frame,
+        force_x,
+        force_y,
+        is_active,
+    }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -431,5 +476,34 @@ mod tests {
     fn test_sync_to_analytics_session_health_zero_frames_no_panic() {
         let h = sync_to_analytics_session_health("empty", 0, 0, 0.0, 0.0, 0);
         assert_eq!(h.late_rate_permille, 0);
+    }
+
+    #[test]
+    fn test_sync_to_physics_event_active_movement() {
+        let frame = make_frame(10, 0); // movement = [100, -50, 0]
+        let ev = sync_to_physics_event(&frame);
+        assert_ne!(ev.content_hash, 0);
+        assert_eq!(ev.tick, 10);
+        assert!((ev.force_x - 100.0).abs() < f32::EPSILON);
+        assert!((ev.force_y - (-50.0_f32)).abs() < f32::EPSILON);
+        assert!(ev.is_active, "non-zero movement → is_active");
+    }
+
+    #[test]
+    fn test_sync_to_physics_event_zero_movement_inactive() {
+        let frame = InputFrame::new(5, 1).with_movement(0, 0, 0);
+        let ev = sync_to_physics_event(&frame);
+        assert!((ev.force_x).abs() < f32::EPSILON);
+        assert!((ev.force_y).abs() < f32::EPSILON);
+        assert!(!ev.is_active, "all-zero input → not active");
+    }
+
+    #[test]
+    fn test_sync_to_physics_event_different_frames_different_hash() {
+        let f1 = make_frame(1, 0);
+        let f2 = make_frame(2, 0);
+        let e1 = sync_to_physics_event(&f1);
+        let e2 = sync_to_physics_event(&f2);
+        assert_ne!(e1.content_hash, e2.content_hash, "different tick → different hash");
     }
 }

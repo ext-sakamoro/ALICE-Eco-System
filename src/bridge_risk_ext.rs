@@ -169,6 +169,59 @@ pub fn risk_reject_to_semantic(
     }
 }
 
+// ── Bridge 4: Risk check result → Ledger order entry ─────────────────────
+
+/// Ledger order entry derived from a risk check result on a `RiskLimits` snapshot.
+///
+/// Encodes approval status, position ceiling, and utilization so the ledger
+/// layer can gate order entry without re-querying the risk-config store.
+pub struct RiskLedgerEntry {
+    /// FNV-1a hash over max_position bytes and limit_utilization bits bytes.
+    pub content_hash: u64,
+    /// True when `limit_utilization < 1.0` (the order is within limits).
+    pub approved: bool,
+    /// Maximum absolute position size from the originating `RiskLimits`.
+    pub max_position: u64,
+    /// Fraction of the position limit already consumed (0.0–1.0+).
+    pub limit_utilization: f64,
+    /// Routing priority: 1 when `limit_utilization > 0.8` (near-limit), else 2.
+    pub priority: u8,
+}
+
+/// Convert a `RiskLimits` snapshot and the current `used_position` into a
+/// `RiskLedgerEntry` for ledger order gating.
+///
+/// `limit_utilization` is `used_position as f64 / max_position as f64`, clamped
+/// to a well-defined range only by the input values (no artificial clamping).
+/// `approved` is `limit_utilization < 1.0`.
+/// `priority` is 1 when `limit_utilization > 0.8`, otherwise 2.
+///
+/// `content_hash` is FNV-1a over `max_position.to_le_bytes()` concatenated
+/// with the little-endian bytes of the f64 bit-pattern of `limit_utilization`.
+#[inline]
+pub fn risk_limits_to_ledger_entry(
+    limits: &RiskLimits,
+    used_position: u64,
+) -> RiskLedgerEntry {
+    let limit_utilization = used_position as f64 / limits.max_position as f64;
+    let approved  = limit_utilization < 1.0;
+    let priority  = if limit_utilization > 0.8 { 1 } else { 2 };
+
+    // Hash input: max_position (8 bytes) || limit_utilization bits (8 bytes).
+    let mut buf = [0u8; 16];
+    buf[0..8].copy_from_slice(&limits.max_position.to_le_bytes());
+    buf[8..16].copy_from_slice(&limit_utilization.to_bits().to_le_bytes());
+    let content_hash = fnv1a(&buf);
+
+    RiskLedgerEntry {
+        content_hash,
+        approved,
+        max_position: limits.max_position,
+        limit_utilization,
+        priority,
+    }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -318,5 +371,79 @@ mod tests {
         assert_ne!(os.content_hash, mo.content_hash);
         assert_ne!(os.content_hash, pl.content_hash);
         assert_ne!(mo.content_hash, ne.content_hash);
+    }
+
+    // ── Bridge 4: Risk Limits → Ledger order entry ────────────────────────
+
+    fn make_limits(max_position: u64) -> RiskLimits {
+        RiskLimits {
+            max_position,
+            max_order_size:  100,
+            max_notional:    10_000_000,
+            max_open_orders: 50,
+            max_daily_loss:  -500_000,
+        }
+    }
+
+    #[test]
+    fn test_limits_to_ledger_entry_approved_low_utilization() {
+        // used=500, max=1000 → utilization=0.5, approved=true, priority=2.
+        let limits = make_limits(1000);
+        let entry = risk_limits_to_ledger_entry(&limits, 500);
+
+        assert_ne!(entry.content_hash, 0);
+        assert_eq!(entry.max_position, 1000);
+        assert!((entry.limit_utilization - 0.5).abs() < f64::EPSILON);
+        assert!(entry.approved, "utilization 0.5 < 1.0 must be approved");
+        assert_eq!(entry.priority, 2, "utilization 0.5 <= 0.8 must have priority 2");
+    }
+
+    #[test]
+    fn test_limits_to_ledger_entry_near_limit_high_priority() {
+        // used=900, max=1000 → utilization=0.9 > 0.8, priority=1, still approved.
+        let limits = make_limits(1000);
+        let entry = risk_limits_to_ledger_entry(&limits, 900);
+
+        assert_ne!(entry.content_hash, 0);
+        assert!(entry.approved, "utilization 0.9 < 1.0 must be approved");
+        assert_eq!(entry.priority, 1, "utilization 0.9 > 0.8 must have priority 1");
+        assert!((entry.limit_utilization - 0.9).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_limits_to_ledger_entry_at_limit_rejected() {
+        // used=1000, max=1000 → utilization=1.0, approved=false, priority=1.
+        let limits = make_limits(1000);
+        let entry = risk_limits_to_ledger_entry(&limits, 1000);
+
+        assert!(!entry.approved, "utilization 1.0 must not be approved");
+        assert_eq!(entry.priority, 1, "utilization 1.0 > 0.8 must have priority 1");
+    }
+
+    #[test]
+    fn test_limits_to_ledger_entry_over_limit_rejected() {
+        // used=1500, max=1000 → utilization=1.5, approved=false, priority=1.
+        let limits = make_limits(1000);
+        let entry = risk_limits_to_ledger_entry(&limits, 1500);
+
+        assert!(!entry.approved, "utilization 1.5 must not be approved");
+        assert_eq!(entry.priority, 1);
+    }
+
+    #[test]
+    fn test_limits_to_ledger_entry_deterministic() {
+        let limits = make_limits(2000);
+        let e1 = risk_limits_to_ledger_entry(&limits, 1200);
+        let e2 = risk_limits_to_ledger_entry(&limits, 1200);
+        assert_eq!(e1.content_hash, e2.content_hash);
+        assert_eq!(e1.limit_utilization, e2.limit_utilization);
+    }
+
+    #[test]
+    fn test_limits_to_ledger_entry_different_positions_differ() {
+        let limits = make_limits(1000);
+        let e1 = risk_limits_to_ledger_entry(&limits, 100);
+        let e2 = risk_limits_to_ledger_entry(&limits, 200);
+        assert_ne!(e1.content_hash, e2.content_hash);
     }
 }

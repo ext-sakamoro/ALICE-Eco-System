@@ -337,6 +337,105 @@ pub fn animation_to_trt_training_data(
     }
 }
 
+// ── Bridge 8: TRT inference result → SDF field parameters ───────────────
+
+/// SDF field parameters derived from a TRT inference result for ALICE-SDF.
+pub struct TrtSdfField {
+    /// Content hash for cache keying (FNV-1a over layer geometry).
+    pub content_hash: u64,
+    /// Voxel grid resolution for the SDF evaluation pass.
+    pub field_resolution: u32,
+    /// Iso-surface threshold value for marching-cubes extraction.
+    pub iso_value: f32,
+    /// Estimated number of active SDF tree nodes given the resolution.
+    pub estimated_nodes: usize,
+}
+
+/// Build an SDF field descriptor from TRT layer geometry.
+///
+/// `field_resolution` is derived from the total parameter count: larger models
+/// warrant finer SDF grids.  `iso_value` is fixed at 0.0 (zero-level set).
+/// `estimated_nodes` approximates the octree node count at the given resolution.
+#[inline]
+pub fn trt_to_sdf_field(layer_shapes: &[(usize, usize)]) -> TrtSdfField {
+    let mut param_count: usize = 0;
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &(out, inp) in layer_shapes {
+        param_count += out * inp;
+        for &b in &(out as u64).to_le_bytes() {
+            hash ^= b as u64;
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
+        for &b in &(inp as u64).to_le_bytes() {
+            hash ^= b as u64;
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
+    }
+    // Resolution scales with sqrt(param_count), clamped to [16, 512].
+    let field_resolution = ((param_count as f64).sqrt() as u32).clamp(16, 512);
+    // Estimated octree nodes: resolution^3 / 8 (one node per 2×2×2 cell).
+    let res = field_resolution as usize;
+    let estimated_nodes = (res * res * res) / 8;
+    TrtSdfField {
+        content_hash: hash,
+        field_resolution,
+        iso_value: 0.0,
+        estimated_nodes,
+    }
+}
+
+// ── Bridge 9: TRT inference result → Physics simulation parameters ───────
+
+/// Physics simulation parameters derived from a TRT inference result.
+pub struct TrtPhysicsParams {
+    /// Content hash for deduplication (FNV-1a over layer geometry).
+    pub content_hash: u64,
+    /// Number of rigid bodies to simulate (one per output feature).
+    pub body_count: u32,
+    /// Fixed simulation time step in microseconds.
+    pub time_step_us: u64,
+    /// Maximum force magnitude in Newtons applied by the inference controller.
+    pub force_magnitude: f64,
+    /// Whether the simulation runs at real-time rate (time_step_us ≤ 16 667 µs = 60 fps).
+    pub is_realtime: bool,
+}
+
+/// Build physics simulation parameters from TRT layer geometry.
+///
+/// `body_count` equals the output feature count of the last layer.
+/// `time_step_us` is fixed at 8 333 µs (120 fps physics tick).
+/// `is_realtime` is set branchlessly: `time_step_us <= 16_667`.
+#[inline]
+pub fn trt_to_physics_params(layer_shapes: &[(usize, usize)]) -> TrtPhysicsParams {
+    let mut param_count: usize = 0;
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &(out, inp) in layer_shapes {
+        param_count += out * inp;
+        for &b in &(out as u64).to_le_bytes() {
+            hash ^= b as u64;
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
+        for &b in &(inp as u64).to_le_bytes() {
+            hash ^= b as u64;
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
+    }
+    let body_count = layer_shapes.last().map_or(0, |&(out, _)| out) as u32;
+    // 120 Hz physics tick: 1_000_000 µs / 120 = 8_333 µs.
+    let time_step_us: u64 = 8_333;
+    // Branchless: real-time when time_step_us fits within one 60 fps frame.
+    let is_realtime = time_step_us <= 16_667;
+    // Force magnitude scales with parameter count to reflect model influence.
+    let force_magnitude = 1.0 + param_count as f64 * 0.001;
+    TrtPhysicsParams {
+        content_hash: hash,
+        body_count,
+        time_step_us,
+        force_magnitude,
+        is_realtime,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -506,5 +605,66 @@ mod tests {
         // sequence_hash mixes in frame metadata, so it must differ.
         assert_ne!(a.sequence_hash, b.sequence_hash,
             "sequence_hash must change when frame_count changes");
+    }
+
+    // ── Bridge 8 tests ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_trt_to_sdf_field_basic() {
+        let shapes = test_shapes(); // 2496 params
+        let field = trt_to_sdf_field(&shapes);
+        assert_ne!(field.content_hash, 0);
+        // sqrt(2496) ≈ 49 → clamped to 49, within [16, 512].
+        assert!(field.field_resolution >= 16 && field.field_resolution <= 512);
+        assert!((field.iso_value).abs() < f32::EPSILON);
+        assert!(field.estimated_nodes > 0);
+        // Deterministic: same shapes → same hash.
+        let field2 = trt_to_sdf_field(&shapes);
+        assert_eq!(field.content_hash, field2.content_hash);
+    }
+
+    #[test]
+    fn test_trt_to_sdf_field_resolution_floor() {
+        // Single tiny layer: 1×1 = 1 param → sqrt = 1.0 → clamped to 16.
+        let shapes = vec![(1, 1)];
+        let field = trt_to_sdf_field(&shapes);
+        assert_eq!(field.field_resolution, 16);
+    }
+
+    #[test]
+    fn test_trt_to_sdf_field_resolution_ceiling() {
+        // Very large layer: 1_000_000 params → sqrt = 1000 → clamped to 512.
+        let shapes = vec![(1000, 1000)];
+        let field = trt_to_sdf_field(&shapes);
+        assert_eq!(field.field_resolution, 512);
+    }
+
+    // ── Bridge 9 tests ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_trt_to_physics_params_basic() {
+        let shapes = test_shapes(); // last layer out = 8
+        let params = trt_to_physics_params(&shapes);
+        assert_ne!(params.content_hash, 0);
+        assert_eq!(params.body_count, 8);
+        assert_eq!(params.time_step_us, 8_333);
+        assert!(params.is_realtime); // 8333 <= 16667
+        assert!(params.force_magnitude > 1.0);
+    }
+
+    #[test]
+    fn test_trt_to_physics_params_deterministic() {
+        let shapes = test_shapes();
+        let a = trt_to_physics_params(&shapes);
+        let b = trt_to_physics_params(&shapes);
+        assert_eq!(a.content_hash, b.content_hash);
+        assert_eq!(a.body_count, b.body_count);
+    }
+
+    #[test]
+    fn test_trt_to_physics_params_empty_shapes() {
+        let params = trt_to_physics_params(&[]);
+        assert_eq!(params.body_count, 0);
+        assert!(params.is_realtime);
     }
 }

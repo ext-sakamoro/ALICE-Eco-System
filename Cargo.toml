@@ -3,7 +3,7 @@ name = "alice-eco-system"
 version = "0.3.0"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration Hub - 394 bridges, 20 pipeline paths (A-U), 63 bridge modules, 51 crates"
+description = "ALICE Ecosystem Integration Hub - 411 bridges, 20 pipeline paths (A-U), 63 bridge modules, 51 crates"
 license = "MIT"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 

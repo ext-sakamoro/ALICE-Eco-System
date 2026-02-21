@@ -423,6 +423,193 @@ pub fn sdf_to_ml_outlier_record(
     }
 }
 
+// ── Bridge 8: SdfTree → CDN content descriptor ────────────────────────────
+
+/// CDN content descriptor for ALICE-CDN delivery of SDF assets.
+///
+/// Provides the CDN edge with the metadata needed to cache and serve
+/// SDF geometry as 3D model content, including estimated payload size
+/// and a stable content type identifier.
+pub struct SdfCdnDescriptor {
+    /// FNV-1a hash of the SDF node count bytes — CDN cache key.
+    pub content_hash: u64,
+    /// Total node count in the SDF tree.
+    pub node_count: u32,
+    /// Estimated serialized size in bytes (node_count * 32 bytes per node).
+    pub estimated_bytes: usize,
+    /// Content type identifier (0x10 = 3D model type).
+    pub content_type_id: u8,
+}
+
+/// Build a CDN content descriptor from an `SdfTree` for ALICE-CDN.
+///
+/// `estimated_bytes` uses 32 bytes per node as a conservative estimate for
+/// CDN cache reservation without requiring a full serialization pass.
+#[inline]
+pub fn sdf_to_cdn_descriptor(tree: &SdfTree) -> SdfCdnDescriptor {
+    let node_count = tree.root.node_count();
+    let mut data = [0u8; 4];
+    data.copy_from_slice(&node_count.to_le_bytes());
+    let content_hash = fnv1a(&data);
+    let estimated_bytes = node_count as usize * 32;
+    SdfCdnDescriptor {
+        content_hash,
+        node_count,
+        estimated_bytes,
+        content_type_id: 0x10,
+    }
+}
+
+// ── Bridge 9: SdfTree → Motion plan seed ──────────────────────────────────
+
+/// Motion plan seed for ALICE-Motion SDF-to-print pipeline.
+///
+/// Seeds the motion planner with geometry metadata so that tool-path
+/// generation can apply S-curve acceleration profiles appropriate for the
+/// complexity of the SDF shape being printed.
+pub struct SdfMotionSeed {
+    /// FNV-1a hash of the SDF node count bytes — motion plan cache key.
+    pub content_hash: u64,
+    /// Total node count in the SDF tree.
+    pub node_count: u32,
+    /// Bounding volume estimate (simplified as node_count cast to f64).
+    pub bounding_volume: f64,
+    /// Always true for SDF → print pipeline: S-curve profiling required.
+    pub requires_scurve: bool,
+}
+
+/// Build a motion plan seed from an `SdfTree` for ALICE-Motion.
+///
+/// `requires_scurve` is always `true` for SDF geometry destined for the
+/// print pipeline, where S-curve acceleration avoids resonance artefacts.
+#[inline]
+pub fn sdf_to_motion_seed(tree: &SdfTree) -> SdfMotionSeed {
+    let node_count = tree.root.node_count();
+    let mut data = [0u8; 4];
+    data.copy_from_slice(&node_count.to_le_bytes());
+    let content_hash = fnv1a(&data);
+    let bounding_volume = node_count as f64;
+    SdfMotionSeed {
+        content_hash,
+        node_count,
+        bounding_volume,
+        requires_scurve: true,
+    }
+}
+
+// ── Bridge 10: SdfTree → Animation keyframe source ────────────────────────
+
+/// Animation keyframe source for ALICE-Animation.
+///
+/// Provides the keyframe capacity and deformability flag needed by the
+/// animation system to allocate keyframe buffers for SDF-driven deformations.
+pub struct SdfAnimationSource {
+    /// FNV-1a hash of the SDF node count bytes — animation asset key.
+    pub content_hash: u64,
+    /// Total node count in the SDF tree.
+    pub node_count: u32,
+    /// Pre-allocated keyframe capacity (node_count * 4).
+    pub keyframe_capacity: usize,
+    /// True when the tree contains more than one node (compound deformation).
+    pub is_deformable: bool,
+}
+
+/// Build an animation keyframe source from an `SdfTree` for ALICE-Animation.
+///
+/// `keyframe_capacity` is pre-computed as `node_count * 4` to avoid
+/// re-allocation during animation playback.
+#[inline]
+pub fn sdf_to_animation_source(tree: &SdfTree) -> SdfAnimationSource {
+    let node_count = tree.root.node_count();
+    let mut data = [0u8; 4];
+    data.copy_from_slice(&node_count.to_le_bytes());
+    let content_hash = fnv1a(&data);
+    let keyframe_capacity = node_count as usize * 4;
+    let is_deformable = node_count > 1;
+    SdfAnimationSource {
+        content_hash,
+        node_count,
+        keyframe_capacity,
+        is_deformable,
+    }
+}
+
+// ── Bridge 11: SdfTree → Font glyph source ────────────────────────────────
+
+/// Font glyph source for ALICE-Font SDF-driven glyph rendering.
+///
+/// Provides the glyph complexity estimate and dimensionality flag to the
+/// font engine so that it can select appropriate SDF atlas resolution and
+/// rendering shaders.
+pub struct SdfFontSource {
+    /// FNV-1a hash of the SDF node count bytes — font atlas cache key.
+    pub content_hash: u64,
+    /// Total node count in the SDF tree.
+    pub node_count: u32,
+    /// Estimated glyph complexity (node_count cast to u32).
+    pub estimated_glyph_complexity: u32,
+    /// True when the tree is simple enough to be treated as a 2D glyph (≤4 nodes).
+    pub is_2d: bool,
+}
+
+/// Build a font glyph source from an `SdfTree` for ALICE-Font.
+///
+/// `is_2d` is set when `node_count <= 4`, indicating that the SDF describes
+/// a simple 2D contour suitable for direct rasterisation without 3D raymarching.
+#[inline]
+pub fn sdf_to_font_source(tree: &SdfTree) -> SdfFontSource {
+    let node_count = tree.root.node_count();
+    let mut data = [0u8; 4];
+    data.copy_from_slice(&node_count.to_le_bytes());
+    let content_hash = fnv1a(&data);
+    let estimated_glyph_complexity = node_count as u32;
+    let is_2d = node_count <= 4;
+    SdfFontSource {
+        content_hash,
+        node_count,
+        estimated_glyph_complexity,
+        is_2d,
+    }
+}
+
+// ── Bridge 12: SdfTree → Synth waveform source ────────────────────────────
+
+/// Synth waveform source for ALICE-Synth SDF-driven audio synthesis.
+///
+/// Maps SDF geometry complexity to synthesizer parameters so that the
+/// ALICE-Synth engine can sonify SDF shapes in real time — useful for
+/// accessibility, generative audio, and debug auralisation.
+pub struct SdfSynthSource {
+    /// FNV-1a hash of the SDF node count bytes — synth patch cache key.
+    pub content_hash: u64,
+    /// Total node count in the SDF tree.
+    pub node_count: u32,
+    /// Number of harmonics (node_count clamped to 16).
+    pub harmonic_count: u32,
+    /// Base frequency in Hz (A4 = 440.0 Hz).
+    pub base_frequency_hz: f32,
+}
+
+/// Build a synth waveform source from an `SdfTree` for ALICE-Synth.
+///
+/// `harmonic_count` is clamped to 16 to match the maximum harmonic series
+/// supported by the ALICE-Synth additive synthesizer.
+/// `base_frequency_hz` is fixed at 440.0 Hz (A4) as a neutral reference pitch.
+#[inline]
+pub fn sdf_to_synth_source(tree: &SdfTree) -> SdfSynthSource {
+    let node_count = tree.root.node_count();
+    let mut data = [0u8; 4];
+    data.copy_from_slice(&node_count.to_le_bytes());
+    let content_hash = fnv1a(&data);
+    let harmonic_count = node_count.min(16) as u32;
+    SdfSynthSource {
+        content_hash,
+        node_count,
+        harmonic_count,
+        base_frequency_hz: 440.0,
+    }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -593,5 +780,96 @@ mod tests {
         // Expected 1 node → strong anomaly.
         let rec = sdf_to_ml_outlier_record(&tree, 1.0);
         assert!(rec.outlier_score > 0.0);
+    }
+
+    #[test]
+    fn test_sdf_to_cdn_descriptor_sphere() {
+        let tree = sphere_tree();
+        let desc = sdf_to_cdn_descriptor(&tree);
+        assert_ne!(desc.content_hash, 0);
+        assert_eq!(desc.node_count, 1);
+        assert_eq!(desc.estimated_bytes, 32);
+        assert_eq!(desc.content_type_id, 0x10);
+    }
+
+    #[test]
+    fn test_sdf_to_cdn_descriptor_csg_larger_estimate() {
+        let tree = csg_tree();
+        let desc = sdf_to_cdn_descriptor(&tree);
+        assert!(desc.node_count > 1);
+        assert_eq!(desc.estimated_bytes, desc.node_count as usize * 32);
+        assert_eq!(desc.content_type_id, 0x10);
+    }
+
+    #[test]
+    fn test_sdf_to_motion_seed_always_scurve() {
+        let sphere = sdf_to_motion_seed(&sphere_tree());
+        assert_ne!(sphere.content_hash, 0);
+        assert_eq!(sphere.node_count, 1);
+        assert!(sphere.requires_scurve, "S-curve always required for SDF → print");
+        assert!((sphere.bounding_volume - 1.0).abs() < f64::EPSILON);
+
+        let csg = sdf_to_motion_seed(&csg_tree());
+        assert!(csg.node_count > 1);
+        assert!(csg.requires_scurve);
+        assert!((csg.bounding_volume - csg.node_count as f64).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_sdf_to_animation_source_sphere_not_deformable() {
+        let tree = sphere_tree();
+        let src = sdf_to_animation_source(&tree);
+        assert_ne!(src.content_hash, 0);
+        assert_eq!(src.node_count, 1);
+        assert_eq!(src.keyframe_capacity, 4);
+        assert!(!src.is_deformable, "single node → not deformable");
+    }
+
+    #[test]
+    fn test_sdf_to_animation_source_csg_is_deformable() {
+        let tree = csg_tree();
+        let src = sdf_to_animation_source(&tree);
+        assert!(src.node_count > 1);
+        assert_eq!(src.keyframe_capacity, src.node_count as usize * 4);
+        assert!(src.is_deformable, "multi-node tree → deformable");
+    }
+
+    #[test]
+    fn test_sdf_to_font_source_sphere_is_2d() {
+        let tree = sphere_tree();
+        let src = sdf_to_font_source(&tree);
+        assert_ne!(src.content_hash, 0);
+        assert_eq!(src.node_count, 1);
+        assert_eq!(src.estimated_glyph_complexity, 1);
+        assert!(src.is_2d, "1 node ≤ 4 → 2D glyph");
+    }
+
+    #[test]
+    fn test_sdf_to_font_source_deep_tree_not_2d() {
+        let tree = deep_tree();
+        let src = sdf_to_font_source(&tree);
+        if src.node_count > 4 {
+            assert!(!src.is_2d, "complex tree → not 2D");
+        }
+        assert_eq!(src.estimated_glyph_complexity, src.node_count as u32);
+    }
+
+    #[test]
+    fn test_sdf_to_synth_source_sphere() {
+        let tree = sphere_tree();
+        let src = sdf_to_synth_source(&tree);
+        assert_ne!(src.content_hash, 0);
+        assert_eq!(src.node_count, 1);
+        assert_eq!(src.harmonic_count, 1);
+        assert!((src.base_frequency_hz - 440.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_sdf_to_synth_source_harmonic_count_clamped() {
+        // deep_tree has many nodes — harmonic_count should clamp to 16.
+        let tree = deep_tree();
+        let src = sdf_to_synth_source(&tree);
+        assert!(src.harmonic_count <= 16, "harmonic_count must not exceed 16");
+        assert!((src.base_frequency_hz - 440.0).abs() < f32::EPSILON);
     }
 }

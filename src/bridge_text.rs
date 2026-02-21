@@ -288,6 +288,44 @@ pub fn sdf_to_text_mesh_result(
     }
 }
 
+// ── Bridge 8: Text → Search (text content → search index entry) ──────────
+
+/// Search index entry derived from text content for ALICE-Search.
+pub struct TextSearchEntry {
+    /// Content hash for deduplication and index keying (FNV-1a over compressed bytes).
+    pub content_hash: u64,
+    /// Number of whitespace-delimited tokens in the original text.
+    pub token_count: u32,
+    /// FNV-1a hash of the raw document bytes (document identity key).
+    pub document_hash: u64,
+    /// Estimated postings list size in bytes (token_count × 12 bytes per posting).
+    pub estimated_index_bytes: usize,
+    /// Whether the text contains CJK characters (simplified: always false here).
+    pub has_cjk: bool,
+}
+
+/// Build a search index entry from a text document.
+///
+/// `token_count` is derived by splitting on ASCII whitespace.
+/// `estimated_index_bytes` = token_count × 12 (postings list estimate).
+/// `has_cjk` is `false` (simplified; full analysis would require Unicode inspection).
+#[inline]
+pub fn text_to_search_entry(text: &str) -> TextSearchEntry {
+    let compressed = compress_tuned(text, CompressionMode::Balanced)
+        .unwrap_or_else(|_| text.as_bytes().to_vec());
+    let content_hash = fnv1a_text(&compressed);
+    let document_hash = fnv1a_text(text.as_bytes());
+    let token_count = text.split_ascii_whitespace().count() as u32;
+    let estimated_index_bytes = token_count as usize * 12;
+    TextSearchEntry {
+        content_hash,
+        token_count,
+        document_hash,
+        estimated_index_bytes,
+        has_cjk: false,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -410,5 +448,43 @@ mod tests {
         assert_eq!(req.content_hash, result.content_hash,
             "request and result must share the same content_hash for the same text");
         assert_eq!(req.text_hash, result.text_hash);
+    }
+
+    // ── Bridge 8 tests ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_text_to_search_entry_basic() {
+        let text = "The quick brown fox jumps over the lazy dog";
+        let entry = text_to_search_entry(text);
+        assert_eq!(entry.token_count, 9);
+        assert_eq!(entry.estimated_index_bytes, 9 * 12);
+        assert!(!entry.has_cjk);
+        assert_ne!(entry.content_hash, 0);
+        assert_ne!(entry.document_hash, 0);
+    }
+
+    #[test]
+    fn test_text_to_search_entry_deterministic() {
+        let text = "hello world";
+        let a = text_to_search_entry(text);
+        let b = text_to_search_entry(text);
+        assert_eq!(a.content_hash, b.content_hash);
+        assert_eq!(a.document_hash, b.document_hash);
+        assert_eq!(a.token_count, b.token_count);
+    }
+
+    #[test]
+    fn test_text_to_search_entry_different_texts_differ() {
+        let a = text_to_search_entry("hello world");
+        let b = text_to_search_entry("goodbye world");
+        assert_ne!(a.content_hash, b.content_hash);
+        assert_ne!(a.document_hash, b.document_hash);
+    }
+
+    #[test]
+    fn test_text_to_search_entry_empty() {
+        let entry = text_to_search_entry("");
+        assert_eq!(entry.token_count, 0);
+        assert_eq!(entry.estimated_index_bytes, 0);
     }
 }

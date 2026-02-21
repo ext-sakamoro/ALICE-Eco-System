@@ -228,6 +228,49 @@ pub fn api_db_log(
     }
 }
 
+// ── Bridge 6: API → Cache (API response → cache entry) ───────────────────
+
+/// Cache entry derived from an API response for ALICE-Cache storage.
+pub struct ApiCacheEntry {
+    /// FNV-1a hash of the API route path (cache key).
+    pub content_hash: u64,
+    /// FNV-1a hash of the route path (route identity for eviction grouping).
+    pub route_hash: u64,
+    /// Response payload size in bytes.
+    pub response_bytes: usize,
+    /// Time-to-live in seconds (300 for public, 60 for private — branchless).
+    pub ttl_secs: u32,
+    /// Whether the response is publicly cacheable (shared CDN / proxy).
+    pub is_public: bool,
+}
+
+/// Build a cache entry from an API response.
+///
+/// `ttl_secs` is computed branchlessly: public responses get 300 s (5 min),
+/// private responses get 60 s (1 min).
+/// `content_hash` and `route_hash` are both derived from the route path via
+/// `fnv1a` — `route_hash` is the raw path hash; `content_hash` mixes in
+/// `response_bytes` so two responses at the same path but different sizes
+/// produce distinct cache keys.
+#[inline]
+pub fn api_to_cache_entry(path: &str, response_bytes: usize, is_public: bool) -> ApiCacheEntry {
+    let route_hash = fnv1a(path.as_bytes());
+    // Mix response_bytes into content_hash for per-payload uniqueness.
+    let size_bytes = (response_bytes as u64).to_le_bytes();
+    let content_hash = fnv1a(&[path.as_bytes(), size_bytes.as_slice()].concat());
+    // Branchless TTL: is_public selects between 300 and 60 via arithmetic.
+    // mask = 0xFFFF_FFFF if true, 0x0000_0000 if false.
+    let mask = -(is_public as i32) as u32;
+    let ttl_secs = (300u32 & mask) | (60u32 & !mask);
+    ApiCacheEntry {
+        content_hash,
+        route_hash,
+        response_bytes,
+        ttl_secs,
+        is_public,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -298,5 +341,41 @@ mod tests {
         assert_eq!(record.path, "/users/42");
         assert_eq!(record.timestamp_ns, 9_000_000_000);
         assert_eq!(record.client_hash, fnv1a(b"admin"));
+    }
+
+    #[test]
+    fn test_api_to_cache_entry_public() {
+        let entry = api_to_cache_entry("/api/static/config", 4096, true);
+        assert_eq!(entry.ttl_secs, 300);
+        assert!(entry.is_public);
+        assert_eq!(entry.response_bytes, 4096);
+        assert_ne!(entry.content_hash, 0);
+        assert_ne!(entry.route_hash, 0);
+    }
+
+    #[test]
+    fn test_api_to_cache_entry_private() {
+        let entry = api_to_cache_entry("/api/user/profile", 512, false);
+        assert_eq!(entry.ttl_secs, 60);
+        assert!(!entry.is_public);
+        assert_eq!(entry.response_bytes, 512);
+    }
+
+    #[test]
+    fn test_api_to_cache_entry_deterministic() {
+        let a = api_to_cache_entry("/api/items", 1024, true);
+        let b = api_to_cache_entry("/api/items", 1024, true);
+        assert_eq!(a.content_hash, b.content_hash);
+        assert_eq!(a.route_hash, b.route_hash);
+    }
+
+    #[test]
+    fn test_api_to_cache_entry_different_sizes_differ() {
+        // Same path but different response_bytes → different content_hash.
+        let a = api_to_cache_entry("/api/items", 100, true);
+        let b = api_to_cache_entry("/api/items", 200, true);
+        assert_ne!(a.content_hash, b.content_hash);
+        // route_hash is path-only so it must be equal.
+        assert_eq!(a.route_hash, b.route_hash);
     }
 }

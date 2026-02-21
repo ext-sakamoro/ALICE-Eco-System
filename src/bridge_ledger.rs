@@ -217,6 +217,60 @@ pub fn ledger_position_to_cache(pos: &Position) -> LedgerCachePosition {
     }
 }
 
+// ── Bridge 6: Ledger Fill → Settlement trade record ───────────────────────
+
+/// Settlement trade record derived from a ledger fill event.
+///
+/// Carries the minimum fields required by the settlement engine to register
+/// an executed trade for T+2 standard delivery settlement.
+pub struct LedgerSettlementTrade {
+    /// Content hash over fill_price, fill_qty, maker_id, and taker_id bytes.
+    pub content_hash: u64,
+    /// Execution price in ticks (from the fill's maker limit price).
+    pub fill_price: f64,
+    /// Quantity matched in this fill event.
+    pub fill_qty: u64,
+    /// Inner u64 of the passive maker order ID.
+    pub maker_id: u64,
+    /// Inner u64 of the aggressive taker order ID.
+    pub taker_id: u64,
+    /// Number of business days until settlement: always 2 (T+2 standard settlement).
+    pub settlement_date_offset: u8,
+}
+
+/// Convert a ledger [`Fill`] into a [`LedgerSettlementTrade`] record.
+///
+/// `fill_price` is stored as `f64` ticks for compatibility with the settlement
+/// engine's floating-point price representation.  `settlement_date_offset` is
+/// always 2 (T+2), the standard equity and FX settlement convention.
+///
+/// `content_hash` is FNV-1a over `fill_price` bits (8 bytes) concatenated with
+/// `fill_qty` (8 bytes), `maker_id` (8 bytes), and `taker_id` (8 bytes),
+/// all in little-endian byte order.
+#[inline]
+pub fn ledger_fill_to_settlement_trade(fill: &Fill) -> LedgerSettlementTrade {
+    let fill_price = fill.price as f64;
+    let fill_qty   = fill.quantity;
+    let maker_id   = fill.maker_id.0;
+    let taker_id   = fill.taker_id.0;
+
+    // Hash input: fill_price bits (8) || fill_qty (8) || maker_id (8) || taker_id (8)
+    let mut hash_data = [0u8; 32];
+    hash_data[0..8].copy_from_slice(&fill_price.to_bits().to_le_bytes());
+    hash_data[8..16].copy_from_slice(&fill_qty.to_le_bytes());
+    hash_data[16..24].copy_from_slice(&maker_id.to_le_bytes());
+    hash_data[24..32].copy_from_slice(&taker_id.to_le_bytes());
+
+    LedgerSettlementTrade {
+        content_hash: fnv1a(&hash_data),
+        fill_price,
+        fill_qty,
+        maker_id,
+        taker_id,
+        settlement_date_offset: 2,
+    }
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -444,5 +498,69 @@ mod tests {
         let entry = ledger_position_to_cache(&pos);
 
         assert_eq!(entry.ttl_secs, 30);
+    }
+
+    // ── Bridge 6 tests ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_fill_to_settlement_trade_basic() {
+        let fill = make_fill(10, 20, 50_000, 5, 1_000_000);
+        let st = ledger_fill_to_settlement_trade(&fill);
+
+        assert_ne!(st.content_hash, 0);
+        assert_eq!(st.fill_price, 50_000.0);
+        assert_eq!(st.fill_qty, 5);
+        assert_eq!(st.maker_id, 10);
+        assert_eq!(st.taker_id, 20);
+        // T+2 standard settlement.
+        assert_eq!(st.settlement_date_offset, 2);
+    }
+
+    #[test]
+    fn test_fill_to_settlement_trade_t2_invariant() {
+        // settlement_date_offset must always be 2 regardless of fill values.
+        let fill1 = make_fill(1, 2, 100, 1, 0);
+        let fill2 = make_fill(99, 88, 999_999, 10_000, 5_000_000);
+        let st1 = ledger_fill_to_settlement_trade(&fill1);
+        let st2 = ledger_fill_to_settlement_trade(&fill2);
+        assert_eq!(st1.settlement_date_offset, 2);
+        assert_eq!(st2.settlement_date_offset, 2);
+    }
+
+    #[test]
+    fn test_fill_to_settlement_trade_deterministic() {
+        let fill = make_fill(3, 7, 12_500, 50, 42_000);
+        let st1 = ledger_fill_to_settlement_trade(&fill);
+        let st2 = ledger_fill_to_settlement_trade(&fill);
+        assert_eq!(st1.content_hash, st2.content_hash);
+        assert_eq!(st1.fill_price,   st2.fill_price);
+        assert_eq!(st1.maker_id,     st2.maker_id);
+    }
+
+    #[test]
+    fn test_fill_to_settlement_trade_hash_changes_with_price() {
+        let fill1 = make_fill(1, 2, 10_000, 10, 0);
+        let fill2 = make_fill(1, 2, 10_001, 10, 0);
+        let st1 = ledger_fill_to_settlement_trade(&fill1);
+        let st2 = ledger_fill_to_settlement_trade(&fill2);
+        assert_ne!(st1.content_hash, st2.content_hash);
+    }
+
+    #[test]
+    fn test_fill_to_settlement_trade_hash_changes_with_qty() {
+        let fill1 = make_fill(5, 6, 500, 100, 0);
+        let fill2 = make_fill(5, 6, 500, 101, 0);
+        let st1 = ledger_fill_to_settlement_trade(&fill1);
+        let st2 = ledger_fill_to_settlement_trade(&fill2);
+        assert_ne!(st1.content_hash, st2.content_hash);
+    }
+
+    #[test]
+    fn test_fill_to_settlement_trade_hash_changes_with_maker_id() {
+        let fill1 = make_fill(1, 2, 1000, 5, 0);
+        let fill2 = make_fill(9, 2, 1000, 5, 0);
+        let st1 = ledger_fill_to_settlement_trade(&fill1);
+        let st2 = ledger_fill_to_settlement_trade(&fill2);
+        assert_ne!(st1.content_hash, st2.content_hash);
     }
 }

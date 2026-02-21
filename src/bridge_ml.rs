@@ -211,6 +211,52 @@ pub fn ml_to_analytics_metrics(weights: &TernaryWeight) -> MlAnalyticsMetrics {
     }
 }
 
+// ── Bridge 7: ML model → TRT engine descriptor ───────────────────────────
+
+/// TRT engine descriptor derived from an ML model for ALICE-TRT deployment.
+pub struct MlTrtDescriptor {
+    /// Content hash for deduplication (FNV-1a over layer geometry).
+    pub content_hash: u64,
+    /// Number of layers inferred from the model's in/out feature dimensions.
+    pub layer_count: u32,
+    /// Estimated total parameter count.
+    pub estimated_params: u64,
+    /// Whether FP16 mode is recommended (always true — TRT always benefits from fp16).
+    pub requires_fp16: bool,
+    /// Engine scheduling priority (1 = high).
+    pub engine_priority: u8,
+}
+
+/// Build a TRT engine descriptor from an ML ternary weight model.
+///
+/// `layer_count` is derived from the model's out-feature count (each output
+/// feature corresponds to one logical processing layer in the descriptor).
+/// `requires_fp16` is always `true` because TRT fp16 mode reduces bandwidth
+/// regardless of model size.
+#[inline]
+pub fn ml_to_trt_descriptor(weights: &TernaryWeight) -> MlTrtDescriptor {
+    let rows = weights.out_features();
+    let cols = weights.in_features();
+    let estimated_params = (rows * cols) as u64;
+    // FNV-1a hash over (rows, cols) pair for stable deduplication key.
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for &b in &(rows as u64).to_le_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    for &b in &(cols as u64).to_le_bytes() {
+        hash ^= b as u64;
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    MlTrtDescriptor {
+        content_hash: hash,
+        layer_count: rows as u32,
+        estimated_params,
+        requires_fp16: true,
+        engine_priority: 1,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -279,5 +325,19 @@ mod tests {
         assert_eq!(m.mac_ops, 72);
         assert!(m.compression_ratio > 1.0);
         assert!(m.memory_bytes < m.param_count);
+    }
+
+    #[test]
+    fn test_ml_to_trt_descriptor() {
+        let weights = test_weights(8, 16);
+        let desc = ml_to_trt_descriptor(&weights);
+        assert_eq!(desc.layer_count, 8);
+        assert_eq!(desc.estimated_params, 128);
+        assert!(desc.requires_fp16);
+        assert_eq!(desc.engine_priority, 1);
+        assert_ne!(desc.content_hash, 0);
+        // Same weights → same hash (deterministic).
+        let desc2 = ml_to_trt_descriptor(&weights);
+        assert_eq!(desc.content_hash, desc2.content_hash);
     }
 }

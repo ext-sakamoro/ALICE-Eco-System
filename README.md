@@ -144,7 +144,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 394 bridges, 20 pipeline paths (A-U), 51 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 411 bridges, 20 pipeline paths (A-U), 51 crates connected | MIT |
 
 **Total: 51 components** | AGPL-3.0: 28 | MIT: 12 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 4 | Semantic Telemetry: 1
 
