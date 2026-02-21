@@ -104,6 +104,9 @@ manga = ["dep:alice-manga"]
 print = ["dep:alice-print"]
 content-creation = ["animation", "manga", "print"]
 firewall = ["dep:alice-edge-firewall"]
+edge-commercial = ["dep:alice-edge-commercial"]
+streaming-protocol-commercial = ["dep:alice-streaming-protocol-commercial"]
+enterprise = ["edge-commercial", "streaming-protocol-commercial"]
 
 [profile.release]
 opt-level = 3
