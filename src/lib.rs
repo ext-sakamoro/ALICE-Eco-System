@@ -61,6 +61,8 @@
 //! Path S (Molecular Compilation):
 //!   [ALICE-Atoms] → [ALICE-Analytics] (crystal/band/property metrics) → [ALICE-DB] (compilation records) → [ALICE-Cache]
 //!
+//! Path T: Reserved for future use.
+//!
 //! Path U (Presence Protocol):
 //!   [ALICE-Presence] → [ALICE-Edge] (event telemetry) → [ALICE-Analytics] (crossing/proximity) → [ALICE-DB] / [ALICE-Cache]
 //! ```

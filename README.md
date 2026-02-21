@@ -43,6 +43,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | v0.1.0 | Embedded Model Generator | 500x compression, 751ns/1K samples, sensors, MQTT, dashboard | MIT (Core) |
+| [ALICE-Edge-Commercial](https://github.com/ext-sakamoro/ALICE-Edge-Commercial) | v0.1.0 | Enterprise Edge Features | Commercial extensions for ALICE-Edge: advanced fleet management, SLA telemetry | Proprietary |
 | [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | v1.0.0 | Procedural Generation Compression | 10-1000x for patterns, LZMA fallback | Open Core (MIT core) |
 | [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | v0.1.0 | 3D Wavelet Video/Audio Codec | CDF 9/7 Wavelet, rANS entropy coding | AGPL-3.0 |
 | [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | v0.1.0 | Voice Procedural Codec | LPC parametric 100-600x, privacy-preserving | MIT |
@@ -67,9 +68,11 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-API](https://github.com/ext-sakamoro/ALICE-API) | v0.1.0 | API Gateway with Distributed Rate Limiting | GCRA lock-free, SFQ, zero-copy splice | AGPL-3.0 |
 | [ALICE-CDN](https://github.com/ext-sakamoro/ALICE-CDN) | v0.2.0 | Decentralized Content Delivery | Vivaldi coordinates, SIMD, Maglev hashing | AGPL-3.0 |
 | [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | v1.0.0 | High-Performance Video Streaming Codec | FlatBuffers, motion estimation, SIMD, **media-stack** (Codec+Voice) | MIT |
+| [ALICE-Streaming-Protocol-Commercial](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol-Commercial) | v1.0.0 | Enterprise Streaming | Commercial extensions for ASP: DRM, multi-CDN failover, SLA guarantees | Proprietary |
 | [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | v0.6.0 | P2P Synchronization via Event Diffing | 18-byte events, bit-exact determinism, Lockstep/Rollback, PyO3 | AGPL-3.0 |
 | [ALICE-Cloud-Gateway](https://github.com/ext-sakamoro/ALICE-Cloud-Gateway) | v0.1.0 | Edge-to-Cloud SDF Ingest Gateway | ASP decrypt, BLAKE3 KDF, DDSketch/HLL telemetry | AGPL-3.0 |
 | [ALICE-DNS](https://github.com/ext-sakamoro/ALICE-DNS) | v0.1.0 | Bloom Filter DNS Ad-Blocker | 453KB binary, O(1) lookup, Pi-hole replacement | AGPL-3.0 |
+| [ALICE-Edge-Firewall](https://github.com/ext-sakamoro/ALICE-Edge-Firewall) | v0.1.0 | Network Firewall (Linux nfq) | Stateful packet inspection, nfqueue integration, edge-native rule engine | AGPL-3.0 |
 
 ### Security & Cryptography
 
@@ -110,6 +113,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Analytics](https://github.com/ext-sakamoro/ALICE-Analytics) | v0.1.0 | Streaming Telemetry & Statistics | HyperLogLog++, DDSketch, CMS, LDP | AGPL-3.0 |
+| [ALICE-Semantic-Telemetry](https://github.com/ext-sakamoro/ALICE-Semantic-Telemetry) | v0.1.0 | Semantic Observability | Structured span/event tracing, semantic enrichment, OTLP export | MIT |
 | [ALICE-View](https://github.com/ext-sakamoro/ALICE-View) | v0.2.0 | Infinite Canvas GPU Renderer | wgpu procedural rendering, 60 FPS | MIT |
 
 ### Science & Domain-Specific
@@ -146,7 +150,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 411 bridges, 20 pipeline paths (A-U), 51 crates connected | MIT |
 
-**Total: 51 components** | AGPL-3.0: 28 | MIT: 12 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 4 | Semantic Telemetry: 1
+**Total: 55 components** | AGPL-3.0: 28 | MIT: 12 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 6
 
 ## Quick Start
 
@@ -269,7 +273,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **394 cross-crate bridges** across 63 bridge files and 20 pipeline paths (A-U), connecting 51 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **411 cross-crate bridges** across 63 bridge files and 20 pipeline paths (A-U), connecting 51 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -282,13 +286,13 @@ The ALICE ecosystem contains **394 cross-crate bridges** across 63 bridge files 
 | **Manga Pipeline** | Manga→SDF, Manga→Print, Manga→Codec, Manga→Cache, Manga→Browser, Manga→Search, Manga→Text | Manga creation & distribution |
 | **Search & Analytics** | Text→Search, Browser→Search, Browser→Analytics, Print→Analytics | Indexing and telemetry |
 | **Orchestration** | Cloud-Gateway→Queue, Cloud-Gateway→Container | Message routing and deploy |
-| **Font Bridges** | Font→View, Font→Browser, Font→SDF, Font→Manga, Font→Animation, Font→CDN, Font→Print | Parametric font rendering & glyph delivery |
-| **Synth Bridges** | Synth→ASP, Synth→Animation, Synth→Codec, Synth→DB, Synth→View | Procedural audio to ecosystem |
-| **Kinematics Bridges** | Kinematics→Sync, Kinematics→Edge, Kinematics→Physics, Kinematics→Animation, Kinematics→ASP, Kinematics→DB | Motion intent compression & IK |
+| **Font Bridges** | Font→View, Font→Browser, Font→SDF, Font→Manga, Font→Animation, Font→CDN, Font→Print + 7 more (14 total) | Parametric font rendering & glyph delivery |
+| **Synth Bridges** | Synth→ASP, Synth→Animation, Synth→Codec, Synth→DB, Synth→View + 6 more (11 total) | Procedural audio to ecosystem |
+| **Kinematics Bridges** | Kinematics→Sync, Kinematics→Edge, Kinematics→Physics, Kinematics→Animation, Kinematics→ASP, Kinematics→DB + 3 more (9 total) | Motion intent compression & IK |
 | **Motion Bridges** | Motion→Physics, Motion→Print, Motion→Animation, Motion→Edge, Motion→SDF | NURBS/Bezier trajectory control |
 | **RTOS Bridges** | RTOS→Edge, RTOS→Queue, RTOS→Container, RTOS→Analytics, RTOS→DB | Real-time task scheduling |
-| **VCS Bridges** | VCS→SDF, VCS→Animation, VCS→Manga, VCS→Sync, VCS→DB, VCS→Auth | AST semantic version control |
-| **Cross-Crate Bridges** | Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS, Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth, RTOS↔ML, ML↔Motion, Print↔Sync, Text↔Sync, Kinematics→Voice, Synth→Search, Motion→Search, VCS→ASP, Cache↔Crypto, View→Text | Multi-domain integration |
+| **VCS Bridges** | VCS→SDF, VCS→Animation, VCS→Manga, VCS→Sync, VCS→DB, VCS→Auth + 5 more (11 total) | AST semantic version control |
+| **Cross-Crate Bridges** | Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS, Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth, RTOS↔ML, ML↔Motion, Print↔Sync, Text↔Sync, Kinematics→Voice, Synth→Search, Motion→Search, VCS→ASP, Cache↔Crypto, View→Text + 11 more (28 total) | Multi-domain integration |
 | **Voice Bridges** | Voice→Synth, Voice→Animation, Voice→Font, Voice→Edge | Parametric voice codec to ecosystem |
 | **Codec Bridges** | Codec→Synth, Codec→Animation, Codec→SDF, Codec→View | 3D wavelet codec to ecosystem |
 | **Text Bridges** | Text→Font, Text→Manga, Text→DB, Text→Browser | Exception-based text compression |
@@ -304,7 +308,7 @@ The ALICE ecosystem contains **394 cross-crate bridges** across 63 bridge files 
 | **Analytics Bridges** | Analytics→DB, Analytics→Cache, Analytics→CDN, Analytics→ML, Analytics→Search, Analytics→View, Analytics→Edge | Streaming sketches to ecosystem |
 | **Queue Bridges** | Queue→DB, Queue→Edge, Queue→Crypto, Queue→Analytics, Queue→Sync, Queue→Cache | Message queue to ecosystem |
 | **Physics Bridges** | Physics→SDF, Physics→View, Physics→DB, Physics→Cache, Physics→Analytics, Physics→ForceField | Deterministic 128-bit physics to ecosystem |
-| **ASP Bridges** | ASP→Cache, ASP→Codec, ASP→SDF, ASP→View, ASP→CDN, ASP→Analytics | Streaming protocol to ecosystem |
+| **ASP Bridges** | ASP→Cache, ASP→Codec, ASP→SDF, ASP→View, ASP→CDN, ASP→Analytics + 6 more (12 total) | Streaming protocol to ecosystem |
 | **Edge Ext Bridges** | Edge→DB, Edge→View, Edge→ASP, Edge→Analytics | Extended sensor model integration |
 | **CDN Ext Bridges** | CDN→Cache, CDN→Physics, CDN→ASP, CDN→Analytics | Extended content delivery integration |
 | **Ledger Bridges** | Ledger→Analytics (Order, Fill, PnL), Ledger→DB (Fill), Ledger→Cache (Position) | Order book event integration |
@@ -320,15 +324,19 @@ The ALICE ecosystem contains **394 cross-crate bridges** across 63 bridge files 
 | **History Bridges** | History→Analytics (Degradation, Quality, Entropy), History→DB (Restoration), History→Cache (Restoration) | Inverse entropy to ecosystem |
 | **Atoms Bridges** | Atoms→Analytics (Crystal, Band, Properties), Atoms→DB (Compilation), Atoms→Cache (Compilation) | Molecular compilation to ecosystem |
 | **Presence Bridges** | Presence→DB (Crossing), Presence→Analytics (Crossing, Proximity), Presence→Edge (Event), Presence→Cache (Event) | Presence protocol to ecosystem |
+| **Firewall Bridges** | Firewall→ML, Firewall→Analytics, Firewall→Edge, Firewall→Cache, Firewall→DB, Firewall→Queue (6 total) | Network packet inspection to ecosystem |
+| **Edge-Commercial Bridges** | EdgeCommercial→DB, EdgeCommercial→Analytics, EdgeCommercial→Cache (3 total) | Enterprise edge features to ecosystem |
+| **ASP-Commercial Bridges** | ASPCommercial→DB, ASPCommercial→Analytics, ASPCommercial→Auth (3 total) | Enterprise streaming features to ecosystem |
+| **Semantic Telemetry Bridges** | SemanticTelemetry→Analytics, SemanticTelemetry→DB, SemanticTelemetry→View, SemanticTelemetry→Edge, SemanticTelemetry→ML, SemanticTelemetry→Physics, SemanticTelemetry→Sync, SemanticTelemetry→Motion, SemanticTelemetry→RTOS (9 total) | Semantic observability to ecosystem |
 | **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS, **K: Financial**, **L: Biology**, **M: Legal**, **N: Energy**, **O: Space**, **P: Neural**, **Q: Climate**, **R: History**, **S: Atoms**, **U: Presence** | End-to-end cross-crate pipelines |
 
 ### Hardware-Native Optimization
 
-All 394 bridge functions are optimized following the ALICE hardware-native methodology:
+All 411 bridge functions are optimized following the ALICE hardware-native methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|
-| `#[inline]` / `#[inline(always)]` | 190+ annotations | Zero call overhead after LTO |
+| `#[inline]` / `#[inline(always)]` | 480+ annotations | Zero call overhead after LTO |
 | Branchless patterns | `.min()` / `.max()` / `.get().map_or()` | `minss`/`maxss`/`cmov` instructions |
 | Division exorcism | Reciprocal multiplication, hoisted loop-invariant `1.0/x` | 5-8x latency reduction on hot loops |
 | Batch-friendly loops | `chunks_exact_mut()`, pre-allocated buffers | Bounds-check elimination, autovectorization |
@@ -927,6 +935,7 @@ Cross-crate bridges (15 total):
 ### Advanced Domain
 - **Inverse Entropy Restoration** (Path R): Fragment degradation modeling, iterative regularized solver, Shannon entropy measurement, confidence mapping
 - **Molecular Compilation** (Path S): Crystal lattice optimization via genetic algorithm, band structure computation, material property prediction
+- **Note: Path T is reserved for future use.**
 - **Cryptographic Presence** (Path U): Vivaldi network coordinates, zero-knowledge identity proofs, 18-byte presence events, proximity verification
 
 ### Benefits
@@ -1156,7 +1165,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │                                                                   │
 │  Layer 1: MIT                            ← Adoption driver       │
 │  ┌─────────────────────────────────────────────────────────┐     │
-│  │ ALICE-SDF  ALICE-Edge  ALICE-Voice  ALICE-View          │     │
+│  │ ALICE-SDF  ALICE-Edge (Open Core)  ALICE-Voice  ALICE-View │  │
 │  │ ALICE-Streaming-Protocol  ALICE-Eco-System              │     │
 │  │ ALICE-Synth  ALICE-Motion  ALICE-Font  ALICE-FIX        │     │
 │  │ ALICE-Space  ALICE-Presence                             │     │
