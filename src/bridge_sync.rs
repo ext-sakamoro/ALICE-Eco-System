@@ -331,9 +331,9 @@ pub struct SyncPhysicsEvent {
     pub content_hash: u64,
     /// Simulation tick (frame number) at which the force is applied.
     pub tick: u64,
-    /// Horizontal force component, directly mapped from movement[0].
+    /// Horizontal force component, directly mapped from `movement[0]`.
     pub force_x: f32,
-    /// Vertical force component, directly mapped from movement[1].
+    /// Vertical force component, directly mapped from `movement[1]`.
     pub force_y: f32,
     /// True when any force or button input is non-zero.
     pub is_active: bool,

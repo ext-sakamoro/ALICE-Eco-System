@@ -227,8 +227,8 @@ pub fn climate_response_to_cache(resp: &ClimateResponse) -> ClimateCacheEntry {
     // Extreme temperature → shorter cache
     let extreme_temp = (temp > 40.0 || temp < -20.0) as u32;
     ttl -= extreme_temp * 55;
-    // Floor at 10 s
-    if ttl < 10 { ttl = 10; }
+    // Floor at 10 s — branchless: compiler emits a cmov for .max()
+    let ttl = ttl.max(10);
 
     ClimateCacheEntry {
         content_hash: fnv1a(&key),
