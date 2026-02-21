@@ -1,11 +1,12 @@
 //! Cross-bridges — Inter-connections among ALICE crates
 //!
-//! 25 bridges connecting Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS,
+//! 28 bridges connecting Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS,
 //! Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth, Motion→Font,
 //! Kinematics→Synth, RTOS→VCS, Animation↔Manga, Auth↔Crypto,
 //! Queue↔Analytics, Print↔Animation, Manga↔Print,
 //! RTOS↔ML, ML↔Motion, Print↔Sync, Text↔Sync, Kinematics→Voice,
-//! Synth→Search, Motion→Search, VCS→ASP, Cache↔Crypto, View→Text.
+//! Synth→Search, Motion→Search, VCS→ASP, Cache↔Crypto, View→Text,
+//! Manga↔Voice, Print↔SDF, Search↔Font.
 
 use alice_cache::AliceCache;
 use alice_crypto::hash as crypto_hash;
@@ -961,6 +962,264 @@ pub fn view_text_overlay(text: &str, params: &MetaFontParams) -> ViewTextOverlay
     }
 }
 
+// ── Bridge 26: Manga ↔ Voice (lipsync / audio narration) ─────────────────
+
+/// Lipsync cue for a single manga dialogue balloon, consumed by ALICE-Voice.
+///
+/// Encodes timing, phoneme density, and an emotion tag so the voice
+/// synthesiser can drive character lip animation without parsing raw text
+/// on every render frame.
+pub struct MangaVoiceLipsyncCue {
+    /// FNV-1a hash over panel_hash ++ dialogue_hash ++ timing bytes.
+    pub content_hash: u64,
+    /// FNV-1a hash of the manga panel this cue belongs to.
+    pub panel_hash: u64,
+    /// FNV-1a hash of the dialogue text bytes.
+    pub dialogue_hash: u64,
+    /// Cue start time in milliseconds from chapter start.
+    pub start_time_ms: u32,
+    /// Cue duration in milliseconds.
+    pub duration_ms: u32,
+    /// Estimated phoneme count for the dialogue text.
+    pub phoneme_count: u32,
+    /// Emotion tag: 0=neutral, 1=happy, 2=sad, 3=angry, 4=surprised.
+    pub emotion_tag: u8,
+}
+
+/// Build a lipsync cue from manga panel and dialogue metadata.
+///
+/// `dialogue_text` is hashed with FNV-1a; phoneme count is estimated as
+/// `ceil(char_count * 1.4)` which approximates Japanese mora-to-phoneme
+/// conversion without requiring a full text-analysis pass.
+#[inline]
+pub fn manga_to_voice_lipsync_cue(
+    panel_hash: u64,
+    dialogue_text: &str,
+    start_ms: u32,
+    duration_ms: u32,
+    emotion: u8,
+) -> MangaVoiceLipsyncCue {
+    let dialogue_hash = fnv1a(dialogue_text.as_bytes());
+    let char_count = dialogue_text.chars().count() as u32;
+    // Approximate mora count: 1.4 mora per character for mixed Japanese text.
+    let phoneme_count = ((char_count as f32 * 1.4) as u32).max(1);
+
+    // Content hash covers panel identity, dialogue identity, and timing.
+    let mut buf = [0u8; 24];
+    buf[0..8].copy_from_slice(&panel_hash.to_le_bytes());
+    buf[8..16].copy_from_slice(&dialogue_hash.to_le_bytes());
+    buf[16..20].copy_from_slice(&start_ms.to_le_bytes());
+    buf[20..24].copy_from_slice(&duration_ms.to_le_bytes());
+    let content_hash = fnv1a(&buf);
+
+    MangaVoiceLipsyncCue {
+        content_hash,
+        panel_hash,
+        dialogue_hash,
+        start_time_ms: start_ms,
+        duration_ms,
+        phoneme_count,
+        emotion_tag: emotion.min(4),
+    }
+}
+
+/// Narration track summary for a manga chapter, produced by ALICE-Voice.
+///
+/// Aggregates all lipsync cues from a chapter into a single record so the
+/// manga renderer can seek, skip, and preview audio without holding every
+/// individual cue in memory.
+pub struct VoiceMangaNarrationTrack {
+    /// FNV-1a hash over chapter_hash ++ aggregated timing bytes.
+    pub content_hash: u64,
+    /// FNV-1a hash of the manga chapter this track belongs to.
+    pub chapter_hash: u64,
+    /// Total number of lipsync cues in the track.
+    pub total_cues: u32,
+    /// Combined duration of all cues in milliseconds.
+    pub total_duration_ms: u64,
+    /// Mean phoneme count per cue (integer rounded).
+    pub avg_phonemes_per_cue: u32,
+}
+
+/// Summarise voice narration metadata for a manga chapter.
+#[inline]
+pub fn voice_to_manga_narration_track(
+    chapter_hash: u64,
+    cues_count: u32,
+    total_duration_ms: u64,
+    total_phonemes: u64,
+) -> VoiceMangaNarrationTrack {
+    let avg = if cues_count > 0 { (total_phonemes / cues_count as u64) as u32 } else { 0 };
+
+    let mut buf = [0u8; 20];
+    buf[0..8].copy_from_slice(&chapter_hash.to_le_bytes());
+    buf[8..12].copy_from_slice(&cues_count.to_le_bytes());
+    buf[12..20].copy_from_slice(&total_duration_ms.to_le_bytes());
+    let content_hash = fnv1a(&buf);
+
+    VoiceMangaNarrationTrack {
+        content_hash,
+        chapter_hash,
+        total_cues: cues_count,
+        total_duration_ms,
+        avg_phonemes_per_cue: avg,
+    }
+}
+
+// ── Bridge 27: Print ↔ SDF (explicit geometry queries) ───────────────────
+
+/// Slice-plane query sent from ALICE-Print to ALICE-SDF.
+///
+/// Encodes the Z-height, resolution, and SDF tree identity so the SDF
+/// engine can evaluate the signed-distance field at the requested layer
+/// plane without the Print layer needing to know tree internals.
+pub struct PrintSdfSliceQuery {
+    /// FNV-1a hash over z_height, resolution, and sdf_tree_hash bytes.
+    pub content_hash: u64,
+    /// Z-height of the slice plane in millimetres.
+    pub z_height_mm: f32,
+    /// Sampling resolution in micrometres (e.g. 100 = 0.1 mm per sample).
+    pub resolution_um: u32,
+    /// FNV-1a hash of the SDF tree being sliced.
+    pub sdf_tree_hash: u64,
+    /// Slice grid width in samples.
+    pub slice_width: u32,
+    /// Slice grid height in samples.
+    pub slice_height: u32,
+}
+
+/// Build a slice-plane query for ALICE-SDF from print layer parameters.
+///
+/// `width` and `height` are the number of samples across the print bed.
+/// Resolution is stored in micrometres so the SDF side can work in SI
+/// units without floating-point unit-conversion ambiguity.
+#[inline]
+pub fn print_to_sdf_slice_query(
+    z_mm: f32,
+    resolution_um: u32,
+    sdf_hash: u64,
+    width: u32,
+    height: u32,
+) -> PrintSdfSliceQuery {
+    let mut buf = [0u8; 20];
+    buf[0..4].copy_from_slice(&z_mm.to_le_bytes());
+    buf[4..8].copy_from_slice(&resolution_um.to_le_bytes());
+    buf[8..16].copy_from_slice(&sdf_hash.to_le_bytes());
+    buf[16..20].copy_from_slice(&width.to_le_bytes());
+    let content_hash = fnv1a(&buf);
+
+    PrintSdfSliceQuery {
+        content_hash,
+        z_height_mm: z_mm,
+        resolution_um,
+        sdf_tree_hash: sdf_hash,
+        slice_width: width,
+        slice_height: height,
+    }
+}
+
+/// Mesh export record produced by ALICE-SDF for ALICE-Print consumption.
+///
+/// Carries vertex/face counts and volumetric measurements so the slicer
+/// can validate geometry quality before committing to a full G-code pass.
+pub struct SdfPrintMeshExport {
+    /// FNV-1a hash over vertex_count ++ face_count ++ volume bytes.
+    pub content_hash: u64,
+    /// Number of vertices in the exported mesh.
+    pub vertex_count: u32,
+    /// Number of triangular faces in the exported mesh.
+    pub face_count: u32,
+    /// Enclosed volume of the mesh in cubic millimetres.
+    pub volume_mm3: f32,
+    /// Surface area of the mesh in square millimetres.
+    pub surface_area_mm2: f32,
+}
+
+/// Build a mesh export record for ALICE-Print from SDF marching-cubes output.
+#[inline]
+pub fn sdf_to_print_mesh_export(
+    vertices: u32,
+    faces: u32,
+    volume: f32,
+    surface_area: f32,
+) -> SdfPrintMeshExport {
+    let mut buf = [0u8; 16];
+    buf[0..4].copy_from_slice(&vertices.to_le_bytes());
+    buf[4..8].copy_from_slice(&faces.to_le_bytes());
+    buf[8..12].copy_from_slice(&volume.to_le_bytes());
+    buf[12..16].copy_from_slice(&surface_area.to_le_bytes());
+    let content_hash = fnv1a(&buf);
+
+    SdfPrintMeshExport {
+        content_hash,
+        vertex_count: vertices,
+        face_count: faces,
+        volume_mm3: volume,
+        surface_area_mm2: surface_area,
+    }
+}
+
+// ── Bridge 28: Search ↔ Font (font metrics in search results) ────────────
+
+/// Font glyph metrics entry stored in an ALICE-Search index.
+///
+/// Allows the search layer to rank and filter font assets by typographic
+/// properties (advance width, vertical metrics, spacing class) without
+/// loading the full font binary for each candidate.
+pub struct SearchFontMetrics {
+    /// FNV-1a hash over glyph_name ++ advance ++ ascender ++ descender bytes.
+    pub content_hash: u64,
+    /// FNV-1a hash of the glyph name bytes (search index key).
+    pub glyph_hash: u64,
+    /// Horizontal advance width in font design units (typically 1/1000 em).
+    pub advance_width: u16,
+    /// Ascender height in font design units.
+    pub ascender: i16,
+    /// Descender depth in font design units (negative = below baseline).
+    pub descender: i16,
+    /// Line height in font design units (ascender - descender + line gap).
+    pub line_height: u16,
+    /// True when the font is a monospace face (all glyphs have equal advance).
+    pub is_monospace: bool,
+}
+
+/// Index font glyph metrics in ALICE-Search.
+///
+/// `advance`, `ascender`, `descender`, and `line_height` use font design
+/// units (typically 1 em = 1000 units for CFF or 2048 for TTF).
+/// `monospace` should be true for fixed-pitch terminal and code fonts.
+#[inline]
+pub fn search_to_font_metrics(
+    glyph_name: &str,
+    advance: u16,
+    ascender: i16,
+    descender: i16,
+    line_height: u16,
+    monospace: bool,
+) -> SearchFontMetrics {
+    let glyph_hash = fnv1a(glyph_name.as_bytes());
+
+    let mut buf = [0u8; 18];
+    buf[0..8].copy_from_slice(&glyph_hash.to_le_bytes());
+    buf[8..10].copy_from_slice(&advance.to_le_bytes());
+    buf[10..12].copy_from_slice(&ascender.to_le_bytes());
+    buf[12..14].copy_from_slice(&descender.to_le_bytes());
+    buf[14..16].copy_from_slice(&line_height.to_le_bytes());
+    buf[16] = monospace as u8;
+    buf[17] = 0; // padding
+    let content_hash = fnv1a(&buf);
+
+    SearchFontMetrics {
+        content_hash,
+        glyph_hash,
+        advance_width: advance,
+        ascender,
+        descender,
+        line_height,
+        is_monospace: monospace,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -1345,5 +1604,135 @@ mod tests {
         // Two identical strings should yield the same hash (determinism)
         let overlay2 = view_text_overlay("Hello ALICE View", &params);
         assert_eq!(overlay.content_hash, overlay2.content_hash);
+    }
+
+    // ── Bridge 26 tests ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_manga_to_voice_lipsync_cue_basic() {
+        let panel_hash: u64 = 0xDEADBEEF_CAFEBABE;
+        let cue = manga_to_voice_lipsync_cue(panel_hash, "こんにちは", 0, 1500, 1);
+        // Dialogue hash must be non-zero and deterministic.
+        assert_ne!(cue.dialogue_hash, 0);
+        assert_ne!(cue.content_hash, 0);
+        assert_eq!(cue.panel_hash, panel_hash);
+        assert_eq!(cue.start_time_ms, 0);
+        assert_eq!(cue.duration_ms, 1500);
+        // 5 chars → ceil(5 * 1.4) = 7 phonemes.
+        assert_eq!(cue.phoneme_count, 7);
+        assert_eq!(cue.emotion_tag, 1);
+    }
+
+    #[test]
+    fn test_manga_to_voice_lipsync_cue_deterministic() {
+        let c1 = manga_to_voice_lipsync_cue(42, "ABC", 100, 500, 0);
+        let c2 = manga_to_voice_lipsync_cue(42, "ABC", 100, 500, 0);
+        assert_eq!(c1.content_hash, c2.content_hash);
+        assert_eq!(c1.dialogue_hash, c2.dialogue_hash);
+    }
+
+    #[test]
+    fn test_manga_to_voice_lipsync_cue_emotion_clamped() {
+        // Emotion values > 4 must be clamped to 4.
+        let cue = manga_to_voice_lipsync_cue(0, "x", 0, 100, 99);
+        assert_eq!(cue.emotion_tag, 4);
+    }
+
+    #[test]
+    fn test_voice_to_manga_narration_track() {
+        let chapter_hash: u64 = 0x1234_5678_9ABC_DEF0;
+        let track = voice_to_manga_narration_track(chapter_hash, 20, 30_000, 140);
+        assert_eq!(track.chapter_hash, chapter_hash);
+        assert_eq!(track.total_cues, 20);
+        assert_eq!(track.total_duration_ms, 30_000);
+        // 140 phonemes / 20 cues = 7 avg.
+        assert_eq!(track.avg_phonemes_per_cue, 7);
+        assert_ne!(track.content_hash, 0);
+    }
+
+    #[test]
+    fn test_voice_to_manga_narration_track_zero_cues() {
+        // Must not divide by zero when cues_count is 0.
+        let track = voice_to_manga_narration_track(1, 0, 0, 0);
+        assert_eq!(track.total_cues, 0);
+        assert_eq!(track.avg_phonemes_per_cue, 0);
+        assert_ne!(track.content_hash, 0);
+    }
+
+    // ── Bridge 27 tests ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_print_to_sdf_slice_query() {
+        let sdf_hash: u64 = 0xABCD_1234_EF56_7890;
+        let q = print_to_sdf_slice_query(5.0, 100, sdf_hash, 2200, 2200);
+        assert_ne!(q.content_hash, 0);
+        assert!((q.z_height_mm - 5.0).abs() < f32::EPSILON);
+        assert_eq!(q.resolution_um, 100);
+        assert_eq!(q.sdf_tree_hash, sdf_hash);
+        assert_eq!(q.slice_width, 2200);
+        assert_eq!(q.slice_height, 2200);
+    }
+
+    #[test]
+    fn test_print_to_sdf_slice_query_different_z_differs() {
+        let h: u64 = 1;
+        let q1 = print_to_sdf_slice_query(1.0, 50, h, 100, 100);
+        let q2 = print_to_sdf_slice_query(2.0, 50, h, 100, 100);
+        assert_ne!(q1.content_hash, q2.content_hash);
+    }
+
+    #[test]
+    fn test_sdf_to_print_mesh_export() {
+        let export = sdf_to_print_mesh_export(5832, 11200, 4189.0, 1256.6);
+        assert_ne!(export.content_hash, 0);
+        assert_eq!(export.vertex_count, 5832);
+        assert_eq!(export.face_count, 11200);
+        assert!((export.volume_mm3 - 4189.0).abs() < 0.01);
+        assert!((export.surface_area_mm2 - 1256.6).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_sdf_to_print_mesh_export_deterministic() {
+        let e1 = sdf_to_print_mesh_export(100, 200, 50.0, 30.0);
+        let e2 = sdf_to_print_mesh_export(100, 200, 50.0, 30.0);
+        assert_eq!(e1.content_hash, e2.content_hash);
+    }
+
+    // ── Bridge 28 tests ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_search_to_font_metrics_proportional() {
+        let m = search_to_font_metrics("A", 600, 800, -200, 1000, false);
+        assert_ne!(m.content_hash, 0);
+        assert_ne!(m.glyph_hash, 0);
+        assert_eq!(m.advance_width, 600);
+        assert_eq!(m.ascender, 800);
+        assert_eq!(m.descender, -200);
+        assert_eq!(m.line_height, 1000);
+        assert!(!m.is_monospace);
+    }
+
+    #[test]
+    fn test_search_to_font_metrics_monospace() {
+        let m = search_to_font_metrics("space", 500, 700, -200, 950, true);
+        assert!(m.is_monospace);
+        assert_eq!(m.advance_width, 500);
+    }
+
+    #[test]
+    fn test_search_to_font_metrics_different_glyphs_differ() {
+        let m1 = search_to_font_metrics("A", 600, 800, -200, 1000, false);
+        let m2 = search_to_font_metrics("B", 600, 800, -200, 1000, false);
+        // Different glyph names → different glyph_hash and content_hash.
+        assert_ne!(m1.glyph_hash, m2.glyph_hash);
+        assert_ne!(m1.content_hash, m2.content_hash);
+    }
+
+    #[test]
+    fn test_search_to_font_metrics_deterministic() {
+        let m1 = search_to_font_metrics("uni3041", 1000, 880, -120, 1100, false);
+        let m2 = search_to_font_metrics("uni3041", 1000, 880, -120, 1100, false);
+        assert_eq!(m1.content_hash, m2.content_hash);
+        assert_eq!(m1.glyph_hash, m2.glyph_hash);
     }
 }

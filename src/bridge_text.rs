@@ -1,8 +1,15 @@
-//! Text bridges — ALICE-Text ↔ Font, Manga, DB, Browser, Queue, Analytics
+//! Text bridges — ALICE-Text ↔ Font, Manga, DB, Browser, Queue, Analytics, SDF
 //!
-//! 6 bridges connecting exception-based text compression to the ALICE ecosystem.
+//! 7 bridges connecting exception-based text compression to the ALICE ecosystem.
 
 use alice_text::{compress_tuned, decompress_tuned, CompressionMode};
+
+#[inline(always)]
+fn fnv1a_text(data: &[u8]) -> u64 {
+    let mut h: u64 = 0xcbf29ce484222325;
+    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    h
+}
 
 // ── Bridge 1: Text → Font (compressed text → MetaFont rendering) ────────
 
@@ -182,6 +189,105 @@ pub fn text_to_analytics_metrics(text: &str) -> TextAnalyticsMetrics {
     }
 }
 
+// ── Bridge 7: Text ↔ SDF (3D text rendering via SDF geometry) ────────────
+
+/// Request to render text as 3D geometry using SDF extrusion.
+///
+/// Encodes text and font identity as content hashes so the SDF pipeline can
+/// cache generated geometry keyed by content without re-extruding identical strings.
+pub struct TextSdf3dRequest {
+    /// FNV-1a hash of the compressed text content (geometry cache key).
+    pub content_hash: u64,
+    /// FNV-1a hash of the raw text bytes (dedup / dirty-flag key).
+    pub text_hash: u64,
+    /// FNV-1a hash of the font name bytes (selects SDF outline generator).
+    pub font_hash: u64,
+    /// Extrusion depth in millimetres (z-axis thickness of the 3D glyph).
+    pub extrude_depth_mm: f32,
+    /// Bevel radius in millimetres applied to the extruded edge.
+    pub bevel_radius_mm: f32,
+    /// Number of characters in the source text.
+    pub char_count: usize,
+    /// Voxel grid resolution for SDF evaluation (higher = finer detail).
+    pub sdf_resolution: u32,
+}
+
+/// Build a 3D text SDF extrusion request from a text string and font descriptor.
+///
+/// Compresses the text with ALICE-Text to derive a stable content hash, then
+/// combines it with the font and geometry parameters into a request struct
+/// that the SDF pipeline can use to drive glyph extrusion.
+#[inline]
+pub fn text_to_sdf_3d_request(
+    text: &str,
+    font_name: &str,
+    extrude_depth_mm: f32,
+    bevel_radius_mm: f32,
+    resolution: u32,
+) -> TextSdf3dRequest {
+    let compressed = compress_tuned(text, CompressionMode::Balanced)
+        .unwrap_or_else(|_| text.as_bytes().to_vec());
+    let content_hash = fnv1a_text(&compressed);
+    let text_hash = fnv1a_text(text.as_bytes());
+    let font_hash = fnv1a_text(font_name.as_bytes());
+    let char_count = text.chars().count();
+
+    TextSdf3dRequest {
+        content_hash,
+        text_hash,
+        font_hash,
+        extrude_depth_mm,
+        bevel_radius_mm,
+        char_count,
+        sdf_resolution: resolution.max(8),
+    }
+}
+
+/// Mesh result produced by the SDF pipeline after evaluating a 3D text request.
+///
+/// Returned from the SDF layer back to the Text layer so callers can query
+/// mesh statistics (vertex / face counts, bounding box) without holding a
+/// reference to SDF-internal data structures.
+pub struct SdfTextMeshResult {
+    /// FNV-1a hash matching the originating TextSdf3dRequest content_hash.
+    pub content_hash: u64,
+    /// FNV-1a hash of the source text bytes.
+    pub text_hash: u64,
+    /// Total vertex count in the generated mesh.
+    pub vertex_count: usize,
+    /// Total triangle face count in the generated mesh.
+    pub face_count: usize,
+    /// Axis-aligned bounding box extents in millimetres (x, y, z).
+    pub bounding_box_mm: [f32; 3],
+}
+
+/// Build an SDF text mesh result record from mesh statistics.
+///
+/// `vertices` and `faces` are element counts (not byte sizes).
+/// `bbox_x/y/z` are the bounding box extents in millimetres.
+#[inline]
+pub fn sdf_to_text_mesh_result(
+    text: &str,
+    vertices: usize,
+    faces: usize,
+    bbox_x: f32,
+    bbox_y: f32,
+    bbox_z: f32,
+) -> SdfTextMeshResult {
+    let compressed = compress_tuned(text, CompressionMode::Balanced)
+        .unwrap_or_else(|_| text.as_bytes().to_vec());
+    let content_hash = fnv1a_text(&compressed);
+    let text_hash = fnv1a_text(text.as_bytes());
+
+    SdfTextMeshResult {
+        content_hash,
+        text_hash,
+        vertex_count: vertices,
+        face_count: faces,
+        bounding_box_mm: [bbox_x, bbox_y, bbox_z],
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -240,5 +346,69 @@ mod tests {
         assert!(m.original_bytes > 0);
         assert!(m.compressed_bytes > 0);
         assert!(m.compression_ratio > 0.0);
+    }
+
+    // ── Bridge 7 tests ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_text_to_sdf_3d_request_basic() {
+        let req = text_to_sdf_3d_request("Hello", "Noto Sans", 5.0, 0.5, 64);
+        assert_ne!(req.content_hash, 0);
+        assert_ne!(req.text_hash, 0);
+        assert_ne!(req.font_hash, 0);
+        assert_eq!(req.char_count, 5);
+        assert!((req.extrude_depth_mm - 5.0).abs() < f32::EPSILON);
+        assert!((req.bevel_radius_mm - 0.5).abs() < f32::EPSILON);
+        assert_eq!(req.sdf_resolution, 64);
+    }
+
+    #[test]
+    fn test_text_to_sdf_3d_request_resolution_floor() {
+        // Resolution below 8 should be clamped to 8.
+        let req = text_to_sdf_3d_request("A", "Mono", 2.0, 0.1, 0);
+        assert_eq!(req.sdf_resolution, 8, "resolution below 8 must be clamped to 8");
+    }
+
+    #[test]
+    fn test_text_to_sdf_3d_request_different_fonts_differ() {
+        let req_a = text_to_sdf_3d_request("ABC", "Noto Sans", 3.0, 0.2, 32);
+        let req_b = text_to_sdf_3d_request("ABC", "Noto Serif", 3.0, 0.2, 32);
+        assert_ne!(req_a.font_hash, req_b.font_hash);
+        // Content hash includes only text (not font), so text hash must be equal.
+        assert_eq!(req_a.text_hash, req_b.text_hash);
+    }
+
+    #[test]
+    fn test_text_to_sdf_3d_request_different_texts_differ() {
+        let req_a = text_to_sdf_3d_request("Hello", "Noto Sans", 3.0, 0.2, 32);
+        let req_b = text_to_sdf_3d_request("World", "Noto Sans", 3.0, 0.2, 32);
+        assert_ne!(req_a.content_hash, req_b.content_hash);
+        assert_ne!(req_a.text_hash, req_b.text_hash);
+        // Font hash must be identical for the same font name.
+        assert_eq!(req_a.font_hash, req_b.font_hash);
+    }
+
+    #[test]
+    fn test_sdf_to_text_mesh_result_basic() {
+        let result = sdf_to_text_mesh_result("ALICE", 1024, 512, 30.0, 10.0, 5.0);
+        assert_ne!(result.content_hash, 0);
+        assert_ne!(result.text_hash, 0);
+        assert_eq!(result.vertex_count, 1024);
+        assert_eq!(result.face_count, 512);
+        assert!((result.bounding_box_mm[0] - 30.0).abs() < f32::EPSILON);
+        assert!((result.bounding_box_mm[1] - 10.0).abs() < f32::EPSILON);
+        assert!((result.bounding_box_mm[2] - 5.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_sdf_to_text_mesh_result_hash_matches_request() {
+        // The content_hash of the mesh result must match the request derived from
+        // the same text string so the caller can correlate request ↔ result.
+        let text = "ALICE 3D";
+        let req = text_to_sdf_3d_request(text, "Gothic", 4.0, 0.3, 128);
+        let result = sdf_to_text_mesh_result(text, 2048, 1024, 50.0, 15.0, 4.0);
+        assert_eq!(req.content_hash, result.content_hash,
+            "request and result must share the same content_hash for the same text");
+        assert_eq!(req.text_hash, result.text_hash);
     }
 }

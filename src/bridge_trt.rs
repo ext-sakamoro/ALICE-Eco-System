@@ -1,8 +1,15 @@
-//! TRT bridges — ALICE-TRT ↔ DB, Analytics, Cache, Edge, View
+//! TRT bridges — ALICE-TRT ↔ DB, Analytics, Cache, Edge, View, Animation
 //!
-//! 5 bridges connecting GPU ternary inference to the ALICE ecosystem.
+//! 7 bridges connecting GPU ternary inference to the ALICE ecosystem.
 //! All structs carry only plain data derived from inference configuration
 //! so they are usable without an active GPU device.
+
+#[inline(always)]
+fn fnv1a_trt(data: &[u8]) -> u64 {
+    let mut h: u64 = 0xcbf29ce484222325;
+    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    h
+}
 
 // ── Bridge 1: TRT → DB (inference result persistence) ───────────────────
 
@@ -227,6 +234,109 @@ pub fn trt_to_view_config(width: usize, height: usize, out_features: usize, scal
     }
 }
 
+// ── Bridge 6: TRT ↔ Animation (AI-driven motion prediction) ─────────────
+
+/// AI motion prediction result produced by a TRT model over animation frames.
+///
+/// Encodes the model identity and prediction statistics so the Animation layer
+/// can consume predicted joint poses without holding a reference to TRT internals.
+pub struct TrtAnimationPrediction {
+    /// FNV-1a hash over model name bytes (model identity / cache key).
+    pub content_hash: u64,
+    /// FNV-1a hash over model name + input/output frame counts.
+    pub model_hash: u64,
+    /// Number of input animation frames fed to the model.
+    pub input_frames: usize,
+    /// Number of future frames predicted by the model.
+    pub predicted_frames: usize,
+    /// Number of skeleton joints covered by the prediction.
+    pub joint_count: usize,
+    /// Model confidence score in [0.0, 1.0] (higher = more certain).
+    pub confidence: f32,
+    /// GPU inference latency in microseconds for this prediction pass.
+    pub latency_us: u64,
+}
+
+/// Build a TRT motion prediction descriptor from inference metadata.
+///
+/// `model_name` identifies the TRT model used for prediction.
+/// `confidence` is clamped to [0.0, 1.0] so callers do not need to pre-validate.
+#[inline]
+pub fn trt_to_animation_prediction(
+    model_name: &str,
+    input_frames: usize,
+    predicted_frames: usize,
+    joint_count: usize,
+    confidence: f32,
+    latency_us: u64,
+) -> TrtAnimationPrediction {
+    let content_hash = fnv1a_trt(model_name.as_bytes());
+    // model_hash mixes name, frame counts, and joint count for a richer identity.
+    let mut buf = [0u8; 24];
+    buf[0..8].copy_from_slice(&(input_frames as u64).to_le_bytes());
+    buf[8..16].copy_from_slice(&(predicted_frames as u64).to_le_bytes());
+    buf[16..24].copy_from_slice(&(joint_count as u64).to_le_bytes());
+    let model_hash = fnv1a_trt(&[model_name.as_bytes(), &buf].concat());
+
+    TrtAnimationPrediction {
+        content_hash,
+        model_hash,
+        input_frames,
+        predicted_frames,
+        joint_count,
+        confidence: confidence.clamp(0.0, 1.0),
+        latency_us,
+    }
+}
+
+/// Animation sequence record packaged for TRT training data ingestion.
+///
+/// Converts a sequence descriptor (frame count, joint count, keyframe positions)
+/// into a compact record the TRT training pipeline can use to build motion
+/// prediction datasets without access to the full animation asset.
+pub struct AnimationTrtTrainingData {
+    /// FNV-1a hash of the sequence name bytes (dataset dedup key).
+    pub content_hash: u64,
+    /// FNV-1a hash of the sequence name combined with frame / joint metadata.
+    pub sequence_hash: u64,
+    /// Total number of frames in the animation sequence.
+    pub frame_count: usize,
+    /// Number of skeleton joints recorded per frame.
+    pub joint_count: usize,
+    /// Total number of keyframe entries across all joints.
+    pub total_keyframes: usize,
+}
+
+/// Build a TRT training data record from an animation sequence descriptor.
+///
+/// `sequence_name` labels the dataset entry.
+/// `keyframes` is the total number of keyframe entries across all joints in
+/// the sequence (typically `frame_count × joint_count` for dense captures,
+/// or fewer for sparse keyframed animation).
+#[inline]
+pub fn animation_to_trt_training_data(
+    sequence_name: &str,
+    frame_count: usize,
+    joint_count: usize,
+    keyframes: usize,
+) -> AnimationTrtTrainingData {
+    let content_hash = fnv1a_trt(sequence_name.as_bytes());
+    // sequence_hash mixes the name with numeric metadata for a stable unique key.
+    let mut buf = [0u8; 24];
+    buf[0..8].copy_from_slice(&(frame_count as u64).to_le_bytes());
+    buf[8..16].copy_from_slice(&(joint_count as u64).to_le_bytes());
+    buf[16..24].copy_from_slice(&(keyframes as u64).to_le_bytes());
+    let sequence_hash = fnv1a_trt(&[sequence_name.as_bytes(), &buf].concat());
+
+    AnimationTrtTrainingData {
+        content_hash,
+        sequence_hash,
+        frame_count,
+        joint_count,
+        total_keyframes: keyframes,
+    }
+}
+
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -314,5 +424,87 @@ mod tests {
         assert_eq!(cfg.feature_channels, 8);
         // output_tensor_bytes: 1920 * 1080 * 8 * 4 = 66 355 200
         assert_eq!(cfg.output_tensor_bytes, 1920 * 1080 * 8 * 4);
+    }
+
+    // ── Bridge 6 tests ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_trt_to_animation_prediction_basic() {
+        let pred = trt_to_animation_prediction("motion_v2", 30, 10, 24, 0.92, 3500);
+        assert_ne!(pred.content_hash, 0);
+        assert_ne!(pred.model_hash, 0);
+        assert_eq!(pred.input_frames, 30);
+        assert_eq!(pred.predicted_frames, 10);
+        assert_eq!(pred.joint_count, 24);
+        assert!((pred.confidence - 0.92).abs() < 1e-5);
+        assert_eq!(pred.latency_us, 3500);
+    }
+
+    #[test]
+    fn test_trt_to_animation_prediction_confidence_clamped() {
+        // Confidence values outside [0, 1] must be clamped.
+        let pred_high = trt_to_animation_prediction("m", 1, 1, 1, 1.5, 0);
+        let pred_low  = trt_to_animation_prediction("m", 1, 1, 1, -0.3, 0);
+        assert!((pred_high.confidence - 1.0).abs() < f32::EPSILON,
+            "confidence > 1.0 must clamp to 1.0");
+        assert!((pred_low.confidence).abs() < f32::EPSILON,
+            "negative confidence must clamp to 0.0");
+    }
+
+    #[test]
+    fn test_trt_to_animation_prediction_different_models_differ() {
+        let a = trt_to_animation_prediction("model_a", 30, 10, 24, 0.9, 1000);
+        let b = trt_to_animation_prediction("model_b", 30, 10, 24, 0.9, 1000);
+        assert_ne!(a.content_hash, b.content_hash);
+        assert_ne!(a.model_hash, b.model_hash);
+    }
+
+    #[test]
+    fn test_trt_to_animation_prediction_same_model_same_hash() {
+        let a = trt_to_animation_prediction("stable_model", 60, 20, 32, 0.85, 5000);
+        let b = trt_to_animation_prediction("stable_model", 60, 20, 32, 0.85, 5000);
+        assert_eq!(a.content_hash, b.content_hash, "identical inputs must yield identical hashes");
+        assert_eq!(a.model_hash, b.model_hash);
+    }
+
+    // ── Bridge 7 tests ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_animation_to_trt_training_data_basic() {
+        let data = animation_to_trt_training_data("run_cycle", 120, 24, 2880);
+        assert_ne!(data.content_hash, 0);
+        assert_ne!(data.sequence_hash, 0);
+        assert_eq!(data.frame_count, 120);
+        assert_eq!(data.joint_count, 24);
+        assert_eq!(data.total_keyframes, 2880);
+    }
+
+    #[test]
+    fn test_animation_to_trt_training_data_different_names_differ() {
+        let a = animation_to_trt_training_data("walk", 60, 24, 1440);
+        let b = animation_to_trt_training_data("sprint", 60, 24, 1440);
+        assert_ne!(a.content_hash, b.content_hash);
+        assert_ne!(a.sequence_hash, b.sequence_hash);
+    }
+
+    #[test]
+    fn test_animation_to_trt_training_data_same_name_same_hash() {
+        let a = animation_to_trt_training_data("idle_loop", 30, 16, 480);
+        let b = animation_to_trt_training_data("idle_loop", 30, 16, 480);
+        assert_eq!(a.content_hash, b.content_hash, "identical inputs must be deterministic");
+        assert_eq!(a.sequence_hash, b.sequence_hash);
+    }
+
+    #[test]
+    fn test_animation_to_trt_training_data_different_frame_counts_differ() {
+        // Same name but different frame counts → different sequence_hash.
+        let a = animation_to_trt_training_data("clip", 60, 24, 1440);
+        let b = animation_to_trt_training_data("clip", 120, 24, 2880);
+        // content_hash is name-only, so it should be equal.
+        assert_eq!(a.content_hash, b.content_hash,
+            "content_hash is derived from name only");
+        // sequence_hash mixes in frame metadata, so it must differ.
+        assert_ne!(a.sequence_hash, b.sequence_hash,
+            "sequence_hash must change when frame_count changes");
     }
 }
