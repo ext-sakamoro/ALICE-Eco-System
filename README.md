@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (42 Components)                     │
+│                          ALICE Ecosystem (51 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -21,10 +21,15 @@
 │  │ RTOS              │  └────────────────┘  │ Eco-System             │  │
 │  └───────────────────┘                       └────────────────────────┘  │
 │                                                                             │
-│  ┌──── Motion & VCS ─┐  ┌─── Financial ───┐                               │
-│  │ Motion  VCS      │  │ Ledger   Risk   │                               │
-│  │ Kinematics       │  │ FIX   Settlement│                               │
-│  └───────────────────┘  └────────────────┘                               │
+│  ┌──── Motion & VCS ─┐  ┌─── Financial ───┐  ┌─── Science ──────────┐  │
+│  │ Motion  VCS      │  │ Ledger   Risk   │  │ Bio    Legal  Energy │  │
+│  │ Kinematics       │  │ FIX   Settlement│  │ Space  Neural Climate│  │
+│  └───────────────────┘  └────────────────┘  └──────────────────────┘  │
+│                                                                             │
+│  ┌──── Advanced ─────┐                                                     │
+│  │ History  Atoms    │  Inverse entropy, molecular compilation,            │
+│  │ Presence          │  cryptographic presence protocol                    │
+│  └───────────────────┘                                                     │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -107,6 +112,25 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Analytics](https://github.com/ext-sakamoro/ALICE-Analytics) | v0.1.0 | Streaming Telemetry & Statistics | HyperLogLog++, DDSketch, CMS, LDP | AGPL-3.0 |
 | [ALICE-View](https://github.com/ext-sakamoro/ALICE-View) | v0.2.0 | Infinite Canvas GPU Renderer | wgpu procedural rendering, 60 FPS | MIT |
 
+### Science & Domain-Specific
+
+| Component | Version | Description | Feature | License |
+|-----------|---------|-------------|---------|---------|
+| [ALICE-Bio](https://github.com/ext-sakamoro/ALICE-Bio) | v0.1.0 | Molecular Biology Engine | Amino acid→SDF, Lennard-Jones, CHARMM, protein folding metrics | AGPL-3.0 |
+| [ALICE-Legal](https://github.com/ext-sakamoro/ALICE-Legal) | v0.1.0 | Legal Compliance Engine | Statute tree, contract analysis, conflict detection, append-only audit log | AGPL-3.0 |
+| [ALICE-Energy](https://github.com/ext-sakamoro/ALICE-Energy) | v0.1.0 | Power Grid Simulation | Bus/branch topology, Newton-Raphson power flow, battery SoC, phase correction | AGPL-3.0 |
+| [ALICE-Space](https://github.com/ext-sakamoro/ALICE-Space) | v0.1.0 | Deep-Space Communication | CommLink budget, differential telemetry (delta encoding), autonomous mission control | MIT |
+| [ALICE-Neural](https://github.com/ext-sakamoro/ALICE-Neural) | v0.1.0 | Brain-Computer Interface | Spike train detection, ISI analysis, firing rate, Bayesian intent classification | AGPL-3.0 |
+| [ALICE-Climate](https://github.com/ext-sakamoro/ALICE-Climate) | v0.1.0 | Planetary Climate Modeling | Weather stations, IDW interpolation, Clausius-Clapeyron, climate anomaly detection | AGPL-3.0 |
+
+### Advanced Domain
+
+| Component | Version | Description | Feature | License |
+|-----------|---------|-------------|---------|---------|
+| [ALICE-History](https://github.com/ext-sakamoro/ALICE-History) | v0.1.0 | Inverse Entropy Restoration | Fragment degradation modeling, iterative solver, Shannon entropy, confidence mapping | AGPL-3.0 |
+| [ALICE-Atoms](https://github.com/ext-sakamoro/ALICE-Atoms) | v0.1.0 | Molecular Compilation | Crystal lattice, Lennard-Jones, band structure, genetic algorithm material compiler | Proprietary |
+| [ALICE-Presence](https://github.com/ext-sakamoro/ALICE-Presence) | v0.1.0 | Cryptographic Presence Protocol | Vivaldi coordinates, ZKP identity, 18-byte events, proximity proofs | MIT |
+
 ### Application
 
 | Component | Version | Description | Feature | License |
@@ -120,9 +144,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 255 bridges, 11 pipeline paths (A-K), 42 crates connected, 409 tests | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 300 bridges, 20 pipeline paths (A-U), 51 crates connected | MIT |
 
-**Total: 39 components** | AGPL-3.0: 21 | MIT: 9 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 3
+**Total: 51 components** | AGPL-3.0: 28 | MIT: 12 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 4 | Semantic Telemetry: 1
 
 ## Quick Start
 
@@ -245,7 +269,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **255 cross-crate bridges** across 41 bridge files and 11 pipeline paths (A-K), connecting 42 crates with 409 tests. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **300 cross-crate bridges** across 50 bridge files and 20 pipeline paths (A-U), connecting 51 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -287,11 +311,20 @@ The ALICE ecosystem contains **255 cross-crate bridges** across 41 bridge files 
 | **Risk Bridges** | Risk→Analytics (Reject), Risk→Cache (Limits), Risk→Semantic (Reject severity) | Pre-trade risk telemetry |
 | **FIX Bridges** | FIX→Analytics (Message), Ledger→FIX (ExecReport), FIX→Semantic (Session) | FIX protocol integration |
 | **Settlement Bridges** | Settlement→DB (Trade), Settlement→Analytics (Journal), Settlement→Queue (Obligation), Settlement→Semantic (Trade) | Post-trade settlement integration |
-| **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS, **K: Financial Trading** | End-to-end cross-crate pipelines |
+| **Bio Bridges** | Bio→Analytics (Residue, Energy), Bio→DB (Residue), Bio→SDF (Protein), Bio→Cache (Energy) | Molecular biology to ecosystem |
+| **Legal Bridges** | Legal→Analytics (Statute, Contract), Legal→DB (AuditEntry), Legal→Cache (Contract), Legal→Edge (Alert) | Legal compliance to ecosystem |
+| **Energy Bridges** | Energy→Analytics (PowerNode, Battery), Energy→DB (PowerFlow), Energy→Edge (Phase), Energy→Cache (Battery) | Power grid to ecosystem |
+| **Space Bridges** | Space→Analytics (CommLink, Mission), Space→DB (Mission), Space→Edge (Differential), Space→Cache (CommLink) | Deep-space comms to ecosystem |
+| **Neural Bridges** | Neural→Analytics (SpikeRate, Intent), Neural→DB (Intent), Neural→Edge (SpikeRate), Neural→Cache (Intent) | BCI to ecosystem |
+| **Climate Bridges** | Climate→Analytics (Station, Anomaly), Climate→DB (Observation), Climate→Edge (Anomaly), Climate→Cache (Station) | Climate modeling to ecosystem |
+| **History Bridges** | History→Analytics (Degradation, Quality, Entropy), History→DB (Restoration), History→Cache (Restoration) | Inverse entropy to ecosystem |
+| **Atoms Bridges** | Atoms→Analytics (Crystal, Band, Properties), Atoms→DB (Compilation), Atoms→Cache (Compilation) | Molecular compilation to ecosystem |
+| **Presence Bridges** | Presence→DB (Crossing), Presence→Analytics (Crossing, Proximity), Presence→Edge (Event), Presence→Cache (Event) | Presence protocol to ecosystem |
+| **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS, **K: Financial**, **L: Biology**, **M: Legal**, **N: Energy**, **O: Space**, **P: Neural**, **Q: Climate**, **R: History**, **S: Atoms**, **U: Presence** | End-to-end cross-crate pipelines |
 
 ### Hardware-Native Optimization
 
-All 255 bridge functions are optimized following the ALICE hardware-native methodology:
+All 300 bridge functions are optimized following the ALICE hardware-native methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|
@@ -883,6 +916,19 @@ Cross-crate bridges (15 total):
 - Post-trade bilateral netting and clearing house settlement
 - Audit trail via append-only settlement journal
 
+### Science & Domain-Specific
+- **Molecular Biology** (Path L): Protein SDF modeling, amino acid residue analytics, Lennard-Jones energy computation
+- **Legal Compliance** (Path M): Statute tree analysis, contract conflict detection, append-only audit logs
+- **Energy Grid** (Path N): Newton-Raphson power flow, battery SoC simulation, phase correction telemetry
+- **Deep-Space Communication** (Path O): Comm link budgets, differential telemetry (delta encoding), autonomous mission control
+- **Brain-Computer Interface** (Path P): Spike train detection, ISI analysis, Bayesian intent classification
+- **Planetary Climate** (Path Q): IDW interpolation, Clausius-Clapeyron moisture, climate anomaly detection
+
+### Advanced Domain
+- **Inverse Entropy Restoration** (Path R): Fragment degradation modeling, iterative regularized solver, Shannon entropy measurement, confidence mapping
+- **Molecular Compilation** (Path S): Crystal lattice optimization via genetic algorithm, band structure computation, material property prediction
+- **Cryptographic Presence** (Path U): Vivaldi network coordinates, zero-knowledge identity proofs, 18-byte presence events, proximity verification
+
 ### Benefits
 - **Bandwidth**: 99% reduction in data transmission
 - **Battery**: 90% less power for radio (biggest consumer)
@@ -982,6 +1028,26 @@ Cross-crate bridges (15 total):
 │  ║  │ Price-Time    │ │ CircuitBreak │ │ SOH parser   │ │ Netting +   │  ║   │
 │  ║  │ i64 tick, i128│ │ i128 margin  │ │ Session mgmt │ │ Clearing    │  ║   │
 │  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
+│  ║                                                                          ║   │
+│  ║  LAYER 1c: Science & Domain-Specific (Path L-Q)                        ║   │
+│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌─────────────┐  ║   │
+│  ║  │  ALICE-Bio    │ │ ALICE-Legal   │ │ ALICE-Energy  │ │ ALICE-Space │  ║   │
+│  ║  │ Protein SDF   │ │ Statute tree  │ │ Power flow    │ │ Comm link   │  ║   │
+│  ║  │ Lennard-Jones │ │ Audit log     │ │ Battery SoC   │ │ Diff telm.  │  ║   │
+│  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
+│  ║  ┌───────────────┐ ┌───────────────┐                                    ║   │
+│  ║  │ ALICE-Neural  │ │ ALICE-Climate │                                    ║   │
+│  ║  │ Spike train   │ │ IDW interp.   │                                    ║   │
+│  ║  │ Bayesian BCI  │ │ Anomaly det.  │                                    ║   │
+│  ║  └───────────────┘ └───────────────┘                                    ║   │
+│  ║                                                                          ║   │
+│  ║  LAYER 1d: Advanced Domain (Path R-U)                                  ║   │
+│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐                  ║   │
+│  ║  │ ALICE-History │ │ ALICE-Atoms   │ │ALICE-Presence │                  ║   │
+│  ║  │ Inv. entropy  │ │ Mol. compiler │ │ Vivaldi+ZKP   │                  ║   │
+│  ║  │ Frag. restore │ │ Genetic algo  │ │ 18-byte event │                  ║   │
+│  ║  │ AGPL-3.0      │ │ Proprietary   │ │ MIT           │                  ║   │
+│  ║  └───────────────┘ └───────────────┘ └───────────────┘                  ║   │
 │  ╚══════════════════════════════════════════════════════════════════════════╝   │
 │                                                                                  │
 │  All components: Rust | no_std compatible | Zero allocation | Deterministic      │
@@ -1055,7 +1121,7 @@ Cross-crate `path = "../ALICE-*"` dependencies are resolved in CI by creating li
     echo "" > ../ALICE-Physics/src/lib.rs
 ```
 
-This enables each crate to build independently in CI without requiring the full 42-component workspace.
+This enables each crate to build independently in CI without requiring the full 51-component workspace.
 
 ## License Strategy — 3-Layer Monetization Architecture
 
@@ -1068,8 +1134,9 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │                                                                   │
 │  Layer 3: Proprietary/BSL                ← Revenue generator     │
 │  ┌─────────────────────────────────────────────────────────┐     │
-│  │ ALICE-Animation  ALICE-Manga  ALICE-Print              │     │
+│  │ ALICE-Animation  ALICE-Manga  ALICE-Print  ALICE-Atoms  │     │
 │  │ Pro authoring tools / Encoders / Production pipelines   │     │
+│  │ Molecular compiler (material IP)                        │     │
 │  │ License: Commercial required for production use         │     │
 │  └─────────────────────────────────────────────────────────┘     │
 │                                                                   │
@@ -1081,6 +1148,8 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  │ ALICE-Sync  ALICE-Cloud-Gateway  ALICE-Analytics        │     │
 │  │ ALICE-DNS  ALICE-Codec  ALICE-RTOS  ALICE-VCS           │     │
 │  │ ALICE-Ledger  ALICE-Risk  ALICE-Settlement              │     │
+│  │ ALICE-Bio  ALICE-Legal  ALICE-Energy  ALICE-Neural     │     │
+│  │ ALICE-Climate  ALICE-History                            │     │
 │  │ Distribution servers / Infrastructure / Backend         │     │
 │  │ AGPL requires source disclosure if used in SaaS         │     │
 │  └─────────────────────────────────────────────────────────┘     │
@@ -1090,6 +1159,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  │ ALICE-SDF  ALICE-Edge  ALICE-Voice  ALICE-View          │     │
 │  │ ALICE-Streaming-Protocol  ALICE-Eco-System              │     │
 │  │ ALICE-Synth  ALICE-Motion  ALICE-Font  ALICE-FIX        │     │
+│  │ ALICE-Space  ALICE-Presence                             │     │
 │  │ Format definitions / Viewers / Renderers / Decoders     │     │
 │  │ MIT = maximum adoption, anyone can build readers        │     │
 │  └─────────────────────────────────────────────────────────┘     │
@@ -1111,6 +1181,12 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 - **Manga**: ピッコマ, LINE Manga, Kindle — ALICE-Manga replaces 2-5 MB raster pages with 2-10 KB resolution-independent SDF pages
 - **3D Printing**: Bambu Lab, Prusa — ALICE-Print skips mesh intermediary entirely
 - **Financial Trading**: Hedge funds, prop trading firms — ALICE-Ledger/Risk/FIX/Settlement provide deterministic i64/i128 matching + settlement (MIT FIX decoder for adoption, AGPL infrastructure for SaaS protection)
+- **Molecular Biology**: Pharma, biotech — ALICE-Bio provides protein SDF modeling, Lennard-Jones force fields, folding energy metrics
+- **Legal Tech**: Law firms, compliance — ALICE-Legal provides statute trees, contract analysis, conflict detection with append-only audit trails
+- **Energy**: Grid operators, utilities — ALICE-Energy provides Newton-Raphson power flow, battery SoC tracking, phase correction
+- **Space**: Agencies, satellite operators — ALICE-Space provides deep-space comm link budgets, differential telemetry, autonomous mission control
+- **Materials Science**: R&D labs — ALICE-Atoms provides genetic algorithm material compiler, crystal lattice optimization, band structure computation
+- **Neuroscience**: BCI companies — ALICE-Neural provides spike train analysis, firing rate computation, Bayesian intent classification
 
 ### Revenue Model
 
