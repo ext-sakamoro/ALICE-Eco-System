@@ -3,7 +3,7 @@ name = "alice-eco-system"
 version = "0.3.0"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration Hub - 235 bridges, 10 pipeline paths (A-J), 31 bridge modules, 31 crates"
+description = "ALICE Ecosystem Integration Hub - 240 bridges, 10 pipeline paths (A-J), 37 bridge modules, 38 crates"
 license = "MIT"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
@@ -60,6 +60,16 @@ alice-container = { path = "../ALICE-Container", default-features = false, featu
 alice-streaming-protocol-commercial = { path = "../ALICE-Streaming-Protocol-Commercial", package = "libasp-enterprise", optional = true, default-features = false }
 alice-edge-commercial = { path = "../ALICE-Edge-Commercial", package = "alice-edge-enterprise", optional = true, default-features = false }
 
+# Browser & Cloud Gateway bridges
+alice-browser = { path = "../ALICE-Browser", default-features = false }
+alice-cloud-gateway = { path = "../ALICE-Cloud-Gateway", default-features = false }
+
+# Firewall bridge (Linux only — depends on nfq/netfilter)
+alice-edge-firewall = { path = "../ALICE-Edge-Firewall", default-features = false, optional = true }
+
+# Semantic Telemetry bridge
+alice-semantic-telemetry = { path = "../ALICE-Semantic-Telemetry" }
+
 # Telemetry & Messaging bridges
 alice-analytics = { path = "../ALICE-Analytics", default-features = false, features = ["std"] }
 alice-queue = { path = "../ALICE-Queue" }
@@ -93,6 +103,7 @@ animation = ["dep:alice-animation"]
 manga = ["dep:alice-manga"]
 print = ["dep:alice-print"]
 content-creation = ["animation", "manga", "print"]
+firewall = ["dep:alice-edge-firewall"]
 
 [profile.release]
 opt-level = 3
