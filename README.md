@@ -144,7 +144,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 300 bridges, 20 pipeline paths (A-U), 51 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 394 bridges, 20 pipeline paths (A-U), 51 crates connected | MIT |
 
 **Total: 51 components** | AGPL-3.0: 28 | MIT: 12 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 4 | Semantic Telemetry: 1
 
@@ -269,7 +269,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **300 cross-crate bridges** across 50 bridge files and 20 pipeline paths (A-U), connecting 51 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **394 cross-crate bridges** across 63 bridge files and 20 pipeline paths (A-U), connecting 51 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -324,7 +324,7 @@ The ALICE ecosystem contains **300 cross-crate bridges** across 50 bridge files 
 
 ### Hardware-Native Optimization
 
-All 300 bridge functions are optimized following the ALICE hardware-native methodology:
+All 394 bridge functions are optimized following the ALICE hardware-native methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|

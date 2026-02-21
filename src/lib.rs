@@ -1,6 +1,6 @@
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 51 ALICE crates into unified pipelines with 300 cross-crate bridges.
+//! Connects 51 ALICE crates into unified pipelines with 394 cross-crate bridges.
 //!
 //! ```text
 //! Path A (IoT/Sensor):
@@ -122,13 +122,24 @@ pub mod bridge_bio;
 pub mod bridge_legal;
 pub mod bridge_energy;
 pub mod bridge_space;
+pub mod bridge_space_cross;
+pub mod bridge_bio_cross;
+pub mod bridge_legal_cross;
+pub mod bridge_energy_cross;
 #[cfg(feature = "neural")]
 pub mod bridge_neural;
+#[cfg(feature = "neural")]
+pub mod bridge_neural_cross;
 pub mod bridge_climate;
+pub mod bridge_climate_cross;
 pub mod bridge_history;
+pub mod bridge_history_cross;
 #[cfg(feature = "atoms")]
 pub mod bridge_atoms;
+#[cfg(feature = "atoms")]
+pub mod bridge_atoms_cross;
 pub mod bridge_presence;
+pub mod bridge_presence_cross;
 
 // Re-export pipeline API
 pub use pipeline::{
