@@ -2,9 +2,7 @@
 //!
 //! 11 bridges connecting procedural audio to the ALICE ecosystem.
 
-use alice_synth::{
-    FmPatch, NoteEventKind, Patch, Score, Synthesizer,
-};
+use alice_synth::{FmPatch, NoteEventKind, Patch, Score, Synthesizer};
 
 // ── Bridge 1: Synth → Streaming-Protocol (Score → ASP audio frames) ────
 
@@ -22,6 +20,7 @@ pub struct SynthAspFrame {
 
 /// Render Score to PCM and package for ALICE-Streaming-Protocol (ASP).
 #[inline]
+#[must_use]
 pub fn synth_to_asp_frame(score: &Score, sample_rate: u32) -> SynthAspFrame {
     let duration = score.duration_secs();
     let num_samples = (duration * sample_rate as f32) as usize;
@@ -56,6 +55,7 @@ pub struct AnimAudioCue {
 
 /// Extract audio cue timeline from Score for ALICE-Animation.
 #[inline]
+#[must_use]
 pub fn synth_to_animation_cues(score: &Score) -> Vec<AnimAudioCue> {
     let tempo_bpm = score.header.tempo_bpm as f32;
     let ticks_per_beat = 96.0f32;
@@ -119,6 +119,7 @@ pub struct SynthCodecPayload {
 
 /// Render Score to f32 PCM for ALICE-Codec wavelet compression.
 #[inline]
+#[must_use]
 pub fn synth_to_codec_payload(score: &Score, sample_rate: u32) -> SynthCodecPayload {
     let duration = score.duration_secs();
     let num_samples = (duration * sample_rate as f32) as usize;
@@ -153,6 +154,7 @@ pub struct ScoreDbRecord {
 
 /// Serialize Score for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn synth_to_db_record(score: &Score) -> ScoreDbRecord {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -183,6 +185,7 @@ pub struct WaveformView {
 
 /// Render Score to downsampled waveform for ALICE-View display.
 #[inline]
+#[must_use]
 pub fn synth_to_view_waveform(score: &Score, sample_rate: u32, columns: usize) -> WaveformView {
     let duration = score.duration_secs();
     let num_samples = (duration * sample_rate as f32) as usize;
@@ -210,8 +213,16 @@ pub fn synth_to_view_waveform(score: &Score, sample_rate: u32, columns: usize) -
         peaks.push((lo, hi));
     }
 
-    let rms = if pcm.is_empty() { 0.0 } else { (sum_sq * (1.0 / pcm.len() as f32)).sqrt() };
-    WaveformView { peaks, duration_secs: duration, rms }
+    let rms = if pcm.is_empty() {
+        0.0
+    } else {
+        (sum_sq * (1.0 / pcm.len() as f32)).sqrt()
+    };
+    WaveformView {
+        peaks,
+        duration_secs: duration,
+        rms,
+    }
 }
 
 // ── Bridge 6: Synth → Cache (Score content caching) ─────────────────────
@@ -230,6 +241,7 @@ pub struct SynthCacheEntry {
 
 /// Prepare Score for ALICE-Cache storage.
 #[inline]
+#[must_use]
 pub fn synth_to_cache_entry(score: &Score) -> SynthCacheEntry {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -261,6 +273,7 @@ pub struct SynthCdnPackage {
 
 /// Package Score for ALICE-CDN content delivery.
 #[inline]
+#[must_use]
 pub fn synth_to_cdn_package(score: &Score) -> SynthCdnPackage {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -292,6 +305,7 @@ pub struct SynthSyncPacket {
 
 /// Prepare Score for ALICE-Sync multiplayer synchronization.
 #[inline]
+#[must_use]
 pub fn synth_to_sync_packet(score: &Score, position_tick: u32) -> SynthSyncPacket {
     SynthSyncPacket {
         score_bytes: score.to_bytes(),
@@ -315,6 +329,7 @@ pub struct SynthCryptoPayload {
 
 /// Prepare Score bytes for ALICE-Crypto encryption.
 #[inline]
+#[must_use]
 pub fn synth_to_crypto_payload(score: &Score) -> SynthCryptoPayload {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -346,6 +361,7 @@ pub struct SynthQueueMessage {
 
 /// Package Score for ALICE-Queue message delivery.
 #[inline]
+#[must_use]
 pub fn synth_to_queue_message(score: &Score) -> SynthQueueMessage {
     let data = score.to_bytes();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -379,10 +395,15 @@ pub struct SynthAnalyticsMetrics {
 
 /// Extract audio metrics for ALICE-Analytics monitoring.
 #[inline]
+#[must_use]
 pub fn synth_to_analytics_metrics(score: &Score) -> SynthAnalyticsMetrics {
     let duration = score.duration_secs();
     let events = score.events.len();
-    let eps = if duration > 0.0 { events as f32 / duration } else { 0.0 };
+    let eps = if duration > 0.0 {
+        events as f32 / duration
+    } else {
+        0.0
+    };
     SynthAnalyticsMetrics {
         duration_secs: duration,
         event_count: events,
@@ -401,10 +422,34 @@ mod tests {
 
     fn test_score() -> Score {
         let mut s = Score::new(120, 1);
-        s.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
-        s.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
-        s.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 64, velocity: 100, kind: NoteEventKind::NoteOn });
-        s.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 64, velocity: 0, kind: NoteEventKind::NoteOff });
+        s.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 60,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        s.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 60,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
+        s.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 64,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        s.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 64,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
         s
     }
 

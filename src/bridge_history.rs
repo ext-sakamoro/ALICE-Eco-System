@@ -2,12 +2,15 @@
 //!
 //! 5 bridges connecting inverse entropy restoration to the ALICE ecosystem.
 
-use alice_history::{Fragment, RestorationResult, EntropyMeasurement};
+use alice_history::{EntropyMeasurement, Fragment, RestorationResult};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -31,6 +34,7 @@ pub struct HistoryAnalyticsDegradationEvent {
 
 /// Convert a fragment into a degradation analytics event.
 #[inline]
+#[must_use]
 pub fn history_fragment_to_analytics(fragment: &Fragment) -> HistoryAnalyticsDegradationEvent {
     let known_frac = fragment.known_fraction();
     let missing = fragment.missing_count();
@@ -56,7 +60,7 @@ pub fn history_fragment_to_analytics(fragment: &Fragment) -> HistoryAnalyticsDeg
 
 /// Restoration quality metrics for ALICE-Analytics ingestion.
 pub struct HistoryAnalyticsQualityEvent {
-    /// Content hash over fragment_id, entropy_before, entropy_after, iterations bytes.
+    /// Content hash over `fragment_id`, `entropy_before`, `entropy_after`, iterations bytes.
     pub content_hash: u64,
     /// Fragment identifier.
     pub fragment_id: u64,
@@ -74,10 +78,17 @@ pub struct HistoryAnalyticsQualityEvent {
 
 /// Convert a restoration result into a quality analytics event.
 #[inline]
-pub fn history_restoration_to_analytics(result: &RestorationResult) -> HistoryAnalyticsQualityEvent {
+#[must_use]
+pub fn history_restoration_to_analytics(
+    result: &RestorationResult,
+) -> HistoryAnalyticsQualityEvent {
     let eb = result.field.entropy_before;
     let ea = result.field.entropy_after;
-    let reduction = if eb > 0.0 { (1.0 - ea / eb).max(0.0).min(1.0) } else { 0.0 };
+    let reduction = if eb > 0.0 {
+        (1.0 - ea / eb).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
 
     let mut key = [0u8; 28];
     key[0..8].copy_from_slice(&result.fragment_id.to_le_bytes());
@@ -100,7 +111,7 @@ pub fn history_restoration_to_analytics(result: &RestorationResult) -> HistoryAn
 
 /// Restoration record for ALICE-DB persistence.
 pub struct HistoryDbRestorationRecord {
-    /// Content hash over fragment_id, iterations, elapsed_ns, field content_hash bytes.
+    /// Content hash over `fragment_id`, iterations, `elapsed_ns`, field `content_hash` bytes.
     pub content_hash: u64,
     /// Fragment identifier.
     pub fragment_id: u64,
@@ -118,6 +129,7 @@ pub struct HistoryDbRestorationRecord {
 
 /// Convert a restoration result into a DB record.
 #[inline]
+#[must_use]
 pub fn history_restoration_to_db(result: &RestorationResult) -> HistoryDbRestorationRecord {
     let mut key = [0u8; 28];
     key[0..8].copy_from_slice(&result.fragment_id.to_le_bytes());
@@ -140,7 +152,7 @@ pub fn history_restoration_to_db(result: &RestorationResult) -> HistoryDbRestora
 
 /// Entropy measurement event for ALICE-Analytics ingestion.
 pub struct HistoryAnalyticsEntropyEvent {
-    /// Content hash over shannon_entropy, normalized_entropy, unique_symbols bytes.
+    /// Content hash over `shannon_entropy`, `normalized_entropy`, `unique_symbols` bytes.
     pub content_hash: u64,
     /// Shannon entropy (bits).
     pub shannon_entropy: f64,
@@ -154,7 +166,10 @@ pub struct HistoryAnalyticsEntropyEvent {
 
 /// Convert an entropy measurement into an analytics event.
 #[inline]
-pub fn history_entropy_to_analytics(measurement: &EntropyMeasurement) -> HistoryAnalyticsEntropyEvent {
+#[must_use]
+pub fn history_entropy_to_analytics(
+    measurement: &EntropyMeasurement,
+) -> HistoryAnalyticsEntropyEvent {
     let mut key = [0u8; 24];
     key[0..8].copy_from_slice(&measurement.shannon_entropy.to_bits().to_le_bytes());
     key[8..16].copy_from_slice(&measurement.normalized_entropy.to_bits().to_le_bytes());
@@ -173,20 +188,21 @@ pub fn history_entropy_to_analytics(measurement: &EntropyMeasurement) -> History
 
 /// Restoration cache entry for ALICE-Cache real-time lookup.
 pub struct HistoryCacheRestoration {
-    /// Content hash over fragment_id and field content_hash bytes.
+    /// Content hash over `fragment_id` and field `content_hash` bytes.
     pub content_hash: u64,
     /// Fragment identifier.
     pub fragment_id: u64,
     /// Mean confidence of the restored field.
     pub mean_confidence: f64,
-    /// Whether the restoration is high-quality (mean_confidence > 0.8).
+    /// Whether the restoration is high-quality (`mean_confidence` > 0.8).
     pub is_high_quality: bool,
-    /// Cache TTL: 30s if low-quality (mean_confidence < 0.5), else 300s.
+    /// Cache TTL: 30s if low-quality (`mean_confidence` < 0.5), else 300s.
     pub ttl_secs: u32,
 }
 
 /// Convert a restoration result into a cache entry with adaptive TTL.
 #[inline]
+#[must_use]
 pub fn history_restoration_to_cache(result: &RestorationResult) -> HistoryCacheRestoration {
     let mean_conf = result.field.confidence.mean_confidence;
 
@@ -212,7 +228,7 @@ pub fn history_restoration_to_cache(result: &RestorationResult) -> HistoryCacheR
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_history::{Fragment, FragmentKind, InversionConfig, restore, measure_entropy};
+    use alice_history::{measure_entropy, restore, Fragment, FragmentKind, InversionConfig};
 
     fn make_fragment(id: u64, kind: FragmentKind) -> Fragment {
         Fragment::new(id, kind, vec![10.0, 0.0, 30.0], vec![1.0, 0.0, 1.0], 1000)

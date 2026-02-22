@@ -3,12 +3,15 @@
 //! 3 bridges connecting brain-computer interface neural data to
 //! ML feature extraction, sync event replication, and voice command synthesis.
 
-use alice_neural::{NeuralField, IntentPacket, IntentKind};
+use alice_neural::{IntentKind, IntentPacket, NeuralField};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -37,10 +40,7 @@ pub struct NeuralMlFeatures {
 #[inline]
 pub fn neural_field_to_ml_features(field: &NeuralField) -> NeuralMlFeatures {
     let source_count = field.source_count();
-    let peak_amplitude = field.weights
-        .iter()
-        .map(|w| w.abs())
-        .fold(0.0f64, f64::max);
+    let peak_amplitude = field.weights.iter().map(|w| w.abs()).fold(0.0f64, f64::max);
     let total_energy = field.total_energy();
     let feature_dim = source_count * 3;
     let is_active = peak_amplitude > 1.0;
@@ -131,11 +131,11 @@ pub fn neural_intent_to_voice_command(packet: &IntentPacket) -> NeuralVoiceComma
     let kind_byte = packet.kind.discriminant();
 
     let command_priority = match packet.kind {
-        IntentKind::Speech    => 1,
-        IntentKind::Visual    => 2,
+        IntentKind::Speech => 1,
+        IntentKind::Visual => 2,
         IntentKind::MotorLeft | IntentKind::MotorRight => 3,
         IntentKind::Cognitive => 4,
-        IntentKind::Idle      => 5,
+        IntentKind::Idle => 5,
     };
 
     // Speech requires auditory feedback confirmation
@@ -161,7 +161,7 @@ pub fn neural_intent_to_voice_command(packet: &IntentPacket) -> NeuralVoiceComma
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_neural::{NeuralField, IntentKind, extract_intent};
+    use alice_neural::{extract_intent, IntentKind, NeuralField};
 
     fn make_active_field() -> NeuralField {
         let mut field = NeuralField::new(1_000_000_000);

@@ -66,8 +66,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Detect content type from raw bytes
     let content_type = ContentType::detect(&asdf_bytes);
     println!("  Detected type:    {:?}", content_type);
-    println!("  Priority weight:  {} (latency-critical)", content_type.priority_weight());
-    println!("  Latency sensitive: {}", content_type.is_latency_sensitive());
+    println!(
+        "  Priority weight:  {} (latency-critical)",
+        content_type.priority_weight()
+    );
+    println!(
+        "  Latency sensitive: {}",
+        content_type.is_latency_sensitive()
+    );
 
     // Parse ASDF header metadata
     if asdf_bytes.len() >= 16 {
@@ -124,14 +130,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     world.add_body(ground_body);
 
     println!("  Bodies: 2 players (dynamic) + 1 ground (static)");
-    println!("  Player 1: pos=({}, {}, {})",
+    println!(
+        "  Player 1: pos=({}, {}, {})",
         world.bodies[p1_id].position.x.to_f32(),
         world.bodies[p1_id].position.y.to_f32(),
-        world.bodies[p1_id].position.z.to_f32());
-    println!("  Player 2: pos=({}, {}, {})",
+        world.bodies[p1_id].position.z.to_f32()
+    );
+    println!(
+        "  Player 2: pos=({}, {}, {})",
         world.bodies[p2_id].position.x.to_f32(),
         world.bodies[p2_id].position.y.to_f32(),
-        world.bodies[p2_id].position.z.to_f32());
+        world.bodies[p2_id].position.z.to_f32()
+    );
     println!();
 
     // ========================================================================
@@ -195,10 +205,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let p2_final = world.bodies[p2_id].position;
 
     println!("  After {} frames:", frames_to_simulate);
-    println!("    Player 1 final: ({:.2}, {:.2}, {:.2})",
-        p1_final.x.to_f32(), p1_final.y.to_f32(), p1_final.z.to_f32());
-    println!("    Player 2 final: ({:.2}, {:.2}, {:.2})",
-        p2_final.x.to_f32(), p2_final.y.to_f32(), p2_final.z.to_f32());
+    println!(
+        "    Player 1 final: ({:.2}, {:.2}, {:.2})",
+        p1_final.x.to_f32(),
+        p1_final.y.to_f32(),
+        p1_final.z.to_f32()
+    );
+    println!(
+        "    Player 2 final: ({:.2}, {:.2}, {:.2})",
+        p2_final.x.to_f32(),
+        p2_final.y.to_f32(),
+        p2_final.z.to_f32()
+    );
     println!("    Replay frames:  {}", recorder.frame_count());
     println!("    Sync confirmed: frame {}", session.confirmed_frame());
     println!();
@@ -219,8 +237,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let p1 = player.get_position(frame, 0)?;
         let p2 = player.get_position(frame, 1)?;
         if let (Some((x1, y1, _)), Some((x2, y2, _))) = (p1, p2) {
-            println!("  │  {:>3}  │ ({:>7.2}, {:>7.2})          │ ({:>6.2}, {:>6.2}) │",
-                frame, x1, y1, x2, y2);
+            println!(
+                "  │  {:>3}  │ ({:>7.2}, {:>7.2})          │ ({:>6.2}, {:>6.2}) │",
+                frame, x1, y1, x2, y2
+            );
         }
     }
     println!("  └───────┴──────────────────────────────────────────────┘");
@@ -246,16 +266,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║              GAME ENGINE PIPELINE SUMMARY                    ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║                                                              ║");
-    println!("║  [ALICE-SDF]     → ASDF binary:  {} bytes ({} nodes)       ║",
-        asdf_size, tree.node_count());
-    println!("║  [ALICE-CDN]     → Content type: {:?}, route → {}     ║",
-        content_type, best_name);
-    println!("║  [ALICE-Physics] → {} frames, 128-bit deterministic        ║",
-        frames_to_simulate);
-    println!("║  [ALICE-Sync]    → Lockstep, {} confirmed frames           ║",
-        session.confirmed_frame());
-    println!("║  [ALICE-DB]      → Replay: {} frames + Telemetry           ║",
-        frames_to_simulate);
+    println!(
+        "║  [ALICE-SDF]     → ASDF binary:  {} bytes ({} nodes)       ║",
+        asdf_size,
+        tree.node_count()
+    );
+    println!(
+        "║  [ALICE-CDN]     → Content type: {:?}, route → {}     ║",
+        content_type, best_name
+    );
+    println!(
+        "║  [ALICE-Physics] → {} frames, 128-bit deterministic        ║",
+        frames_to_simulate
+    );
+    println!(
+        "║  [ALICE-Sync]    → Lockstep, {} confirmed frames           ║",
+        session.confirmed_frame()
+    );
+    println!(
+        "║  [ALICE-DB]      → Replay: {} frames + Telemetry           ║",
+        frames_to_simulate
+    );
     println!("║                                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  CROSS-CRATE BRIDGES:                                        ║");
@@ -267,16 +298,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║                                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  CRATE VERSIONS:                                             ║");
-    println!("║    ALICE-SDF     v{:<10}                                  ║",
-        env!("CARGO_PKG_VERSION"));
-    println!("║    ALICE-CDN     v{:<10}                                  ║",
-        alice_cdn::VERSION);
-    println!("║    ALICE-Physics v{:<10}                                  ║",
-        "0.3.0");
-    println!("║    ALICE-Sync    v{:<10}                                  ║",
-        alice_sync::VERSION);
-    println!("║    ALICE-DB      v{:<10}                                  ║",
-        "0.1.0");
+    println!(
+        "║    ALICE-SDF     v{:<10}                                  ║",
+        env!("CARGO_PKG_VERSION")
+    );
+    println!(
+        "║    ALICE-CDN     v{:<10}                                  ║",
+        alice_cdn::VERSION
+    );
+    println!(
+        "║    ALICE-Physics v{:<10}                                  ║",
+        "0.3.0"
+    );
+    println!(
+        "║    ALICE-Sync    v{:<10}                                  ║",
+        alice_sync::VERSION
+    );
+    println!(
+        "║    ALICE-DB      v{:<10}                                  ║",
+        "0.1.0"
+    );
     println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
     println!("✓ Game Engine Pipeline: SUCCESS (6 crates integrated)");

@@ -2,7 +2,7 @@
 //!
 //! 3 bridges connecting Bloom filter DNS ad-blocker to the ALICE ecosystem.
 
-use alice_dns::{DnsBloomEngine, DnsAction};
+use alice_dns::{DnsAction, DnsBloomEngine};
 
 // ── Bridge 1: DNS → Browser (Bloom filter → domain classification) ──────
 
@@ -34,8 +34,14 @@ pub fn dns_browser_classify(engine: &mut DnsBloomEngine, domain: &str) -> DnsBro
 
 /// Batch classify domains for ALICE-Browser.
 #[inline]
-pub fn dns_browser_classify_batch(engine: &mut DnsBloomEngine, domains: &[&str]) -> Vec<DnsBrowserClassification> {
-    domains.iter().map(|d| dns_browser_classify(engine, d)).collect()
+pub fn dns_browser_classify_batch(
+    engine: &mut DnsBloomEngine,
+    domains: &[&str],
+) -> Vec<DnsBrowserClassification> {
+    domains
+        .iter()
+        .map(|d| dns_browser_classify(engine, d))
+        .collect()
 }
 
 // ── Bridge 2: DNS → Cache (DnsAction → cache prefetch hint) ─────────────
@@ -54,11 +60,11 @@ pub struct DnsCacheHint {
 
 /// Generate cache prefetch hint from DNS action for ALICE-Cache.
 #[inline]
+#[must_use]
 pub fn dns_to_cache_hint(domain: &str, action: DnsAction) -> DnsCacheHint {
     let (should_cache, priority) = match action {
-        DnsAction::Block => (false, 0),
+        DnsAction::Block | DnsAction::Spoof => (false, 0),
         DnsAction::Allow => (true, 100),
-        DnsAction::Spoof => (false, 0),
     };
     DnsCacheHint {
         domain: domain.to_string(),

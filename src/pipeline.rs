@@ -222,7 +222,12 @@ pub struct DnsApiGatewayResult {
 /// AI inference pipeline: ML ternary inference → TRT GPU analytics.
 ///
 /// `[ALICE-ML] → [ALICE-TRT] → [ALICE-Analytics] / [ALICE-DB] / [ALICE-View]`
-pub fn path_g_ai_inference(state_dims: usize, action_dims: usize, hidden: &[usize]) -> AiInferenceResult {
+#[must_use]
+pub fn path_g_ai_inference(
+    state_dims: usize,
+    action_dims: usize,
+    hidden: &[usize],
+) -> AiInferenceResult {
     // Build layer geometry: input→hidden[0], hidden[i]→hidden[i+1], hidden[-1]→output.
     let mut shapes: Vec<(usize, usize)> = Vec::with_capacity(hidden.len() + 1);
     let mut prev = state_dims;
@@ -245,10 +250,16 @@ pub fn path_g_ai_inference(state_dims: usize, action_dims: usize, hidden: &[usiz
 /// Voice delivery pipeline: Voice parametric → Synth → Codec compression.
 ///
 /// `[ALICE-Voice] → [ALICE-Synth] → [ALICE-Codec] → [ALICE-CDN] → [ALICE-Cache]`
+#[must_use]
 pub fn path_h_voice_delivery(params: &alice_voice::ParametricParams) -> VoiceDeliveryResult {
     let synth_params = crate::bridge_voice::voice_to_synth_params(params);
     // Synth → Codec: generate PCM and compress via wavelet
-    let pcm: Vec<f32> = (0..320).map(|i| (i as f32 * synth_params.carrier_freq * std::f32::consts::TAU / 16000.0).sin() * synth_params.amplitude).collect();
+    let pcm: Vec<f32> = (0..320)
+        .map(|i| {
+            (i as f32 * synth_params.carrier_freq * std::f32::consts::TAU / 16000.0).sin()
+                * synth_params.amplitude
+        })
+        .collect();
     let codec_result = crate::bridge_codec::codec_compress_synth_pcm(&pcm);
     VoiceDeliveryResult {
         carrier_freq: synth_params.carrier_freq,
@@ -263,6 +274,7 @@ pub fn path_h_voice_delivery(params: &alice_voice::ParametricParams) -> VoiceDel
 /// Full-text search pipeline: Text compression → Search index → DB/Browser.
 ///
 /// `[ALICE-Text] → [ALICE-Search] → [ALICE-DB] / [ALICE-Browser]`
+#[must_use]
 pub fn path_i_fulltext_search(text: &str, query: &str) -> FullTextSearchResult {
     let browser_content = crate::bridge_text::text_to_browser_content(text);
     let index = alice_search::AliceIndex::build(text.as_bytes(), 4);
@@ -279,15 +291,25 @@ pub fn path_i_fulltext_search(text: &str, query: &str) -> FullTextSearchResult {
 /// DNS + API gateway pipeline: DNS classification → API rate limiting → routing.
 ///
 /// `[ALICE-DNS] → [ALICE-API] → [ALICE-Auth] / [ALICE-CDN] / [ALICE-Cache]`
+#[must_use]
 pub fn path_j_dns_api_gateway(domain: &str, path: &str) -> DnsApiGatewayResult {
     // DNS: classify domain
     let mut dns_engine = alice_dns::DnsBloomEngine::new();
     let action = dns_engine.check_domain(domain);
-    let dns_blocked = matches!(action, alice_dns::DnsAction::Block | alice_dns::DnsAction::Spoof);
+    let dns_blocked = matches!(
+        action,
+        alice_dns::DnsAction::Block | alice_dns::DnsAction::Spoof
+    );
     // API: rate limiting + routing
     let limiter = alice_api::GcraCell::new(100.0, 10);
-    let auth = crate::bridge_api::api_auth_check(&limiter, domain, alice_api::HttpMethod::Get, 1_000_000_000);
-    let route = crate::bridge_api::api_to_cdn_route(path, alice_api::HttpMethod::Get, auth.rate_allowed);
+    let auth = crate::bridge_api::api_auth_check(
+        &limiter,
+        domain,
+        alice_api::HttpMethod::Get,
+        1_000_000_000,
+    );
+    let route =
+        crate::bridge_api::api_to_cdn_route(path, alice_api::HttpMethod::Get, auth.rate_allowed);
     DnsApiGatewayResult {
         dns_blocked,
         api_rate_allowed: auth.rate_allowed,
@@ -321,6 +343,11 @@ pub struct AlicePipeline {
 
 impl AlicePipeline {
     /// Initialize the full pipeline with all 9 crate components.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any crate component fails to initialize.
+    #[allow(clippy::needless_pass_by_value)]
     pub fn new(config: PipelineConfig) -> Result<Self> {
         // ALICE-DB
         let db = AliceDB::open(&config.db_path)?;
@@ -388,9 +415,13 @@ impl AlicePipeline {
 
     // ── Path A: Sensor Ingestion ─────────────────────────────────────────
 
-    /// Ingest sensor data through the full IoT pipeline.
+    /// Ingest sensor data through the full `IoT` pipeline.
     ///
     /// `[Sensor] → [ALICE-Edge] → [ALICE-ASP] → [ALICE-CDN] → [ALICE-DB]`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if ASP packetization or DB persistence fails.
     pub fn ingest_sensor(&mut self, data: &[i32]) -> Result<SensorIngestResult> {
         // 1. ALICE-Edge: compress sensor data to linear model (Q16.16)
         let (slope, intercept) = fit_linear_fixed(data);
@@ -399,10 +430,10 @@ impl AlicePipeline {
         //    I-packet describes the sensor stream (width=1 channel, height=sample count)
         let payload = IPacketPayload::new(1, data.len() as u32, 1.0);
         let packet = AspPacket::create_i_packet(self.asp_sequence, payload)
-            .map_err(|e| format!("ASP packet creation: {:?}", e))?;
+            .map_err(|e| format!("ASP packet creation: {e:?}"))?;
         let asp_bytes = packet
             .to_bytes()
-            .map_err(|e| format!("ASP serialization: {:?}", e))?;
+            .map_err(|e| format!("ASP serialization: {e:?}"))?;
         let asp_packet_size = asp_bytes.len();
         self.asp_sequence += 1;
 
@@ -449,6 +480,10 @@ impl AlicePipeline {
     /// Deliver an SDF asset through the content pipeline.
     ///
     /// `[ALICE-SDF] → [ALICE-CDN] → [ALICE-Cache]`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if SDF serialization fails.
     pub fn deliver_asset(&self, tree: &SdfTree, asset_id: u64) -> Result<AssetDeliveryResult> {
         // 1. ALICE-SDF: serialize to ASDF binary (in-memory, zero disk I/O)
         let body = bincode::serialize(tree)?;
@@ -493,11 +528,11 @@ impl AlicePipeline {
     /// Execute one game tick through the synchronization pipeline.
     ///
     /// `[ALICE-Sync] → [ALICE-Physics] → [Replay → DB] + [Telemetry → DB]`
-    pub fn game_tick(
-        &mut self,
-        local: InputFrame,
-        remote: InputFrame,
-    ) -> Result<GameTickResult> {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if replay recording or telemetry persistence fails.
+    pub fn game_tick(&mut self, local: InputFrame, remote: InputFrame) -> Result<GameTickResult> {
         let frame = self.frame_counter;
 
         // 1. ALICE-Sync: lockstep input exchange
@@ -505,10 +540,7 @@ impl AlicePipeline {
         self.sync_session.add_remote_input(remote);
 
         let stepped = if self.sync_session.ready_to_advance() {
-            let _synced = self
-                .sync_session
-                .advance()
-                .ok_or("Sync advance failed")?;
+            let _synced = self.sync_session.advance().ok_or("Sync advance failed")?;
 
             // 2. ALICE-Physics: deterministic step (128-bit fixed-point)
             let dt = Fix128::from_ratio(1, 60);
@@ -560,6 +592,10 @@ impl AlicePipeline {
     // ── Queries ──────────────────────────────────────────────────────────
 
     /// Query a value from ALICE-DB by timestamp key.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database query fails.
     pub fn query(&self, key: i64) -> Result<Option<f32>> {
         Ok(self.db.get(key)?)
     }
@@ -577,6 +613,10 @@ impl AlicePipeline {
     // ── Lifecycle ────────────────────────────────────────────────────────
 
     /// Flush all buffered data to ALICE-DB.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any buffered write fails.
     pub fn flush(&mut self) -> Result<()> {
         self.recorder.flush()?;
         self.telemetry.flush()?;
@@ -585,6 +625,10 @@ impl AlicePipeline {
     }
 
     /// Close all resources and flush remaining data.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if flush or resource cleanup fails.
     pub fn close(mut self) -> Result<()> {
         self.flush()?;
         self.recorder.close()?;
@@ -598,11 +642,11 @@ impl AlicePipeline {
     /// Ingest motion capture intent through Kinematics → Sync → Physics.
     ///
     /// `[ALICE-Edge] → [ALICE-Kinematics] → [ALICE-Sync] → [ALICE-Physics]`
-    pub fn mocap_intent(
-        &mut self,
-        intent: &Intent,
-        frame: u64,
-    ) -> Result<MocapResult> {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if physics body insertion fails.
+    pub fn mocap_intent(&mut self, intent: &Intent, frame: u64) -> Result<MocapResult> {
         // 1. ALICE-Kinematics: encode intent (8 bytes)
         let intent_bytes = intent.encode();
 
@@ -631,6 +675,10 @@ impl AlicePipeline {
     /// Production pipeline: VCS → SDF + Font + Synth for anime content.
     ///
     /// `[ALICE-VCS] → [ALICE-SDF] + [ALICE-Font] + [ALICE-Synth] → [ALICE-CDN]`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if SDF serialization fails.
     pub fn anime_production(
         &mut self,
         sdf_scene: &SdfTree,
@@ -672,6 +720,10 @@ impl AlicePipeline {
     /// Embedded pipeline: RTOS → Edge → Synth → ASP.
     ///
     /// `[ALICE-RTOS] → [ALICE-Edge] → [ALICE-Synth] → [ALICE-ASP]`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if ASP packetization fails.
     pub fn realtime_embedded(
         &mut self,
         sensor_data: &[i32],
@@ -700,8 +752,8 @@ impl AlicePipeline {
         // 4. ASP: packetize
         let payload = IPacketPayload::new(1, num_samples as u32, 1.0);
         let packet = AspPacket::create_i_packet(self.asp_sequence, payload)
-            .map_err(|e| format!("ASP: {:?}", e))?;
-        let asp_bytes = packet.to_bytes().map_err(|e| format!("ASP: {:?}", e))?;
+            .map_err(|e| format!("ASP: {e:?}"))?;
+        let asp_bytes = packet.to_bytes().map_err(|e| format!("ASP: {e:?}"))?;
         self.asp_sequence += 1;
 
         Ok(EmbeddedResult {
@@ -718,6 +770,10 @@ impl AlicePipeline {
     /// Print pipeline: SDF → Motion (S-curve) → Print segments.
     ///
     /// `[ALICE-SDF] → [ALICE-Motion] (S-curve) → [ALICE-Print] → .3mf`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the motion profile computation fails.
     pub fn print_optimization(
         &self,
         curve: &CubicBezier,
@@ -728,7 +784,8 @@ impl AlicePipeline {
         let arc = curve.arc_length(64);
         let profile = TrapezoidalProfile::new(v_max, a_max, arc);
         let dur = profile.duration();
-        let segments = crate::bridge_motion::motion_to_print_segments(curve, v_max, a_max, num_segments);
+        let segments =
+            crate::bridge_motion::motion_to_print_segments(curve, v_max, a_max, num_segments);
 
         // Calculate average feed rate
         let avg_feed: f32 = if segments.is_empty() {
@@ -752,8 +809,7 @@ impl AlicePipeline {
         self.cdn_nodes
             .iter()
             .find(|(nid, _, _)| *nid == id)
-            .map(|(_, name, _)| name.clone())
-            .unwrap_or_else(|| format!("node-{}", id))
+            .map_or_else(|| format!("node-{id}"), |(_, name, _)| name.clone())
     }
 }
 
@@ -853,8 +909,14 @@ mod tests {
         let mut pipeline = AlicePipeline::new(config).unwrap();
 
         // Add bodies: 2 dynamic players + 1 static ground
-        pipeline.add_body(RigidBody::new_dynamic(Vec3Fix::from_int(0, 10, 0), Fix128::ONE));
-        pipeline.add_body(RigidBody::new_dynamic(Vec3Fix::from_int(3, 10, 0), Fix128::ONE));
+        pipeline.add_body(RigidBody::new_dynamic(
+            Vec3Fix::from_int(0, 10, 0),
+            Fix128::ONE,
+        ));
+        pipeline.add_body(RigidBody::new_dynamic(
+            Vec3Fix::from_int(3, 10, 0),
+            Fix128::ONE,
+        ));
         pipeline.add_body(RigidBody::new_static(Vec3Fix::ZERO));
 
         // Frame 0 is skipped by lockstep (confirmed_frame starts at 0)
@@ -892,9 +954,23 @@ mod tests {
         let mut pipeline = AlicePipeline::new(config).unwrap();
         let sdf = SdfTree::new(SdfNode::sphere(1.0));
         let mut score = Score::new(120, 1);
-        score.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
-        score.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
-        let result = pipeline.anime_production(&sdf, "Hello", &score, "ep1 scene1").unwrap();
+        score.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 60,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        score.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 60,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
+        let result = pipeline
+            .anime_production(&sdf, "Hello", &score, "ep1 scene1")
+            .unwrap();
         assert_ne!(result.vcs_hash, 0);
         assert!(result.sdf_bytes > 0);
         assert_eq!(result.font_params_bytes, 40);
@@ -907,8 +983,20 @@ mod tests {
         let mut pipeline = AlicePipeline::new(config).unwrap();
         let sensor: Vec<i32> = (0..50).map(|i| 2000 + i * 10).collect();
         let mut score = Score::new(120, 1);
-        score.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
-        score.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
+        score.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 60,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        score.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 60,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
         let result = pipeline.realtime_embedded(&sensor, &score, 22050).unwrap();
         assert!(result.rtos_schedulable);
         assert_eq!(result.edge_bytes, 8);
@@ -926,7 +1014,9 @@ mod tests {
             Vec3::new(30.0, 20.0, 0.0),
             Vec3::new(40.0, 0.0, 0.0),
         );
-        let result = pipeline.print_optimization(&curve, 100.0, 500.0, 20).unwrap();
+        let result = pipeline
+            .print_optimization(&curve, 100.0, 500.0, 20)
+            .unwrap();
         assert!(result.arc_length_mm > 0.0);
         assert!(result.duration_secs > 0.0);
         assert_eq!(result.segment_count, 20);
@@ -951,8 +1041,14 @@ mod tests {
         assert!(asset_result.asdf_size > 0);
 
         // Path B-2: Game ticks (Sync → Physics → Replay/Telemetry → DB)
-        pipeline.add_body(RigidBody::new_dynamic(Vec3Fix::from_int(0, 5, 0), Fix128::ONE));
-        pipeline.add_body(RigidBody::new_dynamic(Vec3Fix::from_int(2, 5, 0), Fix128::ONE));
+        pipeline.add_body(RigidBody::new_dynamic(
+            Vec3Fix::from_int(0, 5, 0),
+            Fix128::ONE,
+        ));
+        pipeline.add_body(RigidBody::new_dynamic(
+            Vec3Fix::from_int(2, 5, 0),
+            Fix128::ONE,
+        ));
         pipeline.add_body(RigidBody::new_static(Vec3Fix::ZERO));
 
         // Frames 1..=5 (frame 0 is skipped by lockstep protocol)
@@ -987,16 +1083,43 @@ mod tests {
 
     #[test]
     fn test_path_h_voice_delivery() {
-        use alice_voice::{ParametricParams, PitchInfo, LpcCoefficients, Formant};
+        use alice_voice::{Formant, LpcCoefficients, ParametricParams, PitchInfo};
         let params = ParametricParams {
-            pitch: PitchInfo { f0: 220.0, period: 72.7, voicing_prob: 0.95, confidence: 0.9, is_voiced: true },
-            lpc: LpcCoefficients { coeffs: vec![0.5, -0.3], gain: 0.6, reflection: vec![], error: 0.01 },
+            pitch: PitchInfo {
+                f0: 220.0,
+                period: 72.7,
+                voicing_prob: 0.95,
+                confidence: 0.9,
+                is_voiced: true,
+            },
+            lpc: LpcCoefficients {
+                coeffs: vec![0.5, -0.3],
+                gain: 0.6,
+                reflection: vec![],
+                error: 0.01,
+            },
             formants: vec![
-                Formant { frequency: 700.0, bandwidth: 80.0, amplitude: 1.0 },
-                Formant { frequency: 1200.0, bandwidth: 90.0, amplitude: 0.8 },
-                Formant { frequency: 2600.0, bandwidth: 120.0, amplitude: 0.5 },
+                Formant {
+                    frequency: 700.0,
+                    bandwidth: 80.0,
+                    amplitude: 1.0,
+                },
+                Formant {
+                    frequency: 1200.0,
+                    bandwidth: 90.0,
+                    amplitude: 0.8,
+                },
+                Formant {
+                    frequency: 2600.0,
+                    bandwidth: 120.0,
+                    amplitude: 0.5,
+                },
             ],
-            activity: alice_voice::VoiceActivity { is_voiced: true, confidence: 0.95, energy_db: -20.0 },
+            activity: alice_voice::VoiceActivity {
+                is_voiced: true,
+                confidence: 0.95,
+                energy_db: -20.0,
+            },
             frame_size: 320,
             sample_rate: 16000,
         };

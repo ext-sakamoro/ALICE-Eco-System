@@ -3,12 +3,15 @@
 //! 3 bridges connecting crystallographic data to SDF tree visualization,
 //! physics rigid body simulation, and ML feature extraction.
 
-use alice_atoms::{Crystal, Element, PairPotential, lattice_energy};
+use alice_atoms::{lattice_energy, Crystal, Element, PairPotential};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -155,7 +158,11 @@ pub fn atoms_crystal_to_ml_features(crystal: &Crystal) -> AtomsMlFeatures {
     let mean_en = if crystal.basis.is_empty() {
         0.0
     } else {
-        let sum: f64 = crystal.basis.iter().map(|a| a.element.electronegativity()).sum();
+        let sum: f64 = crystal
+            .basis
+            .iter()
+            .map(|a| a.element.electronegativity())
+            .sum();
         sum / crystal.basis.len() as f64
     };
 
@@ -190,7 +197,9 @@ pub fn atoms_crystal_to_ml_features(crystal: &Crystal) -> AtomsMlFeatures {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_atoms::{Crystal, LatticeType, Atom, Element, compute_band_structure, predict_properties};
+    use alice_atoms::{
+        compute_band_structure, predict_properties, Atom, Crystal, Element, LatticeType,
+    };
     use std::f64::consts::PI;
 
     fn make_si_crystal() -> Crystal {

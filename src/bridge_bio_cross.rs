@@ -4,12 +4,15 @@
 //! protein sequence search indexing, text annotation generation, and
 //! physics force field decomposition.
 
-use alice_bio::{AminoAcid, ProteinSdf, TotalEnergy, radius_of_gyration};
+use alice_bio::{radius_of_gyration, AminoAcid, ProteinSdf, TotalEnergy};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -21,11 +24,11 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// (mean phi/psi, radius of gyration) so the ML layer can train
 /// on protein fold prediction without accessing raw molecular data.
 pub struct BioMlFeatures {
-    /// FNV-1a hash over residue_count, mean_phi, mean_psi, rog bytes.
+    /// FNV-1a hash over `residue_count`, `mean_phi`, `mean_psi`, rog bytes.
     pub content_hash: u64,
     /// Number of residues in the input chain.
     pub residue_count: usize,
-    /// Total feature dimensions: residue_count * 4 (amino_type, phi, psi, omega per residue).
+    /// Total feature dimensions: `residue_count` * 4 (`amino_type`, phi, psi, omega per residue).
     pub feature_count: usize,
     /// Mean phi backbone angle across all residues (radians).
     pub mean_phi: f64,
@@ -37,9 +40,10 @@ pub struct BioMlFeatures {
 
 /// Convert a residue chain into ML feature metadata.
 ///
-/// Requires a ProteinSdf to obtain Ca positions for radius of gyration.
+/// Requires a `ProteinSdf` to obtain Ca positions for radius of gyration.
 /// Mean phi/psi are computed directly from the residue backbone angles.
 #[inline]
+#[must_use]
 pub fn bio_residues_to_ml_features(protein: &ProteinSdf) -> BioMlFeatures {
     let residues = protein.residues();
     let residue_count = residues.len();
@@ -80,24 +84,28 @@ pub fn bio_residues_to_ml_features(protein: &ProteinSdf) -> BioMlFeatures {
 /// per-amino-acid histogram so the Search layer can locate proteins by
 /// composition or sequence substring without storing raw residue data.
 pub struct BioSearchSequence {
-    /// FNV-1a hash over sequence_length + histogram bytes.
+    /// FNV-1a hash over `sequence_length` + histogram bytes.
     pub content_hash: u64,
     /// Number of residues in the sequence.
     pub sequence_length: usize,
     /// FNV-1a hash of the one-letter amino acid sequence string.
     pub sequence_hash: u64,
-    /// Histogram: count of each of the 20 standard amino acids (indexed by AminoAcid::ALL order).
+    /// Histogram: count of each of the 20 standard amino acids (indexed by `AminoAcid::ALL` order).
     pub amino_histogram: [u32; 20],
 }
 
 /// Convert a protein SDF into a searchable sequence record.
 #[inline]
+#[must_use]
 pub fn bio_protein_to_search_sequence(protein: &ProteinSdf) -> BioSearchSequence {
     let residues = protein.residues();
     let sequence_length = residues.len();
 
     // Build one-letter sequence and hash it
-    let one_letters: Vec<u8> = residues.iter().map(|r| r.amino.one_letter() as u8).collect();
+    let one_letters: Vec<u8> = residues
+        .iter()
+        .map(|r| r.amino.one_letter() as u8)
+        .collect();
     let sequence_hash = fnv1a(&one_letters);
 
     // Build histogram indexed by position in AminoAcid::ALL
@@ -134,7 +142,7 @@ pub fn bio_protein_to_search_sequence(protein: &ProteinSdf) -> BioSearchSequence
 /// sequence identity so annotations can be cached and deduplicated
 /// without storing the full residue chain.
 pub struct BioTextAnnotation {
-    /// FNV-1a hash over residue_count, annotation_bytes, sequence_hash bytes.
+    /// FNV-1a hash over `residue_count`, `annotation_bytes`, `sequence_hash` bytes.
     pub content_hash: u64,
     /// Number of residues in the protein.
     pub residue_count: usize,
@@ -146,12 +154,16 @@ pub struct BioTextAnnotation {
 
 /// Convert a protein SDF into a text annotation record.
 #[inline]
+#[must_use]
 pub fn bio_protein_to_text_annotation(protein: &ProteinSdf) -> BioTextAnnotation {
     let residues = protein.residues();
     let residue_count = residues.len();
     let annotation_bytes = residue_count * 2; // one-letter code + separator
 
-    let one_letters: Vec<u8> = residues.iter().map(|r| r.amino.one_letter() as u8).collect();
+    let one_letters: Vec<u8> = residues
+        .iter()
+        .map(|r| r.amino.one_letter() as u8)
+        .collect();
     let sequence_hash = fnv1a(&one_letters);
 
     let mut key = [0u8; 24];
@@ -175,7 +187,7 @@ pub fn bio_protein_to_text_annotation(protein: &ProteinSdf) -> BioTextAnnotation
 /// torsion) to a physics-friendly force record so the Physics layer
 /// can integrate molecular dynamics without parsing energy internals.
 pub struct BioPhysicsForce {
-    /// FNV-1a hash over total_energy, lj, coulomb, is_stable, magnitude bytes.
+    /// FNV-1a hash over `total_energy`, lj, coulomb, `is_stable`, magnitude bytes.
     pub content_hash: u64,
     /// Sum of all energy components (kcal/mol).
     pub total_energy: f64,
@@ -191,6 +203,7 @@ pub struct BioPhysicsForce {
 
 /// Convert a total energy report into a physics force record.
 #[inline]
+#[must_use]
 pub fn bio_energy_to_physics_force(energy: &TotalEnergy) -> BioPhysicsForce {
     let total = energy.total();
     let is_stable = total < 0.0;
@@ -218,7 +231,7 @@ pub fn bio_energy_to_physics_force(energy: &TotalEnergy) -> BioPhysicsForce {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_bio::{AminoAcid, Residue, ProteinSdf, TotalEnergy};
+    use alice_bio::{AminoAcid, ProteinSdf, Residue, TotalEnergy};
     use std::f64::consts::PI;
 
     fn make_residue(aa: AminoAcid, phi: f64, psi: f64) -> Residue {
@@ -243,7 +256,7 @@ mod tests {
         assert_ne!(features.content_hash, 0);
         assert_eq!(features.residue_count, 3);
         assert_eq!(features.feature_count, 12); // 3 * 4
-        // Mean phi should be approximately (-1.0 + -1.1 + -1.2) / 3 = -1.1
+                                                // Mean phi should be approximately (-1.0 + -1.1 + -1.2) / 3 = -1.1
         assert!((features.mean_phi - (-1.1)).abs() < 1e-10);
         // Mean psi should be approximately (-0.8 + -0.7 + -0.9) / 3 = -0.8
         assert!((features.mean_psi - (-0.8)).abs() < 1e-10);
@@ -278,9 +291,18 @@ mod tests {
         assert_eq!(seq.sequence_length, 3);
         assert_ne!(seq.sequence_hash, 0);
         // Check histogram: 1 Ala, 1 Gly, 1 Val
-        let ala_idx = AminoAcid::ALL.iter().position(|&a| a == AminoAcid::Ala).unwrap();
-        let gly_idx = AminoAcid::ALL.iter().position(|&a| a == AminoAcid::Gly).unwrap();
-        let val_idx = AminoAcid::ALL.iter().position(|&a| a == AminoAcid::Val).unwrap();
+        let ala_idx = AminoAcid::ALL
+            .iter()
+            .position(|&a| a == AminoAcid::Ala)
+            .unwrap();
+        let gly_idx = AminoAcid::ALL
+            .iter()
+            .position(|&a| a == AminoAcid::Gly)
+            .unwrap();
+        let val_idx = AminoAcid::ALL
+            .iter()
+            .position(|&a| a == AminoAcid::Val)
+            .unwrap();
         assert_eq!(seq.amino_histogram[ala_idx], 1);
         assert_eq!(seq.amino_histogram[gly_idx], 1);
         assert_eq!(seq.amino_histogram[val_idx], 1);

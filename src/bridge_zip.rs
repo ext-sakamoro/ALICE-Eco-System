@@ -2,10 +2,10 @@
 //!
 //! 5 bridges connecting procedural compression to the ALICE ecosystem.
 
-use alice_core::generators;
-use alice_core::compression;
-use alice_ml::TernaryWeight;
 use crate::hash::fnv1a;
+use alice_core::compression;
+use alice_core::generators;
+use alice_ml::TernaryWeight;
 
 // ── Bridge 1: Zip → Edge (pattern compression → sensor data) ────────────
 
@@ -25,7 +25,12 @@ pub struct ZipEdgeSensorData {
 
 /// Fit sensor data to polynomial model for ALICE-Edge compression.
 #[inline]
-pub fn zip_edge_fit_sensor(samples: &[f32], max_degree: usize, error_threshold: f64) -> Option<ZipEdgeSensorData> {
+#[must_use]
+pub fn zip_edge_fit_sensor(
+    samples: &[f32],
+    max_degree: usize,
+    error_threshold: f64,
+) -> Option<ZipEdgeSensorData> {
     let data: Vec<f32> = samples.to_vec();
     let (coeffs, degree, error) = generators::fit_polynomial(&data, max_degree, error_threshold)?;
     let model_bytes = coeffs.len() * 8;
@@ -35,7 +40,11 @@ pub fn zip_edge_fit_sensor(samples: &[f32], max_degree: usize, error_threshold: 
         degree,
         fit_error: error,
         sample_count: samples.len(),
-        compression_ratio: if model_bytes > 0 { raw_bytes as f32 / model_bytes as f32 } else { 0.0 },
+        compression_ratio: if model_bytes > 0 {
+            raw_bytes as f32 / model_bytes as f32
+        } else {
+            0.0
+        },
     })
 }
 
@@ -57,15 +66,20 @@ pub struct ZipDbResidual {
 
 /// Compress model residuals for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn zip_db_compress_residual(residual: &[f32]) -> ZipDbResidual {
-    let compressed = compression::compress_residual_quantized(residual, 8, 3)
-        .unwrap_or_else(|_| Vec::new());
+    let compressed =
+        compression::compress_residual_quantized(residual, 8, 3).unwrap_or_else(|_| Vec::new());
     let raw_bytes = residual.len() * 4;
     let content_hash = fnv1a(&compressed);
     ZipDbResidual {
         original_bytes: raw_bytes,
         compressed_bytes: compressed.len(),
-        compression_ratio: if compressed.is_empty() { 0.0 } else { raw_bytes as f32 / compressed.len() as f32 },
+        compression_ratio: if compressed.is_empty() {
+            0.0
+        } else {
+            raw_bytes as f32 / compressed.len() as f32
+        },
         content_hash,
         compressed,
     }
@@ -87,16 +101,21 @@ pub struct ZipCryptoPayload {
 
 /// Prepare compressed residual for ALICE-Crypto encryption.
 #[inline]
+#[must_use]
 pub fn zip_to_crypto_payload(residual: &[f32]) -> ZipCryptoPayload {
-    let compressed = compression::compress_residual_quantized(residual, 8, 3)
-        .unwrap_or_else(|_| Vec::new());
+    let compressed =
+        compression::compress_residual_quantized(residual, 8, 3).unwrap_or_else(|_| Vec::new());
     let raw_bytes = residual.len() * 4;
     let content_hash = fnv1a(&compressed);
     ZipCryptoPayload {
         content_hash,
         compressed_bytes: compressed.len(),
         original_bytes: raw_bytes,
-        compression_ratio: if compressed.is_empty() { 0.0 } else { raw_bytes as f32 / compressed.len() as f32 },
+        compression_ratio: if compressed.is_empty() {
+            0.0
+        } else {
+            raw_bytes as f32 / compressed.len() as f32
+        },
     }
 }
 
@@ -124,6 +143,7 @@ pub struct ZipMlCompressedModel {
 /// Packed ternary footprint is `(rows * cols + 3) / 4` bytes (2 bits/weight).
 /// `compression_ratio` is computed via reciprocal multiply (no division op).
 #[inline]
+#[must_use]
 pub fn zip_ml_store(weights: &TernaryWeight, model_name: &str) -> ZipMlCompressedModel {
     let rows = weights.out_features();
     let cols = weights.in_features();
@@ -134,10 +154,14 @@ pub fn zip_ml_store(weights: &TernaryWeight, model_name: &str) -> ZipMlCompresse
     buf[8..16].copy_from_slice(&(cols as u64).to_le_bytes());
     let content_hash = fnv1a(&buf);
     let model_id = fnv1a(model_name.as_bytes());
-    let packed_bytes = (total + 3) / 4; // 2 bits per ternary weight
+    let packed_bytes = total.div_ceil(4); // 2 bits per ternary weight
     let raw_bytes = total * 4; // f32-equivalent footprint
-    // Reciprocal multiply — avoids division.
-    let rcp_packed = if packed_bytes == 0 { 0.0 } else { 1.0 / packed_bytes as f32 };
+                               // Reciprocal multiply — avoids division.
+    let rcp_packed = if packed_bytes == 0 {
+        0.0
+    } else {
+        1.0 / packed_bytes as f32
+    };
     let compression_ratio = raw_bytes as f32 * rcp_packed;
     ZipMlCompressedModel {
         model_id,
@@ -172,12 +196,17 @@ pub struct ZipCacheEntry {
 /// `cache_worthy` is set branchlessly from the integer comparison
 /// `original_bytes > compressed_bytes`.
 #[inline]
+#[must_use]
 pub fn zip_cache_entry(key: &str, compressed_bytes: usize, original_bytes: usize) -> ZipCacheEntry {
     let content_hash = fnv1a(key.as_bytes());
     // Branchless: bool from integer comparison, no if/else.
     let cache_worthy = original_bytes > compressed_bytes;
     // Reciprocal multiply — avoids division.
-    let rcp_compressed = if compressed_bytes > 0 { 1.0 / compressed_bytes as f32 } else { 0.0 };
+    let rcp_compressed = if compressed_bytes > 0 {
+        1.0 / compressed_bytes as f32
+    } else {
+        0.0
+    };
     let compression_ratio = original_bytes as f32 * rcp_compressed;
     ZipCacheEntry {
         content_hash,

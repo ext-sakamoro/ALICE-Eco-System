@@ -9,7 +9,10 @@ use alice_sync::InputFrame;
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -38,6 +41,7 @@ pub struct SyncDbSessionRecord {
 ///
 /// `loss_permille` is computed branchlessly from `lost_frames / total_frames`.
 #[inline]
+#[must_use]
 pub fn sync_to_db_session_record(
     session_id: &str,
     frame_count: u64,
@@ -84,17 +88,18 @@ pub struct SyncAnalyticsFrameEvent {
 /// The movement and aim arrays are hashed as raw i16 bytes for a compact
 /// deduplication key without heap allocation.
 #[inline]
+#[must_use]
 pub fn sync_to_analytics_frame_event(frame: &InputFrame) -> SyncAnalyticsFrameEvent {
     // Hash movement + aim as raw bytes (6 × i16 = 12 bytes per array = 24 bytes total).
     let mut data = [0u8; 24];
     for (i, &v) in frame.movement.iter().enumerate() {
         let bytes = v.to_le_bytes();
-        data[i * 2]     = bytes[0];
+        data[i * 2] = bytes[0];
         data[i * 2 + 1] = bytes[1];
     }
     for (i, &v) in frame.aim.iter().enumerate() {
         let bytes = v.to_le_bytes();
-        data[6 + i * 2]     = bytes[0];
+        data[6 + i * 2] = bytes[0];
         data[6 + i * 2 + 1] = bytes[1];
     }
     let payload_hash = fnv1a(&data);
@@ -136,6 +141,7 @@ pub struct SyncCdnPeerDiscovery {
 ///
 /// TTL is 10 s — peer lists are volatile (peers join/leave frequently).
 #[inline]
+#[must_use]
 pub fn sync_to_cdn_peer_discovery(
     room_id: &str,
     max_peers: u8,
@@ -175,6 +181,7 @@ pub struct SyncCacheStateSnapshot {
 /// TTL is set to 30 s — short enough to stay fresh during active play,
 /// long enough to serve late-joining peers without reprobing the server.
 #[inline]
+#[must_use]
 pub fn sync_to_cache_state_snapshot(
     state_data: &[u8],
     snapshot_frame: u64,
@@ -209,16 +216,17 @@ pub struct SyncDbFrameLog {
 
 /// Build an input frame log record for ALICE-DB.
 #[inline]
+#[must_use]
 pub fn sync_to_db_frame_log(frame: &InputFrame) -> SyncDbFrameLog {
     let mut data = [0u8; 24];
     for (i, &v) in frame.movement.iter().enumerate() {
         let b = v.to_le_bytes();
-        data[i * 2]     = b[0];
+        data[i * 2] = b[0];
         data[i * 2 + 1] = b[1];
     }
     for (i, &v) in frame.aim.iter().enumerate() {
         let b = v.to_le_bytes();
-        data[6 + i * 2]     = b[0];
+        data[6 + i * 2] = b[0];
         data[6 + i * 2 + 1] = b[1];
     }
     SyncDbFrameLog {
@@ -254,6 +262,7 @@ pub struct SyncCachePeerRtt {
 /// `rtt_ewma_ms` is updated as `ewma = 7/8 * prev_ewma + 1/8 * rtt_ms`
 /// using integer arithmetic (branchless, no float).
 #[inline]
+#[must_use]
 pub fn sync_to_cache_peer_rtt(
     peer_id: &str,
     rtt_ms: u32,
@@ -297,6 +306,7 @@ pub struct SyncAnalyticsSessionHealth {
 
 /// Build a session health summary for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn sync_to_analytics_session_health(
     session_id: &str,
     total_frames: u64,
@@ -345,6 +355,7 @@ pub struct SyncPhysicsEvent {
 /// that the physics engine receives the raw analog magnitude without
 /// normalisation — callers should apply their own force scaling.
 #[inline]
+#[must_use]
 pub fn sync_to_physics_event(frame: &InputFrame) -> SyncPhysicsEvent {
     let force_x = frame.movement[0] as f32;
     let force_y = frame.movement[1] as f32;
@@ -371,8 +382,7 @@ mod tests {
     use super::*;
 
     fn make_frame(frame: u64, player_id: u8) -> InputFrame {
-        InputFrame::new(frame, player_id)
-            .with_movement(100, -50, 0)
+        InputFrame::new(frame, player_id).with_movement(100, -50, 0)
     }
 
     #[test]
@@ -410,7 +420,10 @@ mod tests {
         let f2 = InputFrame::new(1, 0).with_movement(0, 0, 0);
         let e1 = sync_to_analytics_frame_event(&f1);
         let e2 = sync_to_analytics_frame_event(&f2);
-        assert_ne!(e1.payload_hash, e2.payload_hash, "different movement → different hash");
+        assert_ne!(
+            e1.payload_hash, e2.payload_hash,
+            "different movement → different hash"
+        );
     }
 
     #[test]
@@ -504,6 +517,9 @@ mod tests {
         let f2 = make_frame(2, 0);
         let e1 = sync_to_physics_event(&f1);
         let e2 = sync_to_physics_event(&f2);
-        assert_ne!(e1.content_hash, e2.content_hash, "different tick → different hash");
+        assert_ne!(
+            e1.content_hash, e2.content_hash,
+            "different tick → different hash"
+        );
     }
 }

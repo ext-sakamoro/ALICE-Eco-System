@@ -2,12 +2,17 @@
 //!
 //! 5 bridges connecting power grid simulation data to the ALICE ecosystem.
 
-use alice_energy::{PowerNode, NodeKind, PowerGrid, BatteryState, BatteryChemistry, PhaseCorrection};
+use alice_energy::{
+    BatteryChemistry, BatteryState, NodeKind, PhaseCorrection, PowerGrid, PowerNode,
+};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -33,6 +38,7 @@ pub struct EnergyAnalyticsGridEvent {
 
 /// Convert a power grid into a grid balance analytics event.
 #[inline]
+#[must_use]
 pub fn energy_grid_to_analytics(grid: &PowerGrid) -> EnergyAnalyticsGridEvent {
     let gen = grid.total_generation();
     let con = grid.total_consumption();
@@ -78,6 +84,7 @@ pub struct EnergyAnalyticsNodeEvent {
 
 /// Convert a power node into a utilization analytics event.
 #[inline]
+#[must_use]
 pub fn energy_node_to_analytics(node: &PowerNode) -> EnergyAnalyticsNodeEvent {
     let kind_byte = match node.kind {
         NodeKind::Generator => 0,
@@ -108,7 +115,7 @@ pub fn energy_node_to_analytics(node: &PowerNode) -> EnergyAnalyticsNodeEvent {
 
 /// Battery health record for ALICE-DB persistence.
 pub struct EnergyDbBatteryRecord {
-    /// Content hash over battery ID, SoC, cycle count, and health bytes.
+    /// Content hash over battery ID, `SoC`, cycle count, and health bytes.
     pub content_hash: u64,
     /// Inner u64 of the battery ID.
     pub battery_id: u64,
@@ -128,6 +135,7 @@ pub struct EnergyDbBatteryRecord {
 
 /// Convert a battery state into a DB health record.
 #[inline]
+#[must_use]
 pub fn energy_battery_to_db(battery: &BatteryState) -> EnergyDbBatteryRecord {
     let chemistry_byte = match battery.chemistry {
         BatteryChemistry::LithiumIon => 0,
@@ -176,6 +184,7 @@ pub struct EnergyEdgePhaseTelemetry {
 
 /// Convert a phase correction into an edge telemetry event.
 #[inline]
+#[must_use]
 pub fn energy_phase_to_edge(correction: &PhaseCorrection) -> EnergyEdgePhaseTelemetry {
     let mut key = [0u8; 32];
     key[0..8].copy_from_slice(&correction.node_id.0.to_le_bytes());
@@ -194,9 +203,9 @@ pub fn energy_phase_to_edge(correction: &PhaseCorrection) -> EnergyEdgePhaseTele
 
 // ── Bridge 5: BatteryState → Cache (real-time SoC lookup) ──────────────
 
-/// Battery SoC cache entry for ALICE-Cache real-time lookup.
+/// Battery `SoC` cache entry for ALICE-Cache real-time lookup.
 pub struct EnergyCacheBattery {
-    /// Content hash over battery ID and SoC bytes.
+    /// Content hash over battery ID and `SoC` bytes.
     pub content_hash: u64,
     /// Inner u64 of the battery ID.
     pub battery_id: u64,
@@ -204,19 +213,20 @@ pub struct EnergyCacheBattery {
     pub soc: f64,
     /// Health percentage.
     pub health_pct: f64,
-    /// Cache TTL: 5s if critical (SoC < 0.1 or > 0.95), else 30s.
+    /// Cache TTL: 5s if critical (`SoC` < 0.1 or > 0.95), else 30s.
     pub ttl_secs: u32,
 }
 
 /// Convert a battery state into a cache entry with adaptive TTL.
 #[inline]
+#[must_use]
 pub fn energy_battery_to_cache(battery: &BatteryState) -> EnergyCacheBattery {
     let soc = battery.state_of_charge;
     let mut key = [0u8; 16];
     key[0..8].copy_from_slice(&battery.id.0.to_le_bytes());
     key[8..16].copy_from_slice(&soc.to_bits().to_le_bytes());
     // Branchless TTL: critical=1 → 30-25=5, normal=0 → 30-0=30.
-    let critical = (soc < 0.1 || soc > 0.95) as u32;
+    let critical = !(0.1..=0.95).contains(&soc) as u32;
     let ttl_secs = 30 - critical * 25;
 
     EnergyCacheBattery {
@@ -233,7 +243,10 @@ pub fn energy_battery_to_cache(battery: &BatteryState) -> EnergyCacheBattery {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_energy::{NodeId, BatteryId, PowerNode, NodeKind, PowerGrid, BatteryState, BatteryChemistry, PhaseCorrection};
+    use alice_energy::{
+        BatteryChemistry, BatteryId, BatteryState, NodeId, NodeKind, PhaseCorrection, PowerGrid,
+        PowerNode,
+    };
 
     #[test]
     fn test_grid_to_analytics() {

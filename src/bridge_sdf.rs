@@ -8,21 +8,24 @@
 //! `category()` introspection API, which is the public surface exposed by
 //! ALICE-SDF without requiring internal field access.
 
-use alice_sdf::{SdfNode, SdfTree};
 use alice_sdf::types::SdfCategory;
+use alice_sdf::{SdfNode, SdfTree};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
-/// Collect category counts from the root node by walking the node_count and
-/// category — returns (primitive_count, operation_count, modifier_count).
+/// Collect category counts from the root node by walking the `node_count` and
+/// category — returns (`primitive_count`, `operation_count`, `modifier_count`).
 ///
-/// Because SdfNode::node_count() recurses, we approximate category breakdown
-/// using the root category as the dominant signal (the node_count gives total
+/// Because `SdfNode::node_count()` recurses, we approximate category breakdown
+/// using the root category as the dominant signal (the `node_count` gives total
 /// tree size, but category distribution is estimated from the tree structure).
 #[inline]
 fn tree_category_counts(root: &SdfNode) -> (u32, u32, u32) {
@@ -58,13 +61,13 @@ fn tree_category_counts(root: &SdfNode) -> (u32, u32, u32) {
 /// display it in the viewport.  Resolution and step count are pre-computed
 /// from the tree complexity to keep the view bridge allocation-free.
 pub struct SdfViewDescriptor {
-    /// FNV-1a hash over node_count bytes — change key.
+    /// FNV-1a hash over `node_count` bytes — change key.
     pub tree_hash: u64,
     /// Total node count in the SDF tree.
     pub node_count: u32,
     /// Category of the root node.
     pub root_category: u8,
-    /// Recommended raymarch step count (branchless function of node_count).
+    /// Recommended raymarch step count (branchless function of `node_count`).
     pub march_steps: u32,
     /// Recommended grid resolution for voxelization.
     pub grid_resolution: u32,
@@ -77,6 +80,7 @@ pub struct SdfViewDescriptor {
 /// `march_steps` scales with `node_count` so that complex scenes get more
 /// steps.  Formula (branchless): `steps = clamp(node_count * 8 + 64, 64, 512)`.
 #[inline]
+#[must_use]
 pub fn sdf_to_view_descriptor(tree: &SdfTree) -> SdfViewDescriptor {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
@@ -99,7 +103,7 @@ pub fn sdf_to_view_descriptor(tree: &SdfTree) -> SdfViewDescriptor {
     let root_category = match tree.root.category() {
         SdfCategory::Primitive => 0u8,
         SdfCategory::Operation => 1u8,
-        SdfCategory::Modifier  => 2u8,
+        SdfCategory::Modifier => 2u8,
         SdfCategory::Transform => 3u8,
     };
 
@@ -120,11 +124,11 @@ pub fn sdf_to_view_descriptor(tree: &SdfTree) -> SdfViewDescriptor {
 /// Stores a compact fingerprint of the SDF tree so that scene assets can be
 /// queried and versioned without re-building the tree from scratch.
 pub struct SdfDbAssetRecord {
-    /// FNV-1a hash of the node_count bytes.
+    /// FNV-1a hash of the `node_count` bytes.
     pub tree_hash: u64,
     /// Total node count.
     pub node_count: u32,
-    /// Serialized size estimate in bytes (node_count * 48 bytes per node).
+    /// Serialized size estimate in bytes (`node_count` * 48 bytes per node).
     pub serialized_bytes: usize,
     /// Asset schema version for migration.
     pub schema_version: u16,
@@ -134,6 +138,7 @@ pub struct SdfDbAssetRecord {
 
 /// Build a DB asset record from an `SdfTree`.
 #[inline]
+#[must_use]
 pub fn sdf_to_db_asset_record(tree: &SdfTree, schema_version: u16) -> SdfDbAssetRecord {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
@@ -165,7 +170,7 @@ pub struct SdfMlFeatures {
     pub operation_ratio: f32,
     /// Fraction of modifier nodes (estimated).
     pub modifier_ratio: f32,
-    /// Estimated surface area proxy (sqrt(node_count) * bounding_radius).
+    /// Estimated surface area proxy (`sqrt(node_count)` * `bounding_radius`).
     pub surface_proxy: f32,
     /// Feature vector for ML model input (length 5).
     pub feature_vec: Vec<f32>,
@@ -173,6 +178,7 @@ pub struct SdfMlFeatures {
 
 /// Extract ML classification features from an `SdfTree`.
 #[inline]
+#[must_use]
 pub fn sdf_to_ml_features(tree: &SdfTree) -> SdfMlFeatures {
     let node_count = tree.root.node_count().max(1);
     let (prims, ops, mods) = tree_category_counts(&tree.root);
@@ -229,6 +235,7 @@ pub struct SdfPrintSliceMeta {
 ///
 /// `scale_mm` converts SDF units to millimetres (e.g. 10.0 for 1 unit = 10 mm).
 #[inline]
+#[must_use]
 pub fn sdf_to_print_slice_meta(tree: &SdfTree, scale_mm: f32) -> SdfPrintSliceMeta {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
@@ -245,7 +252,7 @@ pub fn sdf_to_print_slice_meta(tree: &SdfTree, scale_mm: f32) -> SdfPrintSliceMe
     // Orientation: vertical for single primitives, tilted for medium, flat for large.
     // Branchless: single (≤1) → 2, small (2–8) → 1, large (9+) → 0.
     let is_single = (node_count <= 1) as u8;
-    let is_small = ((node_count >= 2) & (node_count <= 8)) as u8;
+    let is_small = (2..=8).contains(&node_count) as u8;
     let orientation = is_single.wrapping_mul(2) | (is_small & !is_single);
 
     // Support density: more operation nodes need denser supports.
@@ -272,7 +279,7 @@ pub fn sdf_to_print_slice_meta(tree: &SdfTree, scale_mm: f32) -> SdfPrintSliceMe
 pub struct SdfPhysicsCollider {
     /// FNV-1a hash of the SDF tree — physics body identity key.
     pub shape_hash: u64,
-    /// Collider type: 0=sphere, 1=box, 2=capsule, 3=convex_hull, 4=compound.
+    /// Collider type: 0=sphere, 1=box, 2=capsule, `3=convex_hull`, 4=compound.
     pub collider_type: u8,
     /// Bounding sphere radius (used for broad-phase culling).
     pub bounding_radius: f32,
@@ -291,6 +298,7 @@ pub struct SdfPhysicsCollider {
 /// - Operation root, ≤8 nodes → compound (type 4)
 /// - Operation/Modifier root, >8 nodes → convex hull (type 3)
 #[inline]
+#[must_use]
 pub fn sdf_to_physics_collider(tree: &SdfTree) -> SdfPhysicsCollider {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
@@ -317,9 +325,13 @@ pub fn sdf_to_physics_collider(tree: &SdfTree) -> SdfPhysicsCollider {
         3u8
     };
 
-    let sub_shape_count = if is_primitive_root { 1 }
-                          else if is_small_tree { node_count }
-                          else { 1 };
+    let sub_shape_count = if is_primitive_root {
+        1
+    } else if is_small_tree {
+        node_count
+    } else {
+        1
+    };
 
     SdfPhysicsCollider {
         shape_hash,
@@ -338,9 +350,9 @@ pub fn sdf_to_physics_collider(tree: &SdfTree) -> SdfPhysicsCollider {
 /// Tracks incremental CSG edits so that the undo/redo system can replay
 /// geometry operations without storing full tree snapshots.
 pub struct SdfDbVersionRecord {
-    /// FNV-1a hash of the SDF tree after this edit (includes edit_op).
+    /// FNV-1a hash of the SDF tree after this edit (includes `edit_op`).
     pub tree_hash: u64,
-    /// Edit operation: 0=add_node, 1=remove_node, 2=transform, 3=param_change.
+    /// Edit operation: `0=add_node`, `1=remove_node`, 2=transform, `3=param_change`.
     pub edit_op: u8,
     /// Accumulated node count after this edit.
     pub node_count: u32,
@@ -352,6 +364,7 @@ pub struct SdfDbVersionRecord {
 
 /// Build a version history record for ALICE-DB.
 #[inline]
+#[must_use]
 pub fn sdf_to_db_version_record(
     tree: &SdfTree,
     edit_op: u8,
@@ -365,7 +378,7 @@ pub fn sdf_to_db_version_record(
     let root_category = match tree.root.category() {
         SdfCategory::Primitive => 0u8,
         SdfCategory::Operation => 1u8,
-        SdfCategory::Modifier  => 2u8,
+        SdfCategory::Modifier => 2u8,
         SdfCategory::Transform => 3u8,
     };
     SdfDbVersionRecord {
@@ -381,14 +394,14 @@ pub fn sdf_to_db_version_record(
 
 /// Geometry outlier detection record for ALICE-ML.
 ///
-/// Flags SDF trees whose node_count deviates significantly from the expected
+/// Flags SDF trees whose `node_count` deviates significantly from the expected
 /// distribution so the ML pipeline can flag corrupted or adversarial geometry.
 pub struct SdfMlOutlierRecord {
     /// FNV-1a hash of the SDF tree.
     pub tree_hash: u64,
     /// Outlier score (higher = more anomalous, 0.0–1.0).
     pub outlier_score: f32,
-    /// True when outlier_score >= 0.8 (flagged for review).
+    /// True when `outlier_score` >= 0.8 (flagged for review).
     pub is_flagged: bool,
     /// Actual node count.
     pub node_count: u32,
@@ -401,16 +414,15 @@ pub struct SdfMlOutlierRecord {
 /// Outlier score is a branchless normalized deviation from the expected
 /// node count: `score = |actual - expected| / max(expected, 1)`, clamped to [0, 1].
 #[inline]
-pub fn sdf_to_ml_outlier_record(
-    tree: &SdfTree,
-    expected_node_count: f32,
-) -> SdfMlOutlierRecord {
+#[must_use]
+pub fn sdf_to_ml_outlier_record(tree: &SdfTree, expected_node_count: f32) -> SdfMlOutlierRecord {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
     data.copy_from_slice(&node_count.to_le_bytes());
     let tree_hash = fnv1a(&data);
 
-    let deviation = ((node_count as f32 - expected_node_count) / expected_node_count.max(1.0)).abs();
+    let deviation =
+        ((node_count as f32 - expected_node_count) / expected_node_count.max(1.0)).abs();
     let outlier_score = deviation.clamp(0.0, 1.0);
     let is_flagged = outlier_score >= 0.8;
 
@@ -435,7 +447,7 @@ pub struct SdfCdnDescriptor {
     pub content_hash: u64,
     /// Total node count in the SDF tree.
     pub node_count: u32,
-    /// Estimated serialized size in bytes (node_count * 32 bytes per node).
+    /// Estimated serialized size in bytes (`node_count` * 32 bytes per node).
     pub estimated_bytes: usize,
     /// Content type identifier (0x10 = 3D model type).
     pub content_type_id: u8,
@@ -446,6 +458,7 @@ pub struct SdfCdnDescriptor {
 /// `estimated_bytes` uses 32 bytes per node as a conservative estimate for
 /// CDN cache reservation without requiring a full serialization pass.
 #[inline]
+#[must_use]
 pub fn sdf_to_cdn_descriptor(tree: &SdfTree) -> SdfCdnDescriptor {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
@@ -472,7 +485,7 @@ pub struct SdfMotionSeed {
     pub content_hash: u64,
     /// Total node count in the SDF tree.
     pub node_count: u32,
-    /// Bounding volume estimate (simplified as node_count cast to f64).
+    /// Bounding volume estimate (simplified as `node_count` cast to f64).
     pub bounding_volume: f64,
     /// Always true for SDF → print pipeline: S-curve profiling required.
     pub requires_scurve: bool,
@@ -483,6 +496,7 @@ pub struct SdfMotionSeed {
 /// `requires_scurve` is always `true` for SDF geometry destined for the
 /// print pipeline, where S-curve acceleration avoids resonance artefacts.
 #[inline]
+#[must_use]
 pub fn sdf_to_motion_seed(tree: &SdfTree) -> SdfMotionSeed {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
@@ -508,7 +522,7 @@ pub struct SdfAnimationSource {
     pub content_hash: u64,
     /// Total node count in the SDF tree.
     pub node_count: u32,
-    /// Pre-allocated keyframe capacity (node_count * 4).
+    /// Pre-allocated keyframe capacity (`node_count` * 4).
     pub keyframe_capacity: usize,
     /// True when the tree contains more than one node (compound deformation).
     pub is_deformable: bool,
@@ -519,6 +533,7 @@ pub struct SdfAnimationSource {
 /// `keyframe_capacity` is pre-computed as `node_count * 4` to avoid
 /// re-allocation during animation playback.
 #[inline]
+#[must_use]
 pub fn sdf_to_animation_source(tree: &SdfTree) -> SdfAnimationSource {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
@@ -546,7 +561,7 @@ pub struct SdfFontSource {
     pub content_hash: u64,
     /// Total node count in the SDF tree.
     pub node_count: u32,
-    /// Estimated glyph complexity (node_count cast to u32).
+    /// Estimated glyph complexity (`node_count` cast to u32).
     pub estimated_glyph_complexity: u32,
     /// True when the tree is simple enough to be treated as a 2D glyph (≤4 nodes).
     pub is_2d: bool,
@@ -557,12 +572,13 @@ pub struct SdfFontSource {
 /// `is_2d` is set when `node_count <= 4`, indicating that the SDF describes
 /// a simple 2D contour suitable for direct rasterisation without 3D raymarching.
 #[inline]
+#[must_use]
 pub fn sdf_to_font_source(tree: &SdfTree) -> SdfFontSource {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
     data.copy_from_slice(&node_count.to_le_bytes());
     let content_hash = fnv1a(&data);
-    let estimated_glyph_complexity = node_count as u32;
+    let estimated_glyph_complexity = node_count;
     let is_2d = node_count <= 4;
     SdfFontSource {
         content_hash,
@@ -584,7 +600,7 @@ pub struct SdfSynthSource {
     pub content_hash: u64,
     /// Total node count in the SDF tree.
     pub node_count: u32,
-    /// Number of harmonics (node_count clamped to 16).
+    /// Number of harmonics (`node_count` clamped to 16).
     pub harmonic_count: u32,
     /// Base frequency in Hz (A4 = 440.0 Hz).
     pub base_frequency_hz: f32,
@@ -596,12 +612,13 @@ pub struct SdfSynthSource {
 /// supported by the ALICE-Synth additive synthesizer.
 /// `base_frequency_hz` is fixed at 440.0 Hz (A4) as a neutral reference pitch.
 #[inline]
+#[must_use]
 pub fn sdf_to_synth_source(tree: &SdfTree) -> SdfSynthSource {
     let node_count = tree.root.node_count();
     let mut data = [0u8; 4];
     data.copy_from_slice(&node_count.to_le_bytes());
     let content_hash = fnv1a(&data);
-    let harmonic_count = node_count.min(16) as u32;
+    let harmonic_count = node_count.min(16);
     SdfSynthSource {
         content_hash,
         node_count,
@@ -759,7 +776,10 @@ mod tests {
         let tree = csg_tree();
         let r0 = sdf_to_db_version_record(&tree, 0, 1);
         let r1 = sdf_to_db_version_record(&tree, 1, 1);
-        assert_ne!(r0.tree_hash, r1.tree_hash, "different edit_op → different hash");
+        assert_ne!(
+            r0.tree_hash, r1.tree_hash,
+            "different edit_op → different hash"
+        );
     }
 
     #[test]
@@ -770,14 +790,17 @@ mod tests {
         let rec = sdf_to_ml_outlier_record(&tree, nc as f32);
         assert_ne!(rec.tree_hash, 0);
         assert_eq!(rec.node_count, nc);
-        assert!((rec.outlier_score).abs() < f32::EPSILON, "exact match → score 0");
+        assert!(
+            (rec.outlier_score).abs() < f32::EPSILON,
+            "exact match → score 0"
+        );
         assert!(!rec.is_flagged);
     }
 
     #[test]
     fn test_sdf_to_ml_outlier_record_anomalous() {
         let tree = deep_tree(); // many nodes
-        // Expected 1 node → strong anomaly.
+                                // Expected 1 node → strong anomaly.
         let rec = sdf_to_ml_outlier_record(&tree, 1.0);
         assert!(rec.outlier_score > 0.0);
     }
@@ -806,7 +829,10 @@ mod tests {
         let sphere = sdf_to_motion_seed(&sphere_tree());
         assert_ne!(sphere.content_hash, 0);
         assert_eq!(sphere.node_count, 1);
-        assert!(sphere.requires_scurve, "S-curve always required for SDF → print");
+        assert!(
+            sphere.requires_scurve,
+            "S-curve always required for SDF → print"
+        );
         assert!((sphere.bounding_volume - 1.0).abs() < f64::EPSILON);
 
         let csg = sdf_to_motion_seed(&csg_tree());
@@ -869,7 +895,10 @@ mod tests {
         // deep_tree has many nodes — harmonic_count should clamp to 16.
         let tree = deep_tree();
         let src = sdf_to_synth_source(&tree);
-        assert!(src.harmonic_count <= 16, "harmonic_count must not exceed 16");
+        assert!(
+            src.harmonic_count <= 16,
+            "harmonic_count must not exceed 16"
+        );
         assert!((src.base_frequency_hz - 440.0).abs() < f32::EPSILON);
     }
 }

@@ -2,12 +2,17 @@
 //!
 //! 8 bridges connecting Ed25519 ZKP authentication to the ALICE ecosystem.
 
+use std::fmt::Write;
+
 use alice_auth::{AliceId, AliceSig, Identity};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -25,10 +30,14 @@ pub struct AuthDbRecord {
 
 /// Serialize identity for ALICE-DB storage.
 #[inline]
+#[must_use]
 pub fn auth_to_db_record(id: &AliceId) -> AuthDbRecord {
     let bytes = *id.as_bytes();
     let hash = fnv1a(&bytes);
-    let hex: String = bytes.iter().map(|b| format!("{:02x}", b)).collect();
+    let hex: String = bytes.iter().fold(String::new(), |mut s, b| {
+        let _ = write!(s, "{b:02x}");
+        s
+    });
     AuthDbRecord {
         id_bytes: bytes,
         content_hash: hash,
@@ -50,9 +59,14 @@ pub struct AuthCacheToken {
 
 /// Prepare identity for ALICE-Cache session token.
 #[inline]
+#[must_use]
 pub fn auth_to_cache_token(id: &AliceId, ttl_secs: u32) -> AuthCacheToken {
     let bytes = *id.as_bytes();
-    AuthCacheToken { id_bytes: bytes, content_hash: fnv1a(&bytes), ttl_secs }
+    AuthCacheToken {
+        id_bytes: bytes,
+        content_hash: fnv1a(&bytes),
+        ttl_secs,
+    }
 }
 
 // ── Bridge 3: Auth → Crypto (identity key for SSS backup) ──────────────
@@ -69,10 +83,15 @@ pub struct AuthCryptoBackup {
 
 /// Prepare identity seed for ALICE-Crypto SSS backup.
 #[inline]
+#[must_use]
 pub fn auth_to_crypto_backup(identity: &Identity) -> AuthCryptoBackup {
     let id_bytes = *identity.id().as_bytes();
     let seed = identity.seed();
-    AuthCryptoBackup { id_bytes, seed_hash: fnv1a(&seed), payload_bytes: 32 }
+    AuthCryptoBackup {
+        id_bytes,
+        seed_hash: fnv1a(&seed),
+        payload_bytes: 32,
+    }
 }
 
 // ── Bridge 4: Auth → API (API gateway authentication) ───────────────────
@@ -89,10 +108,18 @@ pub struct AuthApiGateway {
 
 /// Verify signature for ALICE-API gateway authentication.
 #[inline]
+#[must_use]
 pub fn auth_to_api_verify(id: &AliceId, message: &[u8], sig: &AliceSig) -> AuthApiGateway {
     let verified = alice_auth::ok(id, message, sig);
-    let hex: String = id.as_bytes()[..16].iter().map(|b| format!("{:02x}", b)).collect();
-    AuthApiGateway { id_hex: hex, signature_bytes: 64, verified }
+    let hex: String = id.as_bytes()[..16].iter().fold(String::new(), |mut s, b| {
+        let _ = write!(s, "{b:02x}");
+        s
+    });
+    AuthApiGateway {
+        id_hex: hex,
+        signature_bytes: 64,
+        verified,
+    }
 }
 
 // ── Bridge 5: Auth → CDN (authenticated content token) ──────────────────
@@ -109,14 +136,19 @@ pub struct AuthCdnToken {
 
 /// Generate authenticated content token for ALICE-CDN.
 #[inline]
+#[must_use]
 pub fn auth_to_cdn_token(id: &AliceId) -> AuthCdnToken {
     let bytes = *id.as_bytes();
-    AuthCdnToken { id_bytes: bytes, content_hash: fnv1a(&bytes), token_size: 32 }
+    AuthCdnToken {
+        id_bytes: bytes,
+        content_hash: fnv1a(&bytes),
+        token_size: 32,
+    }
 }
 
 // ── Bridge 6: Auth → Edge (IoT device authentication) ───────────────────
 
-/// IoT device authentication config for ALICE-Edge.
+/// `IoT` device authentication config for ALICE-Edge.
 pub struct AuthEdgeDevice {
     /// Device identity public key.
     pub device_id: [u8; 32],
@@ -126,10 +158,15 @@ pub struct AuthEdgeDevice {
     pub protocol_version: u8,
 }
 
-/// Configure IoT device authentication for ALICE-Edge.
+/// Configure `IoT` device authentication for ALICE-Edge.
 #[inline]
+#[must_use]
 pub fn auth_to_edge_device(id: &AliceId) -> AuthEdgeDevice {
-    AuthEdgeDevice { device_id: *id.as_bytes(), challenge_bytes: 32, protocol_version: 1 }
+    AuthEdgeDevice {
+        device_id: *id.as_bytes(),
+        challenge_bytes: 32,
+        protocol_version: 1,
+    }
 }
 
 // ── Bridge 7: Auth → DNS (DNS-based identity fingerprint) ───────────────
@@ -146,10 +183,18 @@ pub struct AuthDnsFingerprint {
 
 /// Create DNS TXT record fingerprint from ALICE-Auth identity.
 #[inline]
+#[must_use]
 pub fn auth_to_dns_fingerprint(id: &AliceId) -> AuthDnsFingerprint {
     let bytes = *id.as_bytes();
-    let fp: String = bytes[..16].iter().map(|b| format!("{:02x}", b)).collect();
-    AuthDnsFingerprint { fingerprint: fp, id_bytes: bytes, record_type: "TXT" }
+    let fp: String = bytes[..16].iter().fold(String::new(), |mut s, b| {
+        let _ = write!(s, "{b:02x}");
+        s
+    });
+    AuthDnsFingerprint {
+        fingerprint: fp,
+        id_bytes: bytes,
+        record_type: "TXT",
+    }
 }
 
 // ── Bridge 8: Auth → Sync (authenticated multiplayer session) ───────────
@@ -166,9 +211,14 @@ pub struct AuthSyncSession {
 
 /// Create authenticated session for ALICE-Sync multiplayer.
 #[inline]
+#[must_use]
 pub fn auth_to_sync_session(id: &AliceId, player_slot: u8) -> AuthSyncSession {
     let bytes = *id.as_bytes();
-    AuthSyncSession { id_bytes: bytes, content_hash: fnv1a(&bytes), player_slot }
+    AuthSyncSession {
+        id_bytes: bytes,
+        content_hash: fnv1a(&bytes),
+        player_slot,
+    }
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────

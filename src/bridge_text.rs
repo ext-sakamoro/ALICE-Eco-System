@@ -7,7 +7,10 @@ use alice_text::{compress_tuned, decompress_tuned, CompressionMode};
 #[inline(always)]
 fn fnv1a_text(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -27,6 +30,7 @@ pub struct TextFontPayload {
 
 /// Decompress ALICE-Text payload for ALICE-Font rendering.
 #[inline]
+#[must_use]
 pub fn text_to_font_payload(compressed: &[u8]) -> Option<TextFontPayload> {
     let text = decompress_tuned(compressed).ok()?;
     let char_count = text.chars().count();
@@ -34,7 +38,11 @@ pub fn text_to_font_payload(compressed: &[u8]) -> Option<TextFontPayload> {
         text,
         char_count,
         compressed_bytes: compressed.len(),
-        compression_ratio: if compressed.is_empty() { 0.0 } else { (char_count as f32) / compressed.len() as f32 },
+        compression_ratio: if compressed.is_empty() {
+            0.0
+        } else {
+            (char_count as f32) / compressed.len() as f32
+        },
     })
 }
 
@@ -56,13 +64,19 @@ pub struct TextMangaDialogue {
 
 /// Compress manga dialogue text for ALICE-Manga page embedding.
 #[inline]
+#[must_use]
 pub fn text_to_manga_dialogue(dialogue: &str) -> TextMangaDialogue {
-    let compressed = compress_tuned(dialogue, CompressionMode::Balanced).unwrap_or_else(|_| dialogue.as_bytes().to_vec());
+    let compressed = compress_tuned(dialogue, CompressionMode::Balanced)
+        .unwrap_or_else(|_| dialogue.as_bytes().to_vec());
     let line_count = dialogue.lines().count();
     TextMangaDialogue {
         compressed_len: compressed.len(),
         original_len: dialogue.len(),
-        compression_ratio: if compressed.is_empty() { 0.0 } else { dialogue.len() as f32 / compressed.len() as f32 },
+        compression_ratio: if compressed.is_empty() {
+            0.0
+        } else {
+            dialogue.len() as f32 / compressed.len() as f32
+        },
         line_count,
         compressed,
     }
@@ -86,9 +100,11 @@ pub struct TextDbLogRecord {
 
 /// Compress log batch for ALICE-DB storage.
 #[inline]
+#[must_use]
 pub fn text_to_db_log_batch(logs: &[&str]) -> TextDbLogRecord {
     let combined = logs.join("\n");
-    let compressed = compress_tuned(&combined, CompressionMode::Balanced).unwrap_or_else(|_| combined.as_bytes().to_vec());
+    let compressed = compress_tuned(&combined, CompressionMode::Balanced)
+        .unwrap_or_else(|_| combined.as_bytes().to_vec());
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in &compressed {
         hash ^= b as u64;
@@ -119,9 +135,15 @@ pub struct TextBrowserContent {
 
 /// Compress browser DOM text content via ALICE-Text.
 #[inline]
+#[must_use]
 pub fn text_to_browser_content(dom_text: &str) -> TextBrowserContent {
-    let compressed = compress_tuned(dom_text, CompressionMode::Balanced).unwrap_or_else(|_| dom_text.as_bytes().to_vec());
-    let saving = if dom_text.is_empty() { 0.0 } else { (1.0 - compressed.len() as f32 / dom_text.len() as f32) * 100.0 };
+    let compressed = compress_tuned(dom_text, CompressionMode::Balanced)
+        .unwrap_or_else(|_| dom_text.as_bytes().to_vec());
+    let saving = if dom_text.is_empty() {
+        0.0
+    } else {
+        (1.0 - compressed.len() as f32 / dom_text.len() as f32) * 100.0
+    };
     TextBrowserContent {
         original_bytes: dom_text.len(),
         compressed_bytes: compressed.len(),
@@ -146,8 +168,10 @@ pub struct TextQueueMessage {
 
 /// Compress text for ALICE-Queue message delivery.
 #[inline]
+#[must_use]
 pub fn text_to_queue_message(text: &str) -> TextQueueMessage {
-    let compressed = compress_tuned(text, CompressionMode::Fast).unwrap_or_else(|_| text.as_bytes().to_vec());
+    let compressed =
+        compress_tuned(text, CompressionMode::Fast).unwrap_or_else(|_| text.as_bytes().to_vec());
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in &compressed {
         hash ^= b as u64;
@@ -177,10 +201,20 @@ pub struct TextAnalyticsMetrics {
 
 /// Extract compression metrics for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn text_to_analytics_metrics(text: &str) -> TextAnalyticsMetrics {
-    let compressed = compress_tuned(text, CompressionMode::Balanced).unwrap_or_else(|_| text.as_bytes().to_vec());
-    let ratio = if compressed.is_empty() { 0.0 } else { text.len() as f32 / compressed.len() as f32 };
-    let saving = if text.is_empty() { 0.0 } else { (1.0 - compressed.len() as f32 / text.len() as f32) * 100.0 };
+    let compressed = compress_tuned(text, CompressionMode::Balanced)
+        .unwrap_or_else(|_| text.as_bytes().to_vec());
+    let ratio = if compressed.is_empty() {
+        0.0
+    } else {
+        text.len() as f32 / compressed.len() as f32
+    };
+    let saving = if text.is_empty() {
+        0.0
+    } else {
+        (1.0 - compressed.len() as f32 / text.len() as f32) * 100.0
+    };
     TextAnalyticsMetrics {
         original_bytes: text.len(),
         compressed_bytes: compressed.len(),
@@ -218,6 +252,7 @@ pub struct TextSdf3dRequest {
 /// combines it with the font and geometry parameters into a request struct
 /// that the SDF pipeline can use to drive glyph extrusion.
 #[inline]
+#[must_use]
 pub fn text_to_sdf_3d_request(
     text: &str,
     font_name: &str,
@@ -249,7 +284,7 @@ pub fn text_to_sdf_3d_request(
 /// mesh statistics (vertex / face counts, bounding box) without holding a
 /// reference to SDF-internal data structures.
 pub struct SdfTextMeshResult {
-    /// FNV-1a hash matching the originating TextSdf3dRequest content_hash.
+    /// FNV-1a hash matching the originating `TextSdf3dRequest` `content_hash`.
     pub content_hash: u64,
     /// FNV-1a hash of the source text bytes.
     pub text_hash: u64,
@@ -266,6 +301,7 @@ pub struct SdfTextMeshResult {
 /// `vertices` and `faces` are element counts (not byte sizes).
 /// `bbox_x/y/z` are the bounding box extents in millimetres.
 #[inline]
+#[must_use]
 pub fn sdf_to_text_mesh_result(
     text: &str,
     vertices: usize,
@@ -298,7 +334,7 @@ pub struct TextSearchEntry {
     pub token_count: u32,
     /// FNV-1a hash of the raw document bytes (document identity key).
     pub document_hash: u64,
-    /// Estimated postings list size in bytes (token_count × 12 bytes per posting).
+    /// Estimated postings list size in bytes (`token_count` × 12 bytes per posting).
     pub estimated_index_bytes: usize,
     /// Whether the text contains CJK characters (simplified: always false here).
     pub has_cjk: bool,
@@ -307,9 +343,10 @@ pub struct TextSearchEntry {
 /// Build a search index entry from a text document.
 ///
 /// `token_count` is derived by splitting on ASCII whitespace.
-/// `estimated_index_bytes` = token_count × 12 (postings list estimate).
+/// `estimated_index_bytes` = `token_count` × 12 (postings list estimate).
 /// `has_cjk` is `false` (simplified; full analysis would require Unicode inspection).
 #[inline]
+#[must_use]
 pub fn text_to_search_entry(text: &str) -> TextSearchEntry {
     let compressed = compress_tuned(text, CompressionMode::Balanced)
         .unwrap_or_else(|_| text.as_bytes().to_vec());
@@ -343,7 +380,11 @@ mod tests {
 
     #[test]
     fn test_text_to_db_log_batch() {
-        let logs = vec!["2024-01-01 INFO startup", "2024-01-01 WARN timeout", "2024-01-01 ERROR crash"];
+        let logs = vec![
+            "2024-01-01 INFO startup",
+            "2024-01-01 WARN timeout",
+            "2024-01-01 ERROR crash",
+        ];
         let result = text_to_db_log_batch(&logs);
         assert_eq!(result.entry_count, 3);
         assert_ne!(result.content_hash, 0);
@@ -404,7 +445,10 @@ mod tests {
     fn test_text_to_sdf_3d_request_resolution_floor() {
         // Resolution below 8 should be clamped to 8.
         let req = text_to_sdf_3d_request("A", "Mono", 2.0, 0.1, 0);
-        assert_eq!(req.sdf_resolution, 8, "resolution below 8 must be clamped to 8");
+        assert_eq!(
+            req.sdf_resolution, 8,
+            "resolution below 8 must be clamped to 8"
+        );
     }
 
     #[test]
@@ -445,8 +489,10 @@ mod tests {
         let text = "ALICE 3D";
         let req = text_to_sdf_3d_request(text, "Gothic", 4.0, 0.3, 128);
         let result = sdf_to_text_mesh_result(text, 2048, 1024, 50.0, 15.0, 4.0);
-        assert_eq!(req.content_hash, result.content_hash,
-            "request and result must share the same content_hash for the same text");
+        assert_eq!(
+            req.content_hash, result.content_hash,
+            "request and result must share the same content_hash for the same text"
+        );
         assert_eq!(req.text_hash, result.text_hash);
     }
 

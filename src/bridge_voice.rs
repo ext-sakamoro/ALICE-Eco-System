@@ -18,12 +18,13 @@ pub struct VoiceSynthParams {
     pub voiced: bool,
 }
 
-/// Convert ParametricParams to FM synthesis parameters for ALICE-Synth.
+/// Convert `ParametricParams` to FM synthesis parameters for ALICE-Synth.
 #[inline]
+#[must_use]
 pub fn voice_to_synth_params(params: &ParametricParams) -> VoiceSynthParams {
     let pitch = params.pitch.f0;
     let voiced = params.pitch.is_voiced;
-    let f1 = params.formants.get(0).map_or(500.0, |f| f.frequency);
+    let f1 = params.formants.first().map_or(500.0, |f| f.frequency);
     let f2 = params.formants.get(1).map_or(1500.0, |f| f.frequency);
     let f3 = params.formants.get(2).map_or(2500.0, |f| f.frequency);
     let base = if pitch > 0.0 { pitch } else { 200.0 };
@@ -51,10 +52,11 @@ pub struct VoiceLipSyncCue {
     pub voiced: bool,
 }
 
-/// Convert ParametricParams to lip sync cue for ALICE-Animation.
+/// Convert `ParametricParams` to lip sync cue for ALICE-Animation.
 #[inline]
+#[must_use]
 pub fn voice_to_animation_lipsync(params: &ParametricParams) -> VoiceLipSyncCue {
-    let f1 = params.formants.get(0).map_or(500.0, |f| f.frequency);
+    let f1 = params.formants.first().map_or(500.0, |f| f.frequency);
     let f2 = params.formants.get(1).map_or(1500.0, |f| f.frequency);
     let f3 = params.formants.get(2).map_or(2500.0, |f| f.frequency);
     VoiceLipSyncCue {
@@ -82,10 +84,17 @@ pub struct VoiceTextOverlay {
 
 /// Derive text overlay parameters from voice analysis for ALICE-Font.
 #[inline]
+#[must_use]
 pub fn voice_to_font_overlay(params: &ParametricParams) -> VoiceTextOverlay {
     let emphasis = (params.lpc.gain * 2.0).min(1.0);
     let pitch = params.pitch.f0;
-    let pitch_trend = if pitch > 250.0 { 1i8 } else if pitch < 100.0 { -1 } else { 0 };
+    let pitch_trend = if pitch > 250.0 {
+        1i8
+    } else if pitch < 100.0 {
+        -1
+    } else {
+        0
+    };
     VoiceTextOverlay {
         speaking_rate: 4.0,
         pitch_trend,
@@ -96,7 +105,7 @@ pub fn voice_to_font_overlay(params: &ParametricParams) -> VoiceTextOverlay {
 
 // ── Bridge 4: Voice → Edge (LPC → compressed IoT payload) ───────────────
 
-/// Compressed voice payload for ALICE-Edge IoT streaming.
+/// Compressed voice payload for ALICE-Edge `IoT` streaming.
 pub struct VoiceEdgePayload {
     /// LPC order (number of coefficients).
     pub lpc_order: u8,
@@ -110,18 +119,27 @@ pub struct VoiceEdgePayload {
     pub compression_ratio: f32,
 }
 
-/// Package voice parameters for ALICE-Edge IoT transport.
+/// Package voice parameters for ALICE-Edge `IoT` transport.
 #[inline]
+#[must_use]
 pub fn voice_to_edge_payload(params: &ParametricParams, raw_pcm_bytes: usize) -> VoiceEdgePayload {
     let lpc_order = params.lpc.coeffs.len().min(255) as u8;
-    let pitch_period = if params.pitch.f0 > 0.0 { (16000.0 / params.pitch.f0) as u16 } else { 0 };
+    let pitch_period = if params.pitch.f0 > 0.0 {
+        (16000.0 / params.pitch.f0) as u16
+    } else {
+        0
+    };
     let payload_bytes = 4 + (lpc_order as usize) * 4 + 2 + 4; // gain + coeffs + pitch + header
     VoiceEdgePayload {
         lpc_order,
         pitch_period,
         gain: params.lpc.gain,
         payload_bytes,
-        compression_ratio: if payload_bytes > 0 { raw_pcm_bytes as f32 / payload_bytes as f32 } else { 0.0 },
+        compression_ratio: if payload_bytes > 0 {
+            raw_pcm_bytes as f32 / payload_bytes as f32
+        } else {
+            0.0
+        },
     }
 }
 
@@ -141,8 +159,9 @@ pub struct VoiceDbRecord {
     pub sample_rate: u32,
 }
 
-/// Serialize ParametricParams for ALICE-DB persistence.
+/// Serialize `ParametricParams` for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn voice_to_db_record(params: &ParametricParams) -> VoiceDbRecord {
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in &params.pitch.f0.to_le_bytes() {
@@ -176,8 +195,9 @@ pub struct VoiceCacheEntry {
     pub payload_bytes: usize,
 }
 
-/// Prepare ParametricParams for ALICE-Cache storage.
+/// Prepare `ParametricParams` for ALICE-Cache storage.
 #[inline]
+#[must_use]
 pub fn voice_to_cache_entry(params: &ParametricParams) -> VoiceCacheEntry {
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in &params.pitch.f0.to_le_bytes() {
@@ -220,9 +240,21 @@ mod tests {
                 error: 0.01,
             },
             formants: vec![
-                Formant { frequency: 700.0, bandwidth: 80.0, amplitude: 1.0 },
-                Formant { frequency: 1200.0, bandwidth: 90.0, amplitude: 0.8 },
-                Formant { frequency: 2600.0, bandwidth: 120.0, amplitude: 0.5 },
+                Formant {
+                    frequency: 700.0,
+                    bandwidth: 80.0,
+                    amplitude: 1.0,
+                },
+                Formant {
+                    frequency: 1200.0,
+                    bandwidth: 90.0,
+                    amplitude: 0.8,
+                },
+                Formant {
+                    frequency: 2600.0,
+                    bandwidth: 120.0,
+                    amplitude: 0.5,
+                },
             ],
             activity: alice_voice::VoiceActivity {
                 is_voiced: true,

@@ -5,7 +5,10 @@
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -41,6 +44,7 @@ pub struct BrowserDbPageRecord {
 /// - Both `content_hash` and `url_hash` are the same FNV-1a digest of the URL
 ///   bytes, computed once and stored in both fields for schema flexibility.
 #[inline]
+#[must_use]
 pub fn browser_to_db_page_record(
     url: &str,
     total_nodes: usize,
@@ -99,11 +103,13 @@ pub struct BrowserCacheEntry {
 /// - Content hash covers `node_count` and `byte_estimate` packed into 16
 ///   bytes — no heap allocation.
 #[inline]
+#[must_use]
 pub fn browser_to_cache_entry(
     url: &str,
     node_count: usize,
     content_bytes: usize,
 ) -> BrowserCacheEntry {
+    const BASE_PRODUCT: u64 = 3_600 * 4_096;
     let url_hash = fnv1a(url.as_bytes());
 
     // Content hash over node_count + byte_estimate.
@@ -115,9 +121,8 @@ pub fn browser_to_cache_entry(
     // TTL: inversely proportional to content size; clamped to [30, 3600] s.
     // Reciprocal form: base_product / max(bytes, 1).
     // base_product = 3600 * 4096 = 14_745_600 — fits comfortably in u64.
-    const BASE_PRODUCT: u64 = 3_600 * 4_096;
     let bytes_safe = (content_bytes as u64).max(1);
-    let raw_ttl = (BASE_PRODUCT / bytes_safe).min(3_600).max(30) as u32;
+    let raw_ttl = (BASE_PRODUCT / bytes_safe).clamp(30, 3_600) as u32;
 
     BrowserCacheEntry {
         url_hash,
@@ -152,11 +157,8 @@ pub struct BrowserCdnPage {
 /// - `render_mode` is stored as-is; callers are responsible for clamping to
 ///   [0, 2] if needed (bridge does not validate to avoid a branch).
 #[inline]
-pub fn browser_to_cdn_page(
-    url: &str,
-    content_bytes: usize,
-    render_mode: u8,
-) -> BrowserCdnPage {
+#[must_use]
+pub fn browser_to_cdn_page(url: &str, content_bytes: usize, render_mode: u8) -> BrowserCdnPage {
     let content_hash = fnv1a(url.as_bytes());
 
     BrowserCdnPage {
@@ -197,6 +199,7 @@ pub struct BrowserAnalyticsEvent {
 ///   without a branch; compiler emits a `cmov` for the `.max()`.
 /// - Reciprocal multiply: `blocked as f32 * (1.0 / max(nodes, 1) as f32)`.
 #[inline]
+#[must_use]
 pub fn browser_to_analytics_event(
     url: &str,
     load_ms: f64,
@@ -234,7 +237,7 @@ pub struct BrowserFontRequest {
     pub text_length: usize,
     /// Width of the containing box in CSS pixels.
     pub container_width: f32,
-    /// Estimated glyph count (text_length as a conservative upper bound).
+    /// Estimated glyph count (`text_length` as a conservative upper bound).
     ///
     /// A multi-byte UTF-8 codepoint may produce one glyph; using byte length
     /// as the upper bound avoids decoding cost on the bridge hot path.
@@ -248,11 +251,8 @@ pub struct BrowserFontRequest {
 ///   upper bound that avoids UTF-8 decoding overhead on the bridge path.
 /// - No heap allocation: text bytes are hashed in-place via the FNV loop.
 #[inline]
-pub fn browser_to_font_request(
-    url: &str,
-    text: &str,
-    container_width: f32,
-) -> BrowserFontRequest {
+#[must_use]
+pub fn browser_to_font_request(url: &str, text: &str, container_width: f32) -> BrowserFontRequest {
     let url_hash = fnv1a(url.as_bytes());
     let text_length = text.len();
     // Conservative glyph estimate: one glyph per byte (upper bound).
@@ -278,7 +278,7 @@ pub struct BrowserSearchIndex {
     pub content_hash: u64,
     /// UTF-8 byte length of the extracted text.
     pub text_bytes: usize,
-    /// Approximate word count (text_bytes / 5, rounded up).
+    /// Approximate word count (`text_bytes` / 5, rounded up).
     ///
     /// Average English word length is ~5 bytes; this avoids a full tokenisation
     /// pass on the bridge hot path.
@@ -292,6 +292,7 @@ pub struct BrowserSearchIndex {
 ///   arithmetic — a single add and shift, no division by zero possible.
 /// - Both hashes computed with one FNV-1a pass each; no heap allocation.
 #[inline]
+#[must_use]
 pub fn browser_to_search_index(url: &str, text_content: &str) -> BrowserSearchIndex {
     let url_hash = fnv1a(url.as_bytes());
     let content_hash = fnv1a(text_content.as_bytes());
@@ -300,7 +301,7 @@ pub fn browser_to_search_index(url: &str, text_content: &str) -> BrowserSearchIn
     // Approximate word count: ceil(text_bytes / 5).
     // (text_bytes + 4) >> … won't work cleanly for 5, so use integer div+1.
     // One integer divide — cold path only (bridge produces one record per page).
-    let word_count = (text_bytes + 4) / 5;
+    let word_count = text_bytes.div_ceil(5);
 
     BrowserSearchIndex {
         url_hash,
@@ -336,6 +337,7 @@ pub struct BrowserMlFeedback {
 ///   `rcp_total` is derived once from `max(total, 1)`.
 /// - All ratios clamped to 1.0 with a single `min` call (no branch).
 #[inline]
+#[must_use]
 pub fn browser_to_ml_feedback(
     url: &str,
     total: usize,
@@ -347,9 +349,9 @@ pub fn browser_to_ml_feedback(
 
     // Reciprocal of total — computed once, reused for all three ratios.
     let rcp_total = 1.0_f32 / total.max(1) as f32;
-    let content_ratio  = (content  as f32 * rcp_total).min(1.0_f32);
-    let ad_density     = (ads      as f32 * rcp_total).min(1.0_f32);
-    let tracker_density= (trackers as f32 * rcp_total).min(1.0_f32);
+    let content_ratio = (content as f32 * rcp_total).min(1.0_f32);
+    let ad_density = (ads as f32 * rcp_total).min(1.0_f32);
+    let tracker_density = (trackers as f32 * rcp_total).min(1.0_f32);
 
     BrowserMlFeedback {
         url_hash,
@@ -387,15 +389,13 @@ pub struct BrowserDnsRequest {
 /// - `hostname_bytes` is the byte length of the authority component only;
 ///   computed with simple pointer arithmetic on the `&str` slice.
 #[inline]
+#[must_use]
 pub fn browser_to_dns_request(url: &str) -> BrowserDnsRequest {
     let url_hash = fnv1a(url.as_bytes());
     let bytes = url.as_bytes();
 
     // Locate "://" separator to split scheme from authority.
-    let scheme_end = bytes
-        .windows(3)
-        .position(|w| w == b"://")
-        .unwrap_or(0);
+    let scheme_end = bytes.windows(3).position(|w| w == b"://").unwrap_or(0);
 
     // is_https: scheme length == 5 and prefix == b"https" — branchless compare.
     let is_https = scheme_end == 5 && bytes.starts_with(b"https");
@@ -405,8 +405,7 @@ pub fn browser_to_dns_request(url: &str) -> BrowserDnsRequest {
     let authority_end = bytes[authority_start.min(bytes.len())..]
         .iter()
         .position(|&b| b == b'/' || b == b'?' || b == b'#')
-        .map(|p| authority_start + p)
-        .unwrap_or(bytes.len());
+        .map_or(bytes.len(), |p| authority_start + p);
 
     let hostname_bytes = authority_end.saturating_sub(authority_start);
 
@@ -432,7 +431,10 @@ mod tests {
 
         assert_ne!(rec.content_hash, 0, "content_hash must be non-zero");
         assert_ne!(rec.url_hash, 0, "url_hash must be non-zero");
-        assert_eq!(rec.content_hash, rec.url_hash, "both hashes derive from the URL");
+        assert_eq!(
+            rec.content_hash, rec.url_hash,
+            "both hashes derive from the URL"
+        );
         assert_eq!(rec.node_count, 200);
         assert_eq!(rec.content_nodes, 160, "200 - 40 = 160 content nodes");
         // 40 removed: half=20, remainder=0 → ad=20, tracker=20
@@ -472,8 +474,11 @@ mod tests {
         assert_eq!(event.dom_nodes, 100);
         assert_eq!(event.blocked_nodes, 25);
         // block_ratio = 25 / 100 = 0.25
-        assert!((event.block_ratio - 0.25_f32).abs() < 1e-5,
-            "block_ratio = {}", event.block_ratio);
+        assert!(
+            (event.block_ratio - 0.25_f32).abs() < 1e-5,
+            "block_ratio = {}",
+            event.block_ratio
+        );
         assert_eq!(event.render_mode, 1);
 
         // Zero dom_nodes must not panic and must yield ratio 0.0.
@@ -509,17 +514,26 @@ mod tests {
 
         assert_ne!(fb.url_hash, 0, "url_hash must be non-zero");
         assert_eq!(fb.total_nodes, 100);
-        assert!((fb.content_ratio  - 0.70_f32).abs() < 1e-5,
-            "content_ratio = {}", fb.content_ratio);
-        assert!((fb.ad_density     - 0.20_f32).abs() < 1e-5,
-            "ad_density = {}", fb.ad_density);
-        assert!((fb.tracker_density- 0.10_f32).abs() < 1e-5,
-            "tracker_density = {}", fb.tracker_density);
+        assert!(
+            (fb.content_ratio - 0.70_f32).abs() < 1e-5,
+            "content_ratio = {}",
+            fb.content_ratio
+        );
+        assert!(
+            (fb.ad_density - 0.20_f32).abs() < 1e-5,
+            "ad_density = {}",
+            fb.ad_density
+        );
+        assert!(
+            (fb.tracker_density - 0.10_f32).abs() < 1e-5,
+            "tracker_density = {}",
+            fb.tracker_density
+        );
 
         // Zero total must not panic; all ratios must be 0.0.
         let zero_fb = browser_to_ml_feedback(TEST_URL, 0, 0, 0, 0);
-        assert_eq!(zero_fb.content_ratio,   0.0);
-        assert_eq!(zero_fb.ad_density,      0.0);
+        assert_eq!(zero_fb.content_ratio, 0.0);
+        assert_eq!(zero_fb.ad_density, 0.0);
         assert_eq!(zero_fb.tracker_density, 0.0);
     }
 
@@ -529,7 +543,10 @@ mod tests {
 
         assert_ne!(req.url_hash, 0, "url_hash must be non-zero");
         // "https://example.com/news/article?id=42" → hostname = "example.com" = 11 bytes.
-        assert_eq!(req.hostname_bytes, 11, "hostname = 'example.com' (11 bytes)");
+        assert_eq!(
+            req.hostname_bytes, 11,
+            "hostname = 'example.com' (11 bytes)"
+        );
         assert!(req.is_https, "URL scheme is https");
 
         // HTTP URL must not set is_https.

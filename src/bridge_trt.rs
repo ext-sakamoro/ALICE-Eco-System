@@ -7,7 +7,10 @@
 #[inline(always)]
 fn fnv1a_trt(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -30,6 +33,7 @@ pub struct TrtDbRecord {
 /// `layer_shapes` is a slice of `(out, in)` pairs — one entry per layer.
 /// Hash is computed with FNV-1a over the encoded shape data.
 #[inline]
+#[must_use]
 pub fn trt_to_db_record(layer_shapes: &[(usize, usize)]) -> TrtDbRecord {
     let mut param_count: usize = 0;
     let mut hash: u64 = 0xcbf29ce484222325; // FNV offset basis
@@ -48,7 +52,7 @@ pub fn trt_to_db_record(layer_shapes: &[(usize, usize)]) -> TrtDbRecord {
     }
 
     // 2 bits per ternary weight → divide by 4 (packed into bytes).
-    let vram_bytes = (param_count + 3) / 4;
+    let vram_bytes = param_count.div_ceil(4);
     let out_features = layer_shapes.last().map_or(0, |&(out, _)| out);
 
     TrtDbRecord {
@@ -79,6 +83,7 @@ pub struct TrtAnalyticsMetrics {
 ///
 /// `layer_shapes` is a slice of `(out, in)` pairs.
 #[inline]
+#[must_use]
 pub fn trt_to_analytics_metrics(layer_shapes: &[(usize, usize)]) -> TrtAnalyticsMetrics {
     let mut mac_ops: usize = 0;
     let mut param_count: usize = 0;
@@ -91,11 +96,15 @@ pub fn trt_to_analytics_metrics(layer_shapes: &[(usize, usize)]) -> TrtAnalytics
     }
 
     // Ternary: 2 bits per weight packed into bytes.
-    let vram_bytes = (param_count + 3) / 4;
+    let vram_bytes = param_count.div_ceil(4);
     // FP16 reference: 2 bytes per weight.
     let fp16_bytes = param_count * 2;
     // Reciprocal multiply avoids division in the hot path.
-    let rcp_vram = if vram_bytes > 0 { 1.0 / vram_bytes as f32 } else { 0.0 };
+    let rcp_vram = if vram_bytes > 0 {
+        1.0 / vram_bytes as f32
+    } else {
+        0.0
+    };
     let bandwidth_compression = fp16_bytes as f32 * rcp_vram;
     // Bandwidth reduction translates directly to throughput on memory-bound workloads.
     let throughput_factor = bandwidth_compression;
@@ -120,7 +129,7 @@ pub struct TrtCacheEntry {
     /// Total VRAM bytes required to restore the model.
     pub vram_bytes: usize,
     /// Eviction priority score (lower = evict first).
-    /// Derived from mac_ops: heavier models are worth keeping longer.
+    /// Derived from `mac_ops`: heavier models are worth keeping longer.
     pub eviction_priority: usize,
 }
 
@@ -128,6 +137,7 @@ pub struct TrtCacheEntry {
 ///
 /// `layer_shapes` is a slice of `(out, in)` pairs.
 #[inline]
+#[must_use]
 pub fn trt_to_cache_entry(layer_shapes: &[(usize, usize)]) -> TrtCacheEntry {
     let mut param_count: usize = 0;
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -144,7 +154,7 @@ pub fn trt_to_cache_entry(layer_shapes: &[(usize, usize)]) -> TrtCacheEntry {
         }
     }
 
-    let vram_bytes = (param_count + 3) / 4;
+    let vram_bytes = param_count.div_ceil(4);
     // Eviction priority = total MACs (heavier model → higher priority to retain).
     let eviction_priority = param_count * 2;
 
@@ -179,14 +189,18 @@ pub struct TrtEdgeDeployConfig {
 /// `compressed_params` uses reciprocal multiply — no runtime division.
 /// `is_quantized` is set branchlessly via integer comparison.
 #[inline]
-pub fn trt_to_edge_deploy(layer_shapes: &[(usize, usize)], compression_ratio: f32) -> TrtEdgeDeployConfig {
+#[must_use]
+pub fn trt_to_edge_deploy(
+    layer_shapes: &[(usize, usize)],
+    compression_ratio: f32,
+) -> TrtEdgeDeployConfig {
+    const RCP_1024: f32 = 1.0 / 1024.0;
     let original_params: usize = layer_shapes.iter().map(|&(o, i)| o * i).sum();
     // Reciprocal multiply avoids runtime division.
     let compressed_params = (original_params as f32 * compression_ratio) as usize;
     // Branchless: quantize when model fits in 500 K params.
     let is_quantized = compressed_params < 500_000;
     // 4 bytes per f32 → convert to KB via reciprocal of 1024.
-    const RCP_1024: f32 = 1.0 / 1024.0;
     let estimated_kb = (compressed_params as f32 * 4.0 * RCP_1024) as usize;
 
     TrtEdgeDeployConfig {
@@ -219,7 +233,13 @@ pub struct TrtViewConfig {
 /// `out_features` is the channel count from the last TRT layer.
 /// `scale` must be >= 1.
 #[inline]
-pub fn trt_to_view_config(width: usize, height: usize, out_features: usize, scale: usize) -> TrtViewConfig {
+#[must_use]
+pub fn trt_to_view_config(
+    width: usize,
+    height: usize,
+    out_features: usize,
+    scale: usize,
+) -> TrtViewConfig {
     let out_w = width * scale;
     let out_h = height * scale;
     // f32 = 4 bytes per value in the output tensor.
@@ -262,6 +282,7 @@ pub struct TrtAnimationPrediction {
 /// `model_name` identifies the TRT model used for prediction.
 /// `confidence` is clamped to [0.0, 1.0] so callers do not need to pre-validate.
 #[inline]
+#[must_use]
 pub fn trt_to_animation_prediction(
     model_name: &str,
     input_frames: usize,
@@ -314,6 +335,7 @@ pub struct AnimationTrtTrainingData {
 /// the sequence (typically `frame_count × joint_count` for dense captures,
 /// or fewer for sparse keyframed animation).
 #[inline]
+#[must_use]
 pub fn animation_to_trt_training_data(
     sequence_name: &str,
     frame_count: usize,
@@ -357,6 +379,7 @@ pub struct TrtSdfField {
 /// warrant finer SDF grids.  `iso_value` is fixed at 0.0 (zero-level set).
 /// `estimated_nodes` approximates the octree node count at the given resolution.
 #[inline]
+#[must_use]
 pub fn trt_to_sdf_field(layer_shapes: &[(usize, usize)]) -> TrtSdfField {
     let mut param_count: usize = 0;
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -396,7 +419,7 @@ pub struct TrtPhysicsParams {
     pub time_step_us: u64,
     /// Maximum force magnitude in Newtons applied by the inference controller.
     pub force_magnitude: f64,
-    /// Whether the simulation runs at real-time rate (time_step_us ≤ 16 667 µs = 60 fps).
+    /// Whether the simulation runs at real-time rate (`time_step_us` ≤ 16 667 µs = 60 fps).
     pub is_realtime: bool,
 }
 
@@ -406,6 +429,7 @@ pub struct TrtPhysicsParams {
 /// `time_step_us` is fixed at 8 333 µs (120 fps physics tick).
 /// `is_realtime` is set branchlessly: `time_step_us <= 16_667`.
 #[inline]
+#[must_use]
 pub fn trt_to_physics_params(layer_shapes: &[(usize, usize)]) -> TrtPhysicsParams {
     let mut param_count: usize = 0;
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -543,11 +567,15 @@ mod tests {
     fn test_trt_to_animation_prediction_confidence_clamped() {
         // Confidence values outside [0, 1] must be clamped.
         let pred_high = trt_to_animation_prediction("m", 1, 1, 1, 1.5, 0);
-        let pred_low  = trt_to_animation_prediction("m", 1, 1, 1, -0.3, 0);
-        assert!((pred_high.confidence - 1.0).abs() < f32::EPSILON,
-            "confidence > 1.0 must clamp to 1.0");
-        assert!((pred_low.confidence).abs() < f32::EPSILON,
-            "negative confidence must clamp to 0.0");
+        let pred_low = trt_to_animation_prediction("m", 1, 1, 1, -0.3, 0);
+        assert!(
+            (pred_high.confidence - 1.0).abs() < f32::EPSILON,
+            "confidence > 1.0 must clamp to 1.0"
+        );
+        assert!(
+            (pred_low.confidence).abs() < f32::EPSILON,
+            "negative confidence must clamp to 0.0"
+        );
     }
 
     #[test]
@@ -562,7 +590,10 @@ mod tests {
     fn test_trt_to_animation_prediction_same_model_same_hash() {
         let a = trt_to_animation_prediction("stable_model", 60, 20, 32, 0.85, 5000);
         let b = trt_to_animation_prediction("stable_model", 60, 20, 32, 0.85, 5000);
-        assert_eq!(a.content_hash, b.content_hash, "identical inputs must yield identical hashes");
+        assert_eq!(
+            a.content_hash, b.content_hash,
+            "identical inputs must yield identical hashes"
+        );
         assert_eq!(a.model_hash, b.model_hash);
     }
 
@@ -590,7 +621,10 @@ mod tests {
     fn test_animation_to_trt_training_data_same_name_same_hash() {
         let a = animation_to_trt_training_data("idle_loop", 30, 16, 480);
         let b = animation_to_trt_training_data("idle_loop", 30, 16, 480);
-        assert_eq!(a.content_hash, b.content_hash, "identical inputs must be deterministic");
+        assert_eq!(
+            a.content_hash, b.content_hash,
+            "identical inputs must be deterministic"
+        );
         assert_eq!(a.sequence_hash, b.sequence_hash);
     }
 
@@ -600,11 +634,15 @@ mod tests {
         let a = animation_to_trt_training_data("clip", 60, 24, 1440);
         let b = animation_to_trt_training_data("clip", 120, 24, 2880);
         // content_hash is name-only, so it should be equal.
-        assert_eq!(a.content_hash, b.content_hash,
-            "content_hash is derived from name only");
+        assert_eq!(
+            a.content_hash, b.content_hash,
+            "content_hash is derived from name only"
+        );
         // sequence_hash mixes in frame metadata, so it must differ.
-        assert_ne!(a.sequence_hash, b.sequence_hash,
-            "sequence_hash must change when frame_count changes");
+        assert_ne!(
+            a.sequence_hash, b.sequence_hash,
+            "sequence_hash must change when frame_count changes"
+        );
     }
 
     // ── Bridge 8 tests ────────────────────────────────────────────────────

@@ -3,12 +3,15 @@
 //!
 //! 9 bridges connecting semantic telemetry to the ALICE ecosystem.
 
-use alice_semantic_telemetry::{SemanticEvent, SemanticRing, EventKind, Severity};
+use alice_semantic_telemetry::{EventKind, SemanticEvent, SemanticRing, Severity};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -37,12 +40,15 @@ pub struct TelemetryAnalyticsSnapshot {
 
 /// Create an analytics snapshot from the semantic ring.
 #[inline]
-pub fn telemetry_to_analytics_snapshot(ring: &SemanticRing, window_start_ns: u64, window_end_ns: u64) -> TelemetryAnalyticsSnapshot {
+#[must_use]
+pub fn telemetry_to_analytics_snapshot(
+    ring: &SemanticRing,
+    window_start_ns: u64,
+    window_end_ns: u64,
+) -> TelemetryAnalyticsSnapshot {
     let kind_counts = ring.count_by_kind();
     let total = kind_counts.iter().sum::<u64>();
-    let warn_and_above = ring.iter()
-        .filter(|e| e.severity >= Severity::Warn)
-        .count() as u64;
+    let warn_and_above = ring.iter().filter(|e| e.severity >= Severity::Warn).count() as u64;
     let anomaly_count = kind_counts[EventKind::AnomalyDetected as usize];
     let hash_data = [total.to_le_bytes(), window_start_ns.to_le_bytes()].concat();
     TelemetryAnalyticsSnapshot {
@@ -80,11 +86,13 @@ pub struct TelemetryDbRecord {
 
 /// Convert a semantic event to a DB record.
 #[inline]
+#[must_use]
 pub fn telemetry_event_to_db_record(event: &SemanticEvent) -> TelemetryDbRecord {
     let hash_data = [
         event.timestamp_ns.to_le_bytes(),
         event.source_id.to_le_bytes(),
-    ].concat();
+    ]
+    .concat();
     TelemetryDbRecord {
         content_hash: fnv1a(&hash_data),
         timestamp_ns: event.timestamp_ns,
@@ -99,16 +107,20 @@ pub fn telemetry_event_to_db_record(event: &SemanticEvent) -> TelemetryDbRecord 
 /// Batch convert: drain the ring and produce DB records.
 #[inline]
 pub fn telemetry_drain_to_db_records(ring: &mut SemanticRing) -> Vec<TelemetryDbRecord> {
-    ring.drain().iter().map(telemetry_event_to_db_record).collect()
+    ring.drain()
+        .iter()
+        .map(telemetry_event_to_db_record)
+        .collect()
 }
 
 // ── Bridge 3: Edge → Semantic Telemetry (sensor event injection) ──────────
 
 /// Create a semantic event from an edge sensor reading.
 ///
-/// Maps sensor state changes to StateTransition events
-/// and threshold crossings to ThresholdCrossing events.
+/// Maps sensor state changes to `StateTransition` events
+/// and threshold crossings to `ThresholdCrossing` events.
 #[inline]
+#[must_use]
 pub fn edge_sensor_to_semantic_event(
     timestamp_ns: u64,
     sensor_id: u64,
@@ -129,6 +141,7 @@ pub fn edge_sensor_to_semantic_event(
 
 /// Create a semantic event from an ML anomaly detection result.
 #[inline]
+#[must_use]
 pub fn ml_anomaly_to_semantic_event(
     timestamp_ns: u64,
     model_id: u64,
@@ -168,12 +181,14 @@ pub struct TelemetryViewSummary {
 
 /// Create a view summary from the semantic ring.
 #[inline]
-pub fn telemetry_to_view_summary(ring: &SemanticRing, window_duration_secs: f32) -> TelemetryViewSummary {
+#[must_use]
+pub fn telemetry_to_view_summary(
+    ring: &SemanticRing,
+    window_duration_secs: f32,
+) -> TelemetryViewSummary {
     let kind_counts = ring.count_by_kind();
     let total = kind_counts.iter().sum::<u64>();
-    let warnings = ring.iter()
-        .filter(|e| e.severity >= Severity::Warn)
-        .count() as u64;
+    let warnings = ring.iter().filter(|e| e.severity >= Severity::Warn).count() as u64;
     let inv_duration = if window_duration_secs > 0.0 {
         1.0 / window_duration_secs
     } else {
@@ -200,13 +215,18 @@ pub fn telemetry_to_view_summary(ring: &SemanticRing, window_duration_secs: f32)
 /// Severity is `Warn` when impulse exceeds 100 simulation units
 /// (potential structural event), `Info` otherwise.
 #[inline]
+#[must_use]
 pub fn physics_collision_to_semantic_event(
     timestamp_ns: u64,
     body_hash: u64,
     collision_impulse: f32,
 ) -> SemanticEvent {
     // Threshold: impulse > 100.0 → Warn, otherwise Info.
-    let severity = if collision_impulse > 100.0 { Severity::Warn } else { Severity::Info };
+    let severity = if collision_impulse > 100.0 {
+        Severity::Warn
+    } else {
+        Severity::Info
+    };
     SemanticEvent {
         timestamp_ns,
         source_id: body_hash,
@@ -223,6 +243,7 @@ pub fn physics_collision_to_semantic_event(
 /// `StateTransition` payload convention documented in `SemanticEvent`.
 /// `payload2` carries the body identity hash for cross-subsystem correlation.
 #[inline]
+#[must_use]
 pub fn physics_state_change_to_semantic_event(
     timestamp_ns: u64,
     body_hash: u64,
@@ -248,6 +269,7 @@ pub fn physics_state_change_to_semantic_event(
 /// severity. Clean frames are emitted as `StageComplete` at `Info`.
 /// `payload` carries the frame number; `payload2` carries the session hash.
 #[inline]
+#[must_use]
 pub fn sync_frame_to_semantic_event(
     timestamp_ns: u64,
     session_hash: u64,
@@ -280,6 +302,7 @@ pub fn sync_frame_to_semantic_event(
 /// `payload` carries `plan_hash`; `payload2` packs `(segments << 32) | duration_ms`
 /// for compact downstream decoding without heap allocation.
 #[inline]
+#[must_use]
 pub fn motion_trajectory_to_semantic_event(
     timestamp_ns: u64,
     plan_hash: u64,
@@ -307,6 +330,7 @@ pub fn motion_trajectory_to_semantic_event(
 /// (high-frequency, intentionally low noise on the ring).
 /// `payload` carries `task_hash`; `payload2` carries `slack_us` as u64.
 #[inline]
+#[must_use]
 pub fn rtos_task_to_semantic_event(
     timestamp_ns: u64,
     task_hash: u64,
@@ -367,7 +391,7 @@ mod bridge_physics_sync_motion_rtos_tests {
     #[test]
     fn physics_state_change_encodes_states_correctly() {
         let from: u32 = 1; // e.g., Active
-        let to: u32 = 3;   // e.g., Sleeping
+        let to: u32 = 3; // e.g., Sleeping
         let ev = physics_state_change_to_semantic_event(5_000, 0xABCD, from, to);
         assert_eq!(ev.kind, EventKind::StateTransition);
         assert_eq!(ev.severity, Severity::Info);

@@ -4,12 +4,15 @@
 //! search index entries, auth-verified audit records, and crypto-sealed
 //! contract metadata.
 
-use alice_legal::{StatuteTree, ClauseKind, Contract, ContractStatus, AuditEntry, AuditEventKind};
+use alice_legal::{AuditEntry, AuditEventKind, ClauseKind, Contract, ContractStatus, StatuteTree};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -21,7 +24,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// the Text layer can pre-allocate compression buffers and prioritise
 /// statutes by content volume without parsing the legal tree itself.
 pub struct LegalTextRecord {
-    /// FNV-1a hash over statute_id, clause_count, obligation_count, estimated_text_bytes, title_hash.
+    /// FNV-1a hash over `statute_id`, `clause_count`, `obligation_count`, `estimated_text_bytes`, `title_hash`.
     pub content_hash: u64,
     /// The statute's numeric identifier.
     pub statute_id: u64,
@@ -29,7 +32,7 @@ pub struct LegalTextRecord {
     pub clause_count: usize,
     /// Number of obligation clauses.
     pub obligation_count: usize,
-    /// Estimated text size in bytes (clause_count * 64, approximate average clause length).
+    /// Estimated text size in bytes (`clause_count` * 64, approximate average clause length).
     pub estimated_text_bytes: usize,
     /// FNV-1a hash of the statute title.
     pub title_hash: u64,
@@ -37,6 +40,7 @@ pub struct LegalTextRecord {
 
 /// Convert a statute tree into a text compression record.
 #[inline]
+#[must_use]
 pub fn legal_statute_to_text_record(statute: &StatuteTree) -> LegalTextRecord {
     let clause_count = statute.clauses.len();
     let obligation_count = statute.obligations().len();
@@ -67,7 +71,7 @@ pub fn legal_statute_to_text_record(statute: &StatuteTree) -> LegalTextRecord {
 /// Search layer can filter and rank statutes by complexity and content
 /// type without loading the full clause tree.
 pub struct LegalSearchIndex {
-    /// FNV-1a hash over statute_id, clause_count, title_hash, obligation_count, has_exceptions.
+    /// FNV-1a hash over `statute_id`, `clause_count`, `title_hash`, `obligation_count`, `has_exceptions`.
     pub content_hash: u64,
     /// The statute's numeric identifier.
     pub statute_id: u64,
@@ -83,10 +87,13 @@ pub struct LegalSearchIndex {
 
 /// Convert a statute tree into a search index record.
 #[inline]
+#[must_use]
 pub fn legal_statute_to_search_index(statute: &StatuteTree) -> LegalSearchIndex {
     let clause_count = statute.clauses.len();
     let obligation_count = statute.obligations().len();
-    let has_exceptions = statute.clauses.iter()
+    let has_exceptions = statute
+        .clauses
+        .iter()
         .any(|c| matches!(c.kind, ClauseKind::Exception));
 
     let mut key = [0u8; 33];
@@ -114,7 +121,7 @@ pub fn legal_statute_to_search_index(statute: &StatuteTree) -> LegalSearchIndex 
 /// layer can enforce access control policies (write events require
 /// elevated privileges) without inspecting event kind semantics.
 pub struct LegalAuthRecord {
-    /// FNV-1a hash over entity_id, actor_hash, event_kind, timestamp_ns, entry_hash.
+    /// FNV-1a hash over `entity_id`, `actor_hash`, `event_kind`, `timestamp_ns`, `entry_hash`.
     pub content_hash: u64,
     /// The entity (statute/contract/procedure) affected.
     pub entity_id: u64,
@@ -126,13 +133,14 @@ pub struct LegalAuthRecord {
     pub timestamp_ns: u64,
     /// Content hash from the original audit entry.
     pub entry_hash: u64,
-    /// True for write events: StatuteCreated, StatuteAmended, ContractCreated,
-    /// ProcedureStarted (state-changing operations).
+    /// True for write events: `StatuteCreated`, `StatuteAmended`, `ContractCreated`,
+    /// `ProcedureStarted` (state-changing operations).
     pub is_write_event: bool,
 }
 
 /// Convert an audit entry into an auth-verified record.
 #[inline]
+#[must_use]
 pub fn legal_audit_to_auth_record(entry: &AuditEntry) -> LegalAuthRecord {
     let kind_byte = match entry.kind {
         AuditEventKind::StatuteCreated => 0,
@@ -148,9 +156,9 @@ pub fn legal_audit_to_auth_record(entry: &AuditEntry) -> LegalAuthRecord {
     let is_write_event = matches!(
         entry.kind,
         AuditEventKind::StatuteCreated
-        | AuditEventKind::StatuteAmended
-        | AuditEventKind::ContractCreated
-        | AuditEventKind::ProcedureStarted
+            | AuditEventKind::StatuteAmended
+            | AuditEventKind::ContractCreated
+            | AuditEventKind::ProcedureStarted
     );
 
     let mut key = [0u8; 33];
@@ -179,7 +187,7 @@ pub fn legal_audit_to_auth_record(entry: &AuditEntry) -> LegalAuthRecord {
 /// so the Crypto layer can verify contract integrity without accessing
 /// the full obligation tree.
 pub struct LegalCryptoSealed {
-    /// FNV-1a hash over contract_id, party_count, status, obligation_count, seal_hash.
+    /// FNV-1a hash over `contract_id`, `party_count`, status, `obligation_count`, `seal_hash`.
     pub content_hash: u64,
     /// The contract's numeric identifier.
     pub contract_id: u64,
@@ -189,12 +197,13 @@ pub struct LegalCryptoSealed {
     pub status: u8,
     /// Number of obligations in the contract.
     pub obligation_count: usize,
-    /// FNV-1a seal: hash of contract_id + all party IDs + status byte.
+    /// FNV-1a seal: hash of `contract_id` + all party IDs + status byte.
     pub seal_hash: u64,
 }
 
 /// Convert a contract into a crypto-sealed metadata record.
 #[inline]
+#[must_use]
 pub fn legal_contract_to_crypto_sealed(contract: &Contract) -> LegalCryptoSealed {
     let status_byte = match contract.status {
         ContractStatus::Draft => 0,
@@ -239,7 +248,7 @@ pub fn legal_contract_to_crypto_sealed(contract: &Contract) -> LegalCryptoSealed
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_legal::{StatuteTree, ClauseKind, Contract, AuditLog, AuditEventKind};
+    use alice_legal::{AuditEventKind, AuditLog, ClauseKind, Contract, StatuteTree};
 
     // ── Bridge 1: statute → text record ─────────────────────────────────
 
@@ -316,7 +325,13 @@ mod tests {
     #[test]
     fn test_legal_audit_to_auth_record_write_event() {
         let mut log = AuditLog::new();
-        log.append(AuditEventKind::StatuteCreated, 1, "admin", "Civil Code", 1000);
+        log.append(
+            AuditEventKind::StatuteCreated,
+            1,
+            "admin",
+            "Civil Code",
+            1000,
+        );
         let entry = &log.entries[0];
         let rec = legal_audit_to_auth_record(entry);
         assert_ne!(rec.content_hash, 0);
@@ -330,7 +345,13 @@ mod tests {
     #[test]
     fn test_legal_audit_to_auth_record_read_event() {
         let mut log = AuditLog::new();
-        log.append(AuditEventKind::ContractFulfilled, 100, "alice", "fulfilled", 5000);
+        log.append(
+            AuditEventKind::ContractFulfilled,
+            100,
+            "alice",
+            "fulfilled",
+            5000,
+        );
         let entry = &log.entries[0];
         let rec = legal_audit_to_auth_record(entry);
         assert_eq!(rec.event_kind, 3); // ContractFulfilled
@@ -340,7 +361,13 @@ mod tests {
     #[test]
     fn test_legal_audit_to_auth_record_amended_is_write() {
         let mut log = AuditLog::new();
-        log.append(AuditEventKind::StatuteAmended, 1, "admin", "amendment", 3000);
+        log.append(
+            AuditEventKind::StatuteAmended,
+            1,
+            "admin",
+            "amendment",
+            3000,
+        );
         let entry = &log.entries[0];
         let rec = legal_audit_to_auth_record(entry);
         assert_eq!(rec.event_kind, 1); // StatuteAmended
@@ -350,7 +377,13 @@ mod tests {
     #[test]
     fn test_legal_audit_to_auth_record_deterministic() {
         let mut log = AuditLog::new();
-        log.append(AuditEventKind::ContractCreated, 10, "bob", "new contract", 2000);
+        log.append(
+            AuditEventKind::ContractCreated,
+            10,
+            "bob",
+            "new contract",
+            2000,
+        );
         let entry = &log.entries[0];
         let r1 = legal_audit_to_auth_record(entry);
         let r2 = legal_audit_to_auth_record(entry);

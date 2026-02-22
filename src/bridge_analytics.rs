@@ -7,7 +7,10 @@ use alice_analytics::prelude::*;
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -29,6 +32,7 @@ pub struct AnalyticsDbRecord {
 
 /// Serialize analytics snapshot for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn analytics_to_db_record(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsDbRecord {
     let card = hll.cardinality();
     let count = dd.count();
@@ -56,6 +60,7 @@ pub struct AnalyticsCacheEntry {
 
 /// Cache analytics sketch for ALICE-Cache.
 #[inline]
+#[must_use]
 pub fn analytics_to_cache_entry(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsCacheEntry {
     let card = hll.cardinality();
     let count = dd.count();
@@ -87,11 +92,17 @@ pub struct AnalyticsCdnReport {
 
 /// Package analytics report for ALICE-CDN delivery.
 #[inline]
+#[must_use]
 pub fn analytics_to_cdn_report(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsCdnReport {
     let card = hll.cardinality();
     let p50 = dd.quantile(0.50);
     let p99 = dd.quantile(0.99);
-    let data = [card.to_le_bytes().as_slice(), &p50.to_le_bytes(), &p99.to_le_bytes()].concat();
+    let data = [
+        card.to_le_bytes().as_slice(),
+        &p50.to_le_bytes(),
+        &p99.to_le_bytes(),
+    ]
+    .concat();
     AnalyticsCdnReport {
         content_hash: fnv1a(&data),
         cardinality: card,
@@ -122,6 +133,7 @@ pub struct AnalyticsMlFeatures {
 
 /// Extract ML features from analytics for ALICE-ML anomaly detection.
 #[inline]
+#[must_use]
 pub fn analytics_to_ml_features(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsMlFeatures {
     let card = hll.cardinality();
     let mean = dd.mean();
@@ -154,6 +166,7 @@ pub struct AnalyticsSearchIndex {
 
 /// Index analytics metrics for ALICE-Search.
 #[inline]
+#[must_use]
 pub fn analytics_to_search_index(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsSearchIndex {
     let card = hll.cardinality();
     let data = card.to_le_bytes();
@@ -185,6 +198,7 @@ pub struct AnalyticsViewConfig {
 
 /// Configure dashboard visualization for ALICE-View.
 #[inline]
+#[must_use]
 pub fn analytics_to_view_config(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsViewConfig {
     AnalyticsViewConfig {
         cardinality: hll.cardinality(),
@@ -212,6 +226,7 @@ pub struct AnalyticsEdgePayload {
 
 /// Prepare lightweight telemetry for ALICE-Edge devices.
 #[inline]
+#[must_use]
 pub fn analytics_to_edge_payload(hll: &HyperLogLog12, dd: &DDSketch256) -> AnalyticsEdgePayload {
     let card = hll.cardinality();
     let count = dd.count();
@@ -250,6 +265,7 @@ pub struct ApiAnalyticsMetrics {
 /// `avg_latency_us` is derived from `total_latency_ns` using reciprocal
 /// multiply — no bare `/` in the hot path.
 #[inline]
+#[must_use]
 pub fn api_to_analytics_metrics(
     total_requests: u64,
     rate_limited: u64,
@@ -258,10 +274,9 @@ pub fn api_to_analytics_metrics(
     window_start_ns: u64,
     window_end_ns: u64,
 ) -> ApiAnalyticsMetrics {
+    const RCP_NS_TO_US: f64 = 1.0 / 1_000.0;
     // Reciprocal of request count — hoisted so all per-request averages share it.
     let rcp_requests = 1.0 / total_requests.max(1) as f64;
-    // Reciprocal: 1 / 1_000.0 converts ns → us; combine with rcp_requests.
-    const RCP_NS_TO_US: f64 = 1.0 / 1_000.0;
     let avg_latency_us = total_latency_ns as f64 * RCP_NS_TO_US * rcp_requests;
 
     // Hash over window endpoints so each window gets a unique key.
@@ -302,6 +317,7 @@ pub struct MotionAnalyticsMetrics {
 /// All averages use reciprocal multiply against `trajectories_computed`
 /// to avoid repeated division.
 #[inline]
+#[must_use]
 pub fn motion_to_analytics_metrics(
     trajectories_computed: u64,
     total_segments: u64,
@@ -352,6 +368,7 @@ pub struct EdgeAnalyticsMetrics {
 /// `avg_compression_ratio` uses reciprocal multiply against `sensor_count`
 /// to sum per-channel ratios without repeated division.
 #[inline]
+#[must_use]
 pub fn edge_to_analytics_metrics(
     samples_processed: u64,
     total_compression_ratio: f32,
@@ -458,21 +475,17 @@ mod tests {
     fn test_api_to_analytics_metrics() {
         // 1000 requests, 50 rate-limited, total latency 500 ms (500_000_000 ns),
         // 10 errors, window [1_000_000_000, 2_000_000_000].
-        let m = api_to_analytics_metrics(
-            1_000,
-            50,
-            500_000_000,
-            10,
-            1_000_000_000,
-            2_000_000_000,
-        );
+        let m = api_to_analytics_metrics(1_000, 50, 500_000_000, 10, 1_000_000_000, 2_000_000_000);
         assert_ne!(m.content_hash, 0);
         assert_eq!(m.total_requests, 1_000);
         assert_eq!(m.rate_limited, 50);
         assert_eq!(m.error_count, 10);
         // avg_latency_us = (500_000_000 / 1000) / 1000 = 500 µs
-        assert!((m.avg_latency_us - 500.0).abs() < 0.01,
-            "avg_latency_us = {}", m.avg_latency_us);
+        assert!(
+            (m.avg_latency_us - 500.0).abs() < 0.01,
+            "avg_latency_us = {}",
+            m.avg_latency_us
+        );
         assert_eq!(m.window_start_ns, 1_000_000_000);
         assert_eq!(m.window_end_ns, 2_000_000_000);
     }
@@ -494,15 +507,24 @@ mod tests {
         assert_ne!(m.content_hash, 0);
         assert_eq!(m.trajectories_computed, 100);
         // avg_segments = 500 / 100 = 5.0
-        assert!((m.avg_segments - 5.0).abs() < 0.001,
-            "avg_segments = {}", m.avg_segments);
+        assert!(
+            (m.avg_segments - 5.0).abs() < 0.001,
+            "avg_segments = {}",
+            m.avg_segments
+        );
         // avg_duration_ms = 2000 / 100 = 20.0
-        assert!((m.avg_duration_ms - 20.0).abs() < 0.001,
-            "avg_duration_ms = {}", m.avg_duration_ms);
+        assert!(
+            (m.avg_duration_ms - 20.0).abs() < 0.001,
+            "avg_duration_ms = {}",
+            m.avg_duration_ms
+        );
         assert!((m.max_jerk - 5.0).abs() < 0.001);
         // planning_time_us = 300 / 100 = 3.0
-        assert!((m.planning_time_us - 3.0).abs() < 0.001,
-            "planning_time_us = {}", m.planning_time_us);
+        assert!(
+            (m.planning_time_us - 3.0).abs() < 0.001,
+            "planning_time_us = {}",
+            m.planning_time_us
+        );
     }
 
     #[test]
@@ -524,8 +546,11 @@ mod tests {
         assert_eq!(m.sensor_count, 4);
         assert_eq!(m.anomalies_detected, 3);
         // avg_compression_ratio = 16.0 / 4 = 4.0
-        assert!((m.avg_compression_ratio - 4.0).abs() < 0.001,
-            "avg_compression_ratio = {}", m.avg_compression_ratio);
+        assert!(
+            (m.avg_compression_ratio - 4.0).abs() < 0.001,
+            "avg_compression_ratio = {}",
+            m.avg_compression_ratio
+        );
     }
 
     #[test]

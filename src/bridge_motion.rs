@@ -19,8 +19,9 @@ pub struct TrajectoryPhysicsState {
     pub progress: f32,
 }
 
-/// Evaluate MotionPlan at time t and convert to ALICE-Physics Vec3Fix.
+/// Evaluate `MotionPlan` at time t and convert to ALICE-Physics `Vec3Fix`.
 #[inline]
+#[must_use]
 pub fn motion_to_physics_state(plan: &MotionPlan, t: f32) -> TrajectoryPhysicsState {
     let pos = plan.position(t);
     let vel = plan.velocity(t);
@@ -34,8 +35,9 @@ pub fn motion_to_physics_state(plan: &MotionPlan, t: f32) -> TrajectoryPhysicsSt
     }
 }
 
-/// Convert Physics Vec3Fix to Motion Vec3 (for trajectory feedback).
+/// Convert Physics `Vec3Fix` to Motion Vec3 (for trajectory feedback).
 #[inline(always)]
+#[must_use]
 pub fn physics_to_motion_vec3(v: &Vec3Fix) -> Vec3 {
     Vec3::new(v.x.to_f32(), v.y.to_f32(), v.z.to_f32())
 }
@@ -54,8 +56,9 @@ pub struct GcodeMotionSegment {
     pub duration_secs: f32,
 }
 
-/// Generate G-code segments from CubicBezier + velocity profile for ALICE-Print.
+/// Generate G-code segments from `CubicBezier` + velocity profile for ALICE-Print.
 #[inline]
+#[must_use]
 pub fn motion_to_print_segments(
     curve: &CubicBezier,
     v_max: f32,
@@ -77,7 +80,7 @@ pub fn motion_to_print_segments(
         let s1 = profile.position_at(t1) * rcp_arc;
         let p0 = curve.position(s0.min(1.0));
         let p1 = curve.position(s1.min(1.0));
-        let speed = profile.velocity_at((t0 + t1) / 2.0);
+        let speed = profile.velocity_at(f32::midpoint(t0, t1));
         segments.push(GcodeMotionSegment {
             start: (p0.x, p0.y, p0.z),
             end: (p1.x, p1.y, p1.z),
@@ -102,8 +105,9 @@ pub struct AnimPathKeyframe {
     pub speed: f32,
 }
 
-/// Sample MotionPlan into animation keyframes for ALICE-Animation.
+/// Sample `MotionPlan` into animation keyframes for ALICE-Animation.
 #[inline]
+#[must_use]
 pub fn motion_to_animation_keyframes(plan: &MotionPlan, fps: f32) -> Vec<AnimPathKeyframe> {
     let dur = plan.duration();
     let dt = 1.0 / fps;
@@ -128,7 +132,7 @@ pub fn motion_to_animation_keyframes(plan: &MotionPlan, fps: f32) -> Vec<AnimPat
 
 // ── Bridge 4: Motion → Edge (actuator control packets) ──────────────────
 
-/// Compact actuator control packet for ALICE-Edge IoT transport.
+/// Compact actuator control packet for ALICE-Edge `IoT` transport.
 pub struct ActuatorEdgePacket {
     /// Bezier control points serialized (4 × 3 × f32 = 48 bytes).
     pub bezier_bytes: [u8; 48],
@@ -138,9 +142,14 @@ pub struct ActuatorEdgePacket {
     pub v_max: f32,
 }
 
-/// Package CubicBezier trajectory for ALICE-Edge actuator streaming.
+/// Package `CubicBezier` trajectory for ALICE-Edge actuator streaming.
 #[inline]
-pub fn motion_to_edge_packet(curve: &CubicBezier, v_max: f32, duration_ms: u16) -> ActuatorEdgePacket {
+#[must_use]
+pub fn motion_to_edge_packet(
+    curve: &CubicBezier,
+    v_max: f32,
+    duration_ms: u16,
+) -> ActuatorEdgePacket {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
     for (i, p) in points.iter().enumerate() {
@@ -149,7 +158,11 @@ pub fn motion_to_edge_packet(curve: &CubicBezier, v_max: f32, duration_ms: u16) 
         bytes[offset + 4..offset + 8].copy_from_slice(&p.y.to_le_bytes());
         bytes[offset + 8..offset + 12].copy_from_slice(&p.z.to_le_bytes());
     }
-    ActuatorEdgePacket { bezier_bytes: bytes, duration_ms, v_max }
+    ActuatorEdgePacket {
+        bezier_bytes: bytes,
+        duration_ms,
+        v_max,
+    }
 }
 
 // ── Bridge 5: Motion → SDF (sweep SDF generation) ──────────────────────
@@ -166,8 +179,9 @@ pub struct MotionSdfSweep {
     pub sample_count: usize,
 }
 
-/// Sample CubicBezier into path points for ALICE-SDF sweep extrusion.
+/// Sample `CubicBezier` into path points for ALICE-SDF sweep extrusion.
 #[inline]
+#[must_use]
 pub fn motion_to_sdf_sweep(curve: &CubicBezier, samples: usize) -> MotionSdfSweep {
     let n = samples.max(2);
     let mut path_points = Vec::with_capacity(n);
@@ -203,8 +217,9 @@ pub struct TrajectoryDbRecord {
     pub duration_secs: f32,
 }
 
-/// Serialize CubicBezier trajectory for ALICE-DB persistence.
+/// Serialize `CubicBezier` trajectory for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn motion_to_db_record(curve: &CubicBezier, v_max: f32, a_max: f32) -> TrajectoryDbRecord {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
@@ -243,9 +258,14 @@ pub struct TrajectorySyncPacket {
     pub player_id: u8,
 }
 
-/// Package CubicBezier for ALICE-Sync P2P exchange.
+/// Package `CubicBezier` for ALICE-Sync P2P exchange.
 #[inline]
-pub fn motion_to_sync_packet(curve: &CubicBezier, v_max: f32, player_id: u8) -> TrajectorySyncPacket {
+#[must_use]
+pub fn motion_to_sync_packet(
+    curve: &CubicBezier,
+    v_max: f32,
+    player_id: u8,
+) -> TrajectorySyncPacket {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
     for (i, p) in points.iter().enumerate() {
@@ -279,8 +299,9 @@ pub struct TrajectoryCacheEntry {
     pub arc_length: f32,
 }
 
-/// Prepare CubicBezier for ALICE-Cache storage.
+/// Prepare `CubicBezier` for ALICE-Cache storage.
 #[inline]
+#[must_use]
 pub fn motion_to_cache_entry(curve: &CubicBezier) -> TrajectoryCacheEntry {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
@@ -314,8 +335,9 @@ pub struct TrajectoryCryptoPayload {
     pub payload_bytes: usize,
 }
 
-/// Prepare CubicBezier for ALICE-Crypto encryption.
+/// Prepare `CubicBezier` for ALICE-Crypto encryption.
 #[inline]
+#[must_use]
 pub fn motion_to_crypto_payload(curve: &CubicBezier) -> TrajectoryCryptoPayload {
     let mut bytes = [0u8; 48];
     let points = [curve.p0, curve.p1, curve.p2, curve.p3];
@@ -394,7 +416,12 @@ mod tests {
         assert_eq!(pkt.bezier_bytes.len(), 48);
         assert_eq!(pkt.duration_ms, 500);
         // Verify first point is (0, 0, 0)
-        let x = f32::from_le_bytes([pkt.bezier_bytes[0], pkt.bezier_bytes[1], pkt.bezier_bytes[2], pkt.bezier_bytes[3]]);
+        let x = f32::from_le_bytes([
+            pkt.bezier_bytes[0],
+            pkt.bezier_bytes[1],
+            pkt.bezier_bytes[2],
+            pkt.bezier_bytes[3],
+        ]);
         assert!((x - 0.0).abs() < 0.001);
     }
 

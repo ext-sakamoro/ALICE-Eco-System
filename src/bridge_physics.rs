@@ -2,12 +2,7 @@
 //!
 //! 6 bridges connecting deterministic physics simulation to the ALICE ecosystem.
 
-use alice_physics::{
-    RigidBody,
-    ManifoldConfig,
-    SdfForceType,
-    PhysicsConfig,
-};
+use alice_physics::{ManifoldConfig, PhysicsConfig, RigidBody, SdfForceType};
 
 // ── Bridge 1: Physics ↔ SDF (collision detection config) ────────────────
 
@@ -41,6 +36,7 @@ pub struct SdfColliderConfig {
 /// - Scale derived via `f32::max()` — clamps away from zero without branching.
 /// - `broad_phase_radius` = `collision_radius * scale` is a single multiply.
 #[inline]
+#[must_use]
 pub fn physics_to_sdf_collider_config(
     body: &RigidBody,
     body_index: usize,
@@ -109,13 +105,17 @@ pub struct PhysicsForceFieldDesc {
 /// - All f32 fields are extracted once inside each arm; no secondary calls.
 /// - No heap allocation; all fields are scalars or small fixed-size arrays.
 #[inline]
+#[must_use]
 pub fn physics_to_force_field_desc(
     sdf_index: usize,
     force_type: &SdfForceType,
     enabled: bool,
 ) -> PhysicsForceFieldDesc {
     let (tag, strength, influence_distance, axis): (u8, f32, f32, [f32; 3]) = match force_type {
-        SdfForceType::Attract { strength, max_force } => {
+        SdfForceType::Attract {
+            strength,
+            max_force,
+        } => {
             let s = strength.to_f32();
             let mf = max_force.to_f32();
             // influence_distance: max_force / strength gives the effective pull range.
@@ -124,20 +124,36 @@ pub fn physics_to_force_field_desc(
             let range = mf * inv_s;
             (0, s, range, [0.0; 3])
         }
-        SdfForceType::Repel { strength, range } => {
-            (1, strength.to_f32(), range.to_f32(), [0.0; 3])
-        }
+        SdfForceType::Repel { strength, range } => (1, strength.to_f32(), range.to_f32(), [0.0; 3]),
         SdfForceType::Contain { strength, damping } => {
             // damping stored in influence_distance slot for downstream consumers.
             (2, strength.to_f32(), damping.to_f32(), [0.0; 3])
         }
-        SdfForceType::SurfaceFlow { flow_direction, strength, influence_distance } => {
+        SdfForceType::SurfaceFlow {
+            flow_direction,
+            strength,
+            influence_distance,
+        } => {
             let (dx, dy, dz) = flow_direction.to_f32();
-            (3, strength.to_f32(), influence_distance.to_f32(), [dx, dy, dz])
+            (
+                3,
+                strength.to_f32(),
+                influence_distance.to_f32(),
+                [dx, dy, dz],
+            )
         }
-        SdfForceType::SdfVortex { axis, strength, influence_distance } => {
+        SdfForceType::SdfVortex {
+            axis,
+            strength,
+            influence_distance,
+        } => {
             let (ax, ay, az) = axis.to_f32();
-            (4, strength.to_f32(), influence_distance.to_f32(), [ax, ay, az])
+            (
+                4,
+                strength.to_f32(),
+                influence_distance.to_f32(),
+                [ax, ay, az],
+            )
         }
     };
 
@@ -194,6 +210,7 @@ pub struct PhysicsViewSnapshot {
 /// - Active/sleeping counts incremented branchlessly via `bool as usize` addition.
 /// - First-body position folded into the hash after the loop — no speculative work.
 #[inline]
+#[must_use]
 pub fn physics_to_view_snapshot(bodies: &[RigidBody], frame_seq: u64) -> PhysicsViewSnapshot {
     let cap = bodies.len();
     let mut positions = Vec::with_capacity(cap);
@@ -223,7 +240,7 @@ pub fn physics_to_view_snapshot(bodies: &[RigidBody], frame_seq: u64) -> Physics
     }
 
     // Hash: body count + frame_seq + first body position.
-    let first_pos: [f32; 3] = positions.get(0).copied().unwrap_or([0.0, 0.0, 0.0]);
+    let first_pos: [f32; 3] = positions.first().copied().unwrap_or([0.0, 0.0, 0.0]);
     let mut hash_bytes = [0u8; 24];
     hash_bytes[0..8].copy_from_slice(&(cap as u64).to_le_bytes());
     hash_bytes[8..16].copy_from_slice(&frame_seq.to_le_bytes());
@@ -276,21 +293,21 @@ pub struct PhysicsDbRecord {
 /// - `timestep_secs` = `RCP_60 * inv_substeps` — two reciprocal multiplies,
 ///   no division in the hot path.
 #[inline]
+#[must_use]
 pub fn physics_to_db_record(
     bodies: &[RigidBody],
     constraint_count: usize,
     config: &PhysicsConfig,
 ) -> PhysicsDbRecord {
+    const RCP_60: f32 = 1.0 / 60.0;
     // Determinism checksum: XOR all body position Y high-words.
     let determinism_checksum = bodies
         .iter()
         .fold(0u64, |acc, b| acc ^ (b.position.y.hi as u64));
 
     let (gx, gy, gz) = config.gravity.to_f32();
-
     // Substep dt = (1/60) / substeps — reciprocal multiply avoids two divisions.
     // RCP_60 is computed once; then multiplied by inv_substeps.
-    const RCP_60: f32 = 1.0 / 60.0;
     let substeps = config.substeps as f32;
     let inv_substeps = 1.0_f32 / substeps.max(1.0_f32);
     let timestep_secs = RCP_60 * inv_substeps;
@@ -347,6 +364,7 @@ pub struct PhysicsCacheEntry {
 /// - `eviction_priority`: saturating cast via `min(frame_index, u32::MAX as u64) as u32`.
 /// - State checksum XOR-folds X and Z high-words; complements the DB record's Y fold.
 #[inline]
+#[must_use]
 pub fn physics_to_cache_entry(bodies: &[RigidBody], frame_index: u64) -> PhysicsCacheEntry {
     let body_count = bodies.len();
 
@@ -397,7 +415,7 @@ pub struct PhysicsAnalyticsMetrics {
     pub total_kinetic_energy_proxy: f32,
     /// Maximum speed² observed across all bodies (for outlier detection).
     pub max_speed_sq: f32,
-    /// Simulation frequency in Hz (1 / substep_dt, at 60 Hz outer tick).
+    /// Simulation frequency in Hz (1 / `substep_dt`, at 60 Hz outer tick).
     pub sim_frequency_hz: f32,
     /// Content hash for time-series deduplication.
     pub content_hash: u64,
@@ -411,6 +429,7 @@ pub struct PhysicsAnalyticsMetrics {
 /// - `sim_frequency_hz` = `60.0 * substeps` — one multiply, zero divisions.
 /// - `constraint_solve_ops` uses `u64` widening multiply to prevent overflow.
 #[inline]
+#[must_use]
 pub fn physics_to_analytics_metrics(
     bodies: &[RigidBody],
     config: &PhysicsConfig,
@@ -434,8 +453,7 @@ pub fn physics_to_analytics_metrics(
     let sleeping_bodies = body_count - active_bodies;
 
     // constraint_solve_ops: active_bodies × iterations (u64 widening avoids overflow).
-    let constraint_solve_ops =
-        (active_bodies as u64).wrapping_mul(config.iterations as u64);
+    let constraint_solve_ops = (active_bodies as u64).wrapping_mul(config.iterations as u64);
 
     // sim_frequency_hz = 60 Hz outer tick × substeps per tick — pure multiply.
     let sim_frequency_hz = 60.0_f32 * config.substeps as f32;
@@ -466,7 +484,7 @@ pub fn physics_to_analytics_metrics(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_physics::{PhysicsConfig, RigidBody, Fix128, Vec3Fix};
+    use alice_physics::{Fix128, PhysicsConfig, RigidBody, Vec3Fix};
     use alice_physics::{ManifoldConfig, SdfForceType};
 
     /// Construct a default `PhysicsConfig` for testing.
@@ -506,15 +524,27 @@ mod tests {
         let result = physics_to_sdf_collider_config(&body, 42, &manifold, 1.0);
 
         // Position round-trips through Fix128 → f32 faithfully.
-        assert!((result.position[0] - 3.0).abs() < 0.01, "x position mismatch");
-        assert!((result.position[1] - 7.0).abs() < 0.01, "y position mismatch");
+        assert!(
+            (result.position[0] - 3.0).abs() < 0.01,
+            "x position mismatch"
+        );
+        assert!(
+            (result.position[1] - 7.0).abs() < 0.01,
+            "y position mismatch"
+        );
 
         // Scale equals sample_radius (clamped).
         assert!(result.scale > 0.0, "scale must be positive");
-        assert!((result.scale - 0.5).abs() < 1e-5, "scale should equal sample_radius");
+        assert!(
+            (result.scale - 0.5).abs() < 1e-5,
+            "scale should equal sample_radius"
+        );
 
         // broad_phase_radius = collision_radius(1.0) × scale(0.5) = 0.5.
-        assert!((result.broad_phase_radius - 0.5).abs() < 1e-5, "broad_phase_radius mismatch");
+        assert!(
+            (result.broad_phase_radius - 0.5).abs() < 1e-5,
+            "broad_phase_radius mismatch"
+        );
 
         // Body index and min_penetration are preserved verbatim.
         assert_eq!(result.body_index, 42);
@@ -523,7 +553,10 @@ mod tests {
         // Hash is non-zero and deterministic.
         assert_ne!(result.content_hash, 0);
         let result2 = physics_to_sdf_collider_config(&body, 42, &manifold, 1.0);
-        assert_eq!(result.content_hash, result2.content_hash, "hash must be deterministic");
+        assert_eq!(
+            result.content_hash, result2.content_hash,
+            "hash must be deterministic"
+        );
     }
 
     // ── Test 2: Physics → SDF force field descriptor ────────────────────
@@ -548,7 +581,10 @@ mod tests {
         };
         let desc_repel = physics_to_force_field_desc(0, &repel, true);
         assert_eq!(desc_repel.force_type_tag, 1, "Repel should have tag 1");
-        assert!((desc_repel.influence_distance - 10.0).abs() < 0.01, "range mismatch");
+        assert!(
+            (desc_repel.influence_distance - 10.0).abs() < 0.01,
+            "range mismatch"
+        );
 
         // SurfaceFlow variant: axis should carry the direction.
         let flow = SdfForceType::SurfaceFlow {
@@ -559,7 +595,10 @@ mod tests {
         let desc_flow = physics_to_force_field_desc(1, &flow, false);
         assert_eq!(desc_flow.force_type_tag, 3, "SurfaceFlow should have tag 3");
         assert!(!desc_flow.enabled);
-        assert!((desc_flow.axis[2] - 1.0).abs() < 0.01, "axis Z should be ~1.0");
+        assert!(
+            (desc_flow.axis[2] - 1.0).abs() < 0.01,
+            "axis Z should be ~1.0"
+        );
 
         // Different variants produce different hashes.
         assert_ne!(desc.content_hash, desc_repel.content_hash);
@@ -579,7 +618,8 @@ mod tests {
 
         // Active + sleeping must equal body count.
         assert_eq!(
-            snap.active_count + snap.sleeping_count, 4,
+            snap.active_count + snap.sleeping_count,
+            4,
             "active + sleeping must equal body count"
         );
 
@@ -593,7 +633,10 @@ mod tests {
 
         // Identity quaternion: w=1, x=y=z=0.
         let [qx, qy, qz, qw] = snap.orientations[0];
-        assert!((qw - 1.0).abs() < 0.01, "identity quaternion w should be ~1.0");
+        assert!(
+            (qw - 1.0).abs() < 0.01,
+            "identity quaternion w should be ~1.0"
+        );
         assert!(qx.abs() < 0.01);
         assert!(qy.abs() < 0.01);
         assert!(qz.abs() < 0.01);
@@ -635,7 +678,10 @@ mod tests {
             "checksum must be deterministic"
         );
         assert_ne!(rec.content_hash, 0);
-        assert_eq!(rec.content_hash, rec2.content_hash, "hash must be deterministic");
+        assert_eq!(
+            rec.content_hash, rec2.content_hash,
+            "hash must be deterministic"
+        );
     }
 
     // ── Test 5: Physics → Cache entry ────────────────────────────────────
@@ -649,7 +695,10 @@ mod tests {
         assert_eq!(entry.frame_index, 1000);
 
         // state_size_bytes = 16 × 128 = 2048.
-        assert_eq!(entry.state_size_bytes, 2048, "state size should be body_count * 128");
+        assert_eq!(
+            entry.state_size_bytes, 2048,
+            "state size should be body_count * 128"
+        );
 
         // frame_index 1000 fits in u32 → passes through unchanged.
         assert_eq!(entry.eviction_priority, 1000u32);
@@ -657,15 +706,25 @@ mod tests {
         // Hash is non-zero and deterministic.
         assert_ne!(entry.content_hash, 0);
         let entry2 = physics_to_cache_entry(&bodies, 1000);
-        assert_eq!(entry.content_hash, entry2.content_hash, "hash must be deterministic");
+        assert_eq!(
+            entry.content_hash, entry2.content_hash,
+            "hash must be deterministic"
+        );
 
         // Different frame_index → different hash.
         let entry3 = physics_to_cache_entry(&bodies, 1001);
-        assert_ne!(entry.content_hash, entry3.content_hash, "different frame should differ");
+        assert_ne!(
+            entry.content_hash, entry3.content_hash,
+            "different frame should differ"
+        );
 
         // u64::MAX saturates eviction_priority to u32::MAX.
         let big_entry = physics_to_cache_entry(&bodies, u64::MAX);
-        assert_eq!(big_entry.eviction_priority, u32::MAX, "should saturate at u32::MAX");
+        assert_eq!(
+            big_entry.eviction_priority,
+            u32::MAX,
+            "should saturate at u32::MAX"
+        );
     }
 
     // ── Test 6: Physics → Analytics metrics ──────────────────────────────
@@ -680,12 +739,16 @@ mod tests {
 
         // Active + sleeping must equal total.
         assert_eq!(
-            metrics.active_bodies + metrics.sleeping_bodies, 6,
+            metrics.active_bodies + metrics.sleeping_bodies,
+            6,
             "active + sleeping must equal body_count"
         );
 
         // Body 0 velocity=0 → sleeping; bodies 1-5 → active.
-        assert!(metrics.sleeping_bodies >= 1, "at least body 0 should be sleeping");
+        assert!(
+            metrics.sleeping_bodies >= 1,
+            "at least body 0 should be sleeping"
+        );
         assert!(metrics.active_bodies >= 5, "bodies 1-5 should be active");
 
         // KE proxy is positive (sum of v² for active bodies).
@@ -719,6 +782,9 @@ mod tests {
         // Hash is non-zero and deterministic.
         assert_ne!(metrics.content_hash, 0);
         let metrics2 = physics_to_analytics_metrics(&bodies, &config);
-        assert_eq!(metrics.content_hash, metrics2.content_hash, "hash must be deterministic");
+        assert_eq!(
+            metrics.content_hash, metrics2.content_hash,
+            "hash must be deterministic"
+        );
     }
 }

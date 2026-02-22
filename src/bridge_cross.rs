@@ -12,16 +12,16 @@ use alice_cache::AliceCache;
 use alice_crypto::hash as crypto_hash;
 use alice_font::param::MetaFontParams;
 use alice_kinematics::Vec3k;
-use alice_ml::{TernaryWeight, ternary_matvec};
+use alice_ml::{ternary_matvec, TernaryWeight};
 use alice_motion::{CubicBezier, MotionPlan, Vec3};
-use alice_rtos::{Kernel, TaskPriority};
 use alice_rtos::kernel::KernelStats;
+use alice_rtos::{Kernel, TaskPriority};
 use alice_search::AliceIndex;
+use alice_sync::input_sync::InputFrame;
 use alice_synth::{NoteEventKind, Score};
 use alice_text::{compress_tuned, CompressionMode};
 use alice_vcs::ast::{AstNodeKind, AstTree};
 use alice_vcs::diff::{diff_trees, patch_size_bytes};
-use alice_sync::input_sync::InputFrame;
 // libasp metadata used via VcsAspDiffPacket payload encoding
 use crate::hash::fnv1a;
 
@@ -41,6 +41,7 @@ pub struct AudioRtosConfig {
 
 /// Configure ALICE-RTOS kernel with audio render task from ALICE-Synth.
 #[inline]
+#[must_use]
 pub fn synth_rtos_audio_kernel(config: &AudioRtosConfig) -> (Kernel, KernelStats) {
     let mut kernel = Kernel::testing();
     kernel.add_task(
@@ -56,10 +57,16 @@ pub fn synth_rtos_audio_kernel(config: &AudioRtosConfig) -> (Kernel, KernelStats
 
 /// Calculate audio task timing from buffer size and sample rate.
 #[inline]
+#[must_use]
 pub fn synth_rtos_audio_config(buffer_size: usize, sample_rate: u32) -> AudioRtosConfig {
     let period_us = (buffer_size as u64 * 1_000_000 / sample_rate as u64) as u32;
     let wcet_us = period_us / 4; // 25% CPU budget for audio
-    AudioRtosConfig { buffer_size, sample_rate, period_us, wcet_us }
+    AudioRtosConfig {
+        buffer_size,
+        sample_rate,
+        period_us,
+        wcet_us,
+    }
 }
 
 // ── Bridge 2: Motion ↔ Kinematics (trajectory for joints) ──────────────
@@ -76,18 +83,21 @@ pub struct JointTrajectoryResult {
 
 /// Convert Motion Vec3 to Kinematics Vec3k.
 #[inline(always)]
+#[must_use]
 pub fn motion_to_kinematics_vec3(v: &Vec3) -> Vec3k {
     Vec3k::new(v.x, v.y, v.z)
 }
 
 /// Convert Kinematics Vec3k to Motion Vec3.
 #[inline(always)]
+#[must_use]
 pub fn kinematics_to_motion_vec3(v: &Vec3k) -> Vec3 {
     Vec3::new(v.x, v.y, v.z)
 }
 
 /// Drive IK arm along a Bezier trajectory from ALICE-Motion.
 #[inline]
+#[must_use]
 pub fn motion_kinematics_trajectory(
     curve: &CubicBezier,
     v_max: f32,
@@ -107,14 +117,22 @@ pub fn motion_kinematics_trajectory(
     for i in 0..n {
         let t = i as f32 * dt;
         let target_pos = plan.position(t.min(dur));
-        let target = Vec3k::new(target_pos.x * 0.01, target_pos.y * 0.01, target_pos.z * 0.01);
+        let target = Vec3k::new(
+            target_pos.x * 0.01,
+            target_pos.y * 0.01,
+            target_pos.z * 0.01,
+        );
         let (it, _err) = chain.inverse_kinematics(target, 50, 0.001);
         let ee = chain.forward_kinematics();
         positions.push((ee.x, ee.y, ee.z));
         iters.push(it);
     }
 
-    JointTrajectoryResult { positions, ik_iterations: iters, duration_secs: dur }
+    JointTrajectoryResult {
+        positions,
+        ik_iterations: iters,
+        duration_secs: dur,
+    }
 }
 
 // ── Bridge 3: Kinematics ↔ RTOS (motion control scheduling) ─────────────
@@ -133,10 +151,23 @@ pub struct MotionControlRtosConfig {
 
 /// Configure RTOS kernel for kinematics motion control.
 #[inline]
+#[must_use]
 pub fn kinematics_rtos_kernel(config: &MotionControlRtosConfig) -> (Kernel, KernelStats) {
     let mut kernel = Kernel::testing();
-    kernel.add_task(b"ik_upd", |_| {}, TaskPriority::HIGH, config.ik_period_us, config.ik_wcet_us);
-    kernel.add_task(b"sensor", |_| {}, TaskPriority::NORMAL, config.sensor_period_us, config.sensor_wcet_us);
+    kernel.add_task(
+        b"ik_upd",
+        |_| {},
+        TaskPriority::HIGH,
+        config.ik_period_us,
+        config.ik_wcet_us,
+    );
+    kernel.add_task(
+        b"sensor",
+        |_| {},
+        TaskPriority::NORMAL,
+        config.sensor_period_us,
+        config.sensor_wcet_us,
+    );
     let stats = kernel.run_for(1_000_000, 100);
     (kernel, stats)
 }
@@ -153,11 +184,18 @@ pub struct TrajectoryRtosResult {
 
 /// Configure RTOS for Motion trajectory execution with deadline guarantees.
 #[inline]
+#[must_use]
 pub fn motion_rtos_trajectory_kernel(control_hz: f32, traj_wcet_us: u32) -> TrajectoryRtosResult {
     let period_us = (1_000_000.0 / control_hz) as u32;
     let mut kernel = Kernel::testing();
     kernel.add_task(b"traj", |_| {}, TaskPriority::HIGH, period_us, traj_wcet_us);
-    kernel.add_task(b"comm", |_| {}, TaskPriority::NORMAL, period_us * 10, traj_wcet_us / 2);
+    kernel.add_task(
+        b"comm",
+        |_| {},
+        TaskPriority::NORMAL,
+        period_us * 10,
+        traj_wcet_us / 2,
+    );
     let schedulable = kernel.is_schedulable();
     let stats = kernel.run_for(1_000_000, 100);
 
@@ -181,14 +219,19 @@ pub struct ScoreRevision {
     pub event_count: usize,
 }
 
-/// Convert Score to VCS AstTree for version tracking.
+/// Convert Score to VCS `AstTree` for version tracking.
 #[inline]
+#[must_use]
 pub fn synth_to_vcs_tree(score: &Score) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, "score", 0);
-    let header = tree.add_node(AstNodeKind::Group, &format!("tempo_{}", score.header.tempo_bpm), root);
+    let header = tree.add_node(
+        AstNodeKind::Group,
+        &format!("tempo_{}", score.header.tempo_bpm),
+        root,
+    );
     let mut abs_tick: u32 = 0;
-    for (_i, evt) in score.events.iter().enumerate() {
+    for evt in &score.events {
         abs_tick += evt.delta_tick as u32;
         let kind_str = match evt.kind {
             NoteEventKind::NoteOn => "on",
@@ -207,6 +250,7 @@ pub fn synth_to_vcs_tree(score: &Score) -> AstTree {
 
 /// Diff two Score versions using VCS.
 #[inline]
+#[must_use]
 pub fn vcs_diff_scores(old: &Score, new: &Score) -> ScoreRevision {
     let old_tree = synth_to_vcs_tree(old);
     let new_tree = synth_to_vcs_tree(new);
@@ -226,26 +270,68 @@ pub struct FontRevision {
     pub diff_ops: usize,
 }
 
-/// Convert MetaFontParams to VCS AstTree for version tracking.
+/// Convert `MetaFontParams` to VCS `AstTree` for version tracking.
 #[inline]
+#[must_use]
 pub fn font_to_vcs_tree(params: &MetaFontParams, name: &str) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, name, 0);
-    tree.add_node(AstNodeKind::Parameter, &format!("weight_{}", (params.weight * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("width_{}", (params.width * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("serif_{}", (params.serif * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("contrast_{}", (params.contrast * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("slant_{}", (params.slant * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("x_height_{}", (params.x_height * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("cap_height_{}", (params.cap_height * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("ascender_{}", (params.ascender * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("descender_{}", (params.descender * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("roundness_{}", (params.roundness * 1000.0) as i32), root);
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("weight_{}", (params.weight * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("width_{}", (params.width * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("serif_{}", (params.serif * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("contrast_{}", (params.contrast * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("slant_{}", (params.slant * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("x_height_{}", (params.x_height * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("cap_height_{}", (params.cap_height * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("ascender_{}", (params.ascender * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("descender_{}", (params.descender * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("roundness_{}", (params.roundness * 1000.0) as i32),
+        root,
+    );
     tree
 }
 
 /// Diff two font parameter versions using VCS.
 #[inline]
+#[must_use]
 pub fn vcs_diff_fonts(old: &MetaFontParams, new: &MetaFontParams) -> FontRevision {
     let old_tree = font_to_vcs_tree(old, "font_v1");
     let new_tree = font_to_vcs_tree(new, "font_v2");
@@ -272,6 +358,7 @@ pub struct LyricsTiming {
 
 /// Align text characters to Score note events for karaoke-style display.
 #[inline]
+#[must_use]
 pub fn font_synth_lyrics_timing(text: &str, score: &Score) -> Vec<LyricsTiming> {
     let chars: Vec<char> = text.chars().filter(|c| !c.is_whitespace()).collect();
     let tempo = score.header.tempo_bpm as f32;
@@ -285,7 +372,9 @@ pub fn font_synth_lyrics_timing(text: &str, score: &Score) -> Vec<LyricsTiming> 
         abs_tick += evt.delta_tick as u32;
         let t = abs_tick as f32 * secs_per_tick;
         match evt.kind {
-            NoteEventKind::NoteOn => { on_time = Some(t); }
+            NoteEventKind::NoteOn => {
+                on_time = Some(t);
+            }
             NoteEventKind::NoteOff => {
                 if let Some(start) = on_time.take() {
                     note_starts.push((start, t));
@@ -325,6 +414,7 @@ pub struct TrajectoryAnnotation {
 
 /// Create text annotation along a Motion trajectory with ALICE-Font params.
 #[inline]
+#[must_use]
 pub fn motion_font_annotation(
     curve: &CubicBezier,
     text: &str,
@@ -356,6 +446,7 @@ pub struct MotionAudioTrigger {
 
 /// Convert Kinematics Intent to ALICE-Synth audio trigger.
 #[inline]
+#[must_use]
 pub fn kinematics_synth_trigger(intent: &alice_kinematics::Intent) -> MotionAudioTrigger {
     let target = intent.target;
     // Map position to note: x → pitch (0.0..1.0 → 48..84)
@@ -384,20 +475,38 @@ pub struct RtosVcsSnapshot {
     pub diff_bytes: usize,
 }
 
-/// Convert RTOS KernelStats to VCS AstTree for execution versioning.
+/// Convert RTOS `KernelStats` to VCS `AstTree` for execution versioning.
 #[inline]
+#[must_use]
 pub fn rtos_to_vcs_tree(stats: &KernelStats) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, "rtos_snapshot", 0);
-    tree.add_node(AstNodeKind::Parameter, &format!("util_{}", (stats.utilization * 1000.0) as i32), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("tasks_{}", stats.tasks_executed), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("switches_{}", stats.context_switches), root);
-    tree.add_node(AstNodeKind::Parameter, &format!("ticks_{}", stats.total_ticks), root);
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("util_{}", (stats.utilization * 1000.0) as i32),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("tasks_{}", stats.tasks_executed),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("switches_{}", stats.context_switches),
+        root,
+    );
+    tree.add_node(
+        AstNodeKind::Parameter,
+        &format!("ticks_{}", stats.total_ticks),
+        root,
+    );
     tree
 }
 
 /// Diff two RTOS execution snapshots using VCS.
 #[inline]
+#[must_use]
 pub fn vcs_diff_rtos(old: &KernelStats, new: &KernelStats) -> RtosVcsSnapshot {
     let old_tree = rtos_to_vcs_tree(old);
     let new_tree = rtos_to_vcs_tree(new);
@@ -429,12 +538,23 @@ pub struct AnimMangaPanel {
 #[inline]
 pub fn animation_to_manga_panel(scene: &alice_animation::SceneGraph, time: f32) -> AnimMangaPanel {
     let actors = scene.actor_count();
-    let panel_type = if actors > 3 { "wide" } else if actors > 1 { "standard" } else { "close-up" };
+    let panel_type = if actors > 3 {
+        "wide"
+    } else if actors > 1 {
+        "standard"
+    } else {
+        "close-up"
+    };
     let mut buf = [0u8; 12];
     buf[0..8].copy_from_slice(&(actors as u64).to_le_bytes());
     buf[8..12].copy_from_slice(&time.to_le_bytes());
     let content_hash = fnv1a(&buf);
-    AnimMangaPanel { actor_count: actors, time, panel_type, content_hash }
+    AnimMangaPanel {
+        actor_count: actors,
+        time,
+        panel_type,
+        content_hash,
+    }
 }
 
 // ── Bridge 12: Auth ↔ Crypto (identity → encrypted seed backup) ───────
@@ -451,6 +571,7 @@ pub struct AuthCryptoIdentity {
 
 /// Hash Auth identity via Crypto BLAKE3 for secure indexing.
 #[inline]
+#[must_use]
 pub fn auth_crypto_hash_identity(id: &alice_auth::AliceId) -> AuthCryptoIdentity {
     let id_bytes = *id.as_bytes();
     let blake_hash = alice_crypto::hash(&id_bytes);
@@ -478,7 +599,11 @@ pub struct QueueAnalyticsSnapshot {
 
 /// Extract queue metrics for Analytics monitoring.
 #[inline]
-pub fn queue_analytics_snapshot(msg: &alice_queue::Message, depth: usize) -> QueueAnalyticsSnapshot {
+#[must_use]
+pub fn queue_analytics_snapshot(
+    msg: &alice_queue::Message,
+    depth: usize,
+) -> QueueAnalyticsSnapshot {
     QueueAnalyticsSnapshot {
         depth,
         payload_bytes: msg.payload.len(),
@@ -506,7 +631,9 @@ pub struct PrintAnimPreview {
 /// Configure animated print preview from SliceResult.
 #[inline]
 pub fn print_animation_preview(result: &alice_print::SliceResult, fps: usize) -> PrintAnimPreview {
-    let frames_per_layer = (fps as f32 * result.print_time_seconds / result.layer_count.max(1) as f32).max(1.0) as usize;
+    let frames_per_layer = (fps as f32 * result.print_time_seconds
+        / result.layer_count.max(1) as f32)
+        .max(1.0) as usize;
     PrintAnimPreview {
         layer_count: result.layer_count,
         print_time_secs: result.print_time_seconds,
@@ -569,6 +696,7 @@ pub struct MlRtosInferenceConfig {
 /// Estimates WCET from weight dimensions (add/sub-only, no multiply) and
 /// registers the task with the RTOS kernel for schedulability analysis.
 #[inline]
+#[must_use]
 pub fn rtos_ml_inference_kernel(
     weights: &TernaryWeight,
     inference_hz: f32,
@@ -608,15 +736,13 @@ pub struct MlMotionPrediction {
     pub inference_ops: usize,
 }
 
-/// Run ternary inference and map output to a CubicBezier trajectory.
+/// Run ternary inference and map output to a `CubicBezier` trajectory.
 ///
 /// Requires a model with at least 12 output features (4 control points × 3
 /// coordinates). Extra outputs are ignored; missing outputs default to 0.
 #[inline]
-pub fn ml_motion_predict_curve(
-    weights: &TernaryWeight,
-    state: &[f32],
-) -> MlMotionPrediction {
+#[must_use]
+pub fn ml_motion_predict_curve(weights: &TernaryWeight, state: &[f32]) -> MlMotionPrediction {
     let out_f = weights.out_features();
     let in_f = weights.in_features();
     let mut output = vec![0.0f32; out_f];
@@ -625,10 +751,10 @@ pub fn ml_motion_predict_curve(
     // Map first 12 outputs to Bezier control points (tanh for bounded range)
     let g = |i: usize| -> f32 { output.get(i).copied().unwrap_or(0.0).tanh() };
     let curve = CubicBezier::new(
-        Vec3::new(g(0),  g(1),  g(2)),
-        Vec3::new(g(3),  g(4),  g(5)),
-        Vec3::new(g(6),  g(7),  g(8)),
-        Vec3::new(g(9),  g(10), g(11)),
+        Vec3::new(g(0), g(1), g(2)),
+        Vec3::new(g(3), g(4), g(5)),
+        Vec3::new(g(6), g(7), g(8)),
+        Vec3::new(g(9), g(10), g(11)),
     );
     MlMotionPrediction {
         curve,
@@ -668,8 +794,8 @@ pub fn print_sync_frame(
     let filament_mm_x100 = (result.filament_meters * 100_000.0).min(i16::MAX as f32) as i16;
     let layer_lo = (current_layer & 0xFFFF) as i16;
     let layer_hi = ((current_layer >> 16) & 0xFFFF) as i16;
-    let frame = InputFrame::new(sim_frame, player_id)
-        .with_movement(layer_lo, layer_hi, filament_mm_x100);
+    let frame =
+        InputFrame::new(sim_frame, player_id).with_movement(layer_lo, layer_hi, filament_mm_x100);
     // Hash the movement and action bytes for deduplication
     let mut buf = [0u8; 10];
     buf[0..2].copy_from_slice(&frame.movement[0].to_le_bytes());
@@ -686,13 +812,13 @@ pub fn print_sync_frame(
 
 // ── Bridge 19: Text ↔ Sync (collaborative text editing via InputFrame) ───
 
-/// Collaborative text edit transmitted as an ALICE-Sync InputFrame.
+/// Collaborative text edit transmitted as an ALICE-Sync `InputFrame`.
 ///
 /// Compresses a text diff using ALICE-Text and encodes its byte-length and
-/// checksum into an InputFrame so the Sync layer can sequence edits
+/// checksum into an `InputFrame` so the Sync layer can sequence edits
 /// deterministically across peers.
 pub struct TextSyncEdit {
-    /// The encoded InputFrame carrying edit metadata.
+    /// The encoded `InputFrame` carrying edit metadata.
     pub frame: InputFrame,
     /// ALICE-Text compressed diff bytes.
     pub compressed_diff: Vec<u8>,
@@ -702,13 +828,10 @@ pub struct TextSyncEdit {
     pub char_count: usize,
 }
 
-/// Compress a text diff and encode its metadata into an ALICE-Sync InputFrame.
+/// Compress a text diff and encode its metadata into an ALICE-Sync `InputFrame`.
 #[inline]
-pub fn text_sync_edit(
-    diff_text: &str,
-    player_id: u8,
-    sim_frame: u64,
-) -> TextSyncEdit {
+#[must_use]
+pub fn text_sync_edit(diff_text: &str, player_id: u8, sim_frame: u64) -> TextSyncEdit {
     let compressed = compress_tuned(diff_text, CompressionMode::Balanced)
         .unwrap_or_else(|_| diff_text.as_bytes().to_vec());
     let diff_hash = fnv1a(&compressed);
@@ -717,9 +840,13 @@ pub fn text_sync_edit(
     let clen = compressed.len().min(i16::MAX as usize) as i16;
     let hash_lo = (diff_hash & 0xFFFF) as i16;
     let hash_hi = ((diff_hash >> 16) & 0xFFFF) as i16;
-    let frame = InputFrame::new(sim_frame, player_id)
-        .with_movement(clen, hash_lo, hash_hi);
-    TextSyncEdit { frame, compressed_diff: compressed, diff_hash, char_count }
+    let frame = InputFrame::new(sim_frame, player_id).with_movement(clen, hash_lo, hash_hi);
+    TextSyncEdit {
+        frame,
+        compressed_diff: compressed,
+        diff_hash,
+        char_count,
+    }
 }
 
 // ── Bridge 20: Kinematics → Voice (gesture-to-speech mapping) ───────────
@@ -749,6 +876,7 @@ pub struct KinematicsVoiceParams {
 /// All mappings are branchless linear rescalings for zero branch-prediction
 /// penalties on the audio render path.
 #[inline]
+#[must_use]
 pub fn kinematics_voice_params(intent: &alice_kinematics::Intent) -> KinematicsVoiceParams {
     let t = intent.target;
     // x → pitch: clamp to [0, 1], map to [80, 400] Hz (bass → soprano)
@@ -766,7 +894,14 @@ pub fn kinematics_voice_params(intent: &alice_kinematics::Intent) -> KinematicsV
     buf[0..4].copy_from_slice(&t.x.to_le_bytes());
     buf[4..8].copy_from_slice(&t.y.to_le_bytes());
     buf[8..12].copy_from_slice(&t.z.to_le_bytes());
-    KinematicsVoiceParams { pitch_hz, f1_hz, f2_hz, gain, voiced, content_hash: fnv1a(&buf) }
+    KinematicsVoiceParams {
+        pitch_hz,
+        f1_hz,
+        f2_hz,
+        gain,
+        voiced,
+        content_hash: fnv1a(&buf),
+    }
 }
 
 // ── Bridge 21: Synth → Search (audio fingerprint indexing) ───────────────
@@ -774,7 +909,7 @@ pub fn kinematics_voice_params(intent: &alice_kinematics::Intent) -> KinematicsV
 /// Audio fingerprint index entry for ALICE-Search.
 ///
 /// Encodes a Score's event sequence as a byte signature that can be
-/// inserted into an FM-Index for O(pattern_length) lookup later.
+/// inserted into an FM-Index for `O(pattern_length)` lookup later.
 pub struct SynthSearchFingerprint {
     /// Byte signature of the score (note + tick encoding).
     pub signature: Vec<u8>,
@@ -791,6 +926,7 @@ pub struct SynthSearchFingerprint {
 /// Each note event is encoded as two bytes `[note, velocity]` so that
 /// melodic sub-sequences can be searched in O(pattern) time.
 #[inline]
+#[must_use]
 pub fn synth_search_fingerprint(score: &Score) -> SynthSearchFingerprint {
     let mut sig: Vec<u8> = Vec::with_capacity(score.events.len() * 2);
     for evt in &score.events {
@@ -800,14 +936,19 @@ pub fn synth_search_fingerprint(score: &Score) -> SynthSearchFingerprint {
     let content_hash = fnv1a(&sig);
     let event_count = score.events.len();
     let index = AliceIndex::build(&sig, 4);
-    SynthSearchFingerprint { signature: sig, index, content_hash, event_count }
+    SynthSearchFingerprint {
+        signature: sig,
+        index,
+        content_hash,
+        event_count,
+    }
 }
 
 // ── Bridge 22: Motion → Search (trajectory search via curve signature) ───
 
 /// Trajectory curve signature for ALICE-Search indexing.
 ///
-/// Quantises a CubicBezier into a fixed-width byte sequence so that
+/// Quantises a `CubicBezier` into a fixed-width byte sequence so that
 /// similar trajectory shapes can be located via FM-Index substring search.
 pub struct MotionSearchSignature {
     /// Quantised curve bytes (12 bytes: 4 points × 3 coords, each 1 byte).
@@ -818,11 +959,12 @@ pub struct MotionSearchSignature {
     pub content_hash: u64,
 }
 
-/// Build a searchable trajectory signature from a CubicBezier.
+/// Build a searchable trajectory signature from a `CubicBezier`.
 ///
 /// Each coordinate is clamped to [-1, 1] and mapped to [0, 255] for
 /// compact byte representation suitable for FM-Index insertion.
 #[inline]
+#[must_use]
 pub fn motion_search_signature(curve: &CubicBezier) -> MotionSearchSignature {
     let quantise = |v: f32| -> u8 { ((v.clamp(-1.0, 1.0) + 1.0) * 127.5) as u8 };
     let p0 = curve.position(0.0);
@@ -830,14 +972,26 @@ pub fn motion_search_signature(curve: &CubicBezier) -> MotionSearchSignature {
     let p2 = curve.position(2.0 / 3.0);
     let p3 = curve.position(1.0);
     let sig: [u8; 12] = [
-        quantise(p0.x), quantise(p0.y), quantise(p0.z),
-        quantise(p1.x), quantise(p1.y), quantise(p1.z),
-        quantise(p2.x), quantise(p2.y), quantise(p2.z),
-        quantise(p3.x), quantise(p3.y), quantise(p3.z),
+        quantise(p0.x),
+        quantise(p0.y),
+        quantise(p0.z),
+        quantise(p1.x),
+        quantise(p1.y),
+        quantise(p1.z),
+        quantise(p2.x),
+        quantise(p2.y),
+        quantise(p2.z),
+        quantise(p3.x),
+        quantise(p3.y),
+        quantise(p3.z),
     ];
     let content_hash = fnv1a(&sig);
     let index = AliceIndex::build(&sig, 2);
-    MotionSearchSignature { signature: sig, index, content_hash }
+    MotionSearchSignature {
+        signature: sig,
+        index,
+        content_hash,
+    }
 }
 
 // ── Bridge 23: VCS → ASP (version-controlled streaming via diff packets) ─
@@ -861,6 +1015,7 @@ pub struct VcsAspDiffPacket {
 
 /// Encode a VCS tree diff as ASP-ready metadata for streaming.
 #[inline]
+#[must_use]
 pub fn vcs_asp_diff_packet(
     old_tree: &AstTree,
     new_tree: &AstTree,
@@ -903,10 +1058,7 @@ pub struct CryptoCacheRecord {
 /// Returns the routing hash (FNV-1a of first 8 key bytes) alongside
 /// the BLAKE3 key so callers can retrieve the entry with `cache.get`.
 #[inline]
-pub fn cache_crypto_insert(
-    cache: &AliceCache<u64, Vec<u8>>,
-    data: &[u8],
-) -> CryptoCacheRecord {
+pub fn cache_crypto_insert(cache: &AliceCache<u64, Vec<u8>>, data: &[u8]) -> CryptoCacheRecord {
     let h = crypto_hash(data);
     let blake3_key: [u8; 32] = *h.as_bytes();
     let routing_hash = fnv1a(&blake3_key[..8]);
@@ -931,7 +1083,7 @@ pub struct ViewTextOverlay {
     pub compressed: Vec<u8>,
     /// Original text character count.
     pub char_count: usize,
-    /// Estimated display width in em units (char_count × advance_per_char).
+    /// Estimated display width in em units (`char_count` × `advance_per_char`).
     pub display_width_em: f32,
     /// Font weight parameter (0.0–1.0) for stroke width scaling.
     pub font_weight: f32,
@@ -941,9 +1093,10 @@ pub struct ViewTextOverlay {
 
 /// Compress a text overlay string and compute View display metrics.
 ///
-/// Uses MetaFontParams for advance estimation so layout is consistent
+/// Uses `MetaFontParams` for advance estimation so layout is consistent
 /// with the font actually selected for rendering.
 #[inline]
+#[must_use]
 pub fn view_text_overlay(text: &str, params: &MetaFontParams) -> ViewTextOverlay {
     let compressed = compress_tuned(text, CompressionMode::Balanced)
         .unwrap_or_else(|_| text.as_bytes().to_vec());
@@ -969,7 +1122,7 @@ pub fn view_text_overlay(text: &str, params: &MetaFontParams) -> ViewTextOverlay
 /// synthesiser can drive character lip animation without parsing raw text
 /// on every render frame.
 pub struct MangaVoiceLipsyncCue {
-    /// FNV-1a hash over panel_hash ++ dialogue_hash ++ timing bytes.
+    /// FNV-1a hash over `panel_hash` ++ `dialogue_hash` ++ timing bytes.
     pub content_hash: u64,
     /// FNV-1a hash of the manga panel this cue belongs to.
     pub panel_hash: u64,
@@ -991,6 +1144,7 @@ pub struct MangaVoiceLipsyncCue {
 /// `ceil(char_count * 1.4)` which approximates Japanese mora-to-phoneme
 /// conversion without requiring a full text-analysis pass.
 #[inline]
+#[must_use]
 pub fn manga_to_voice_lipsync_cue(
     panel_hash: u64,
     dialogue_text: &str,
@@ -1028,7 +1182,7 @@ pub fn manga_to_voice_lipsync_cue(
 /// manga renderer can seek, skip, and preview audio without holding every
 /// individual cue in memory.
 pub struct VoiceMangaNarrationTrack {
-    /// FNV-1a hash over chapter_hash ++ aggregated timing bytes.
+    /// FNV-1a hash over `chapter_hash` ++ aggregated timing bytes.
     pub content_hash: u64,
     /// FNV-1a hash of the manga chapter this track belongs to.
     pub chapter_hash: u64,
@@ -1042,13 +1196,18 @@ pub struct VoiceMangaNarrationTrack {
 
 /// Summarise voice narration metadata for a manga chapter.
 #[inline]
+#[must_use]
 pub fn voice_to_manga_narration_track(
     chapter_hash: u64,
     cues_count: u32,
     total_duration_ms: u64,
     total_phonemes: u64,
 ) -> VoiceMangaNarrationTrack {
-    let avg = if cues_count > 0 { (total_phonemes / cues_count as u64) as u32 } else { 0 };
+    let avg = if cues_count > 0 {
+        (total_phonemes / cues_count as u64) as u32
+    } else {
+        0
+    };
 
     let mut buf = [0u8; 20];
     buf[0..8].copy_from_slice(&chapter_hash.to_le_bytes());
@@ -1073,7 +1232,7 @@ pub fn voice_to_manga_narration_track(
 /// engine can evaluate the signed-distance field at the requested layer
 /// plane without the Print layer needing to know tree internals.
 pub struct PrintSdfSliceQuery {
-    /// FNV-1a hash over z_height, resolution, and sdf_tree_hash bytes.
+    /// FNV-1a hash over `z_height`, resolution, and `sdf_tree_hash` bytes.
     pub content_hash: u64,
     /// Z-height of the slice plane in millimetres.
     pub z_height_mm: f32,
@@ -1093,6 +1252,7 @@ pub struct PrintSdfSliceQuery {
 /// Resolution is stored in micrometres so the SDF side can work in SI
 /// units without floating-point unit-conversion ambiguity.
 #[inline]
+#[must_use]
 pub fn print_to_sdf_slice_query(
     z_mm: f32,
     resolution_um: u32,
@@ -1122,7 +1282,7 @@ pub fn print_to_sdf_slice_query(
 /// Carries vertex/face counts and volumetric measurements so the slicer
 /// can validate geometry quality before committing to a full G-code pass.
 pub struct SdfPrintMeshExport {
-    /// FNV-1a hash over vertex_count ++ face_count ++ volume bytes.
+    /// FNV-1a hash over `vertex_count` ++ `face_count` ++ volume bytes.
     pub content_hash: u64,
     /// Number of vertices in the exported mesh.
     pub vertex_count: u32,
@@ -1136,6 +1296,7 @@ pub struct SdfPrintMeshExport {
 
 /// Build a mesh export record for ALICE-Print from SDF marching-cubes output.
 #[inline]
+#[must_use]
 pub fn sdf_to_print_mesh_export(
     vertices: u32,
     faces: u32,
@@ -1166,7 +1327,7 @@ pub fn sdf_to_print_mesh_export(
 /// properties (advance width, vertical metrics, spacing class) without
 /// loading the full font binary for each candidate.
 pub struct SearchFontMetrics {
-    /// FNV-1a hash over glyph_name ++ advance ++ ascender ++ descender bytes.
+    /// FNV-1a hash over `glyph_name` ++ advance ++ ascender ++ descender bytes.
     pub content_hash: u64,
     /// FNV-1a hash of the glyph name bytes (search index key).
     pub glyph_hash: u64,
@@ -1188,6 +1349,7 @@ pub struct SearchFontMetrics {
 /// units (typically 1 em = 1000 units for CFF or 2048 for TTF).
 /// `monospace` should be true for fixed-pitch terminal and code fonts.
 #[inline]
+#[must_use]
 pub fn search_to_font_metrics(
     glyph_name: &str,
     advance: u16,
@@ -1288,14 +1450,50 @@ mod tests {
     #[test]
     fn test_vcs_diff_scores() {
         let mut s1 = Score::new(120, 1);
-        s1.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
-        s1.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
+        s1.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 60,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        s1.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 60,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
 
         let mut s2 = Score::new(120, 1);
-        s2.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
-        s2.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
-        s2.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 64, velocity: 100, kind: NoteEventKind::NoteOn });
-        s2.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 64, velocity: 0, kind: NoteEventKind::NoteOff });
+        s2.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 60,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        s2.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 60,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
+        s2.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 64,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        s2.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 64,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
 
         let rev = vcs_diff_scores(&s1, &s2);
         assert!(rev.diff_ops > 0);
@@ -1314,10 +1512,34 @@ mod tests {
     #[test]
     fn test_font_synth_lyrics_timing() {
         let mut score = Score::new(120, 1);
-        score.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
-        score.add_event(NoteEvent { delta_tick: 48, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
-        score.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 62, velocity: 100, kind: NoteEventKind::NoteOn });
-        score.add_event(NoteEvent { delta_tick: 48, channel: 0, note: 62, velocity: 0, kind: NoteEventKind::NoteOff });
+        score.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 60,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        score.add_event(NoteEvent {
+            delta_tick: 48,
+            channel: 0,
+            note: 60,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
+        score.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 62,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        score.add_event(NoteEvent {
+            delta_tick: 48,
+            channel: 0,
+            note: 62,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
 
         let timings = font_synth_lyrics_timing("AB", &score);
         assert_eq!(timings.len(), 2);
@@ -1342,7 +1564,8 @@ mod tests {
 
     #[test]
     fn test_kinematics_synth_trigger() {
-        let intent = alice_kinematics::Intent::reach(alice_kinematics::Vec3k::new(0.5, 0.8, 0.0), 100);
+        let intent =
+            alice_kinematics::Intent::reach(alice_kinematics::Vec3k::new(0.5, 0.8, 0.0), 100);
         let trigger = kinematics_synth_trigger(&intent);
         assert!(trigger.note >= 48 && trigger.note <= 84);
         assert!(trigger.velocity > 0);
@@ -1432,10 +1655,7 @@ mod tests {
 
     #[test]
     fn test_rtos_ml_inference_kernel() {
-        let weights = alice_ml::TernaryWeight::from_ternary(
-            &[1, -1, 0, 1, -1, 1, 0, -1, 1],
-            3, 3,
-        );
+        let weights = alice_ml::TernaryWeight::from_ternary(&[1, -1, 0, 1, -1, 1, 0, -1, 1], 3, 3);
         let (_kernel, stats, config) = rtos_ml_inference_kernel(&weights, 100.0);
         assert!(stats.schedulable);
         assert!(stats.tasks_executed > 0);
@@ -1450,10 +1670,7 @@ mod tests {
     #[test]
     fn test_ml_motion_predict_curve() {
         // 12-output model: maps to exactly 4 Bezier control points
-        let weights = alice_ml::TernaryWeight::from_ternary(
-            &vec![1i8; 12 * 3],
-            12, 3,
-        );
+        let weights = alice_ml::TernaryWeight::from_ternary(&vec![1i8; 12 * 3], 12, 3);
         let state = [0.5f32, -0.5, 1.0];
         let pred = ml_motion_predict_curve(&weights, &state);
         assert_eq!(pred.raw_output.len(), 12);
@@ -1503,10 +1720,8 @@ mod tests {
 
     #[test]
     fn test_kinematics_voice_params() {
-        let intent = alice_kinematics::Intent::reach(
-            alice_kinematics::Vec3k::new(0.5, 0.7, 0.3),
-            200,
-        );
+        let intent =
+            alice_kinematics::Intent::reach(alice_kinematics::Vec3k::new(0.5, 0.7, 0.3), 200);
         let vp = kinematics_voice_params(&intent);
         assert!(vp.pitch_hz >= 80.0 && vp.pitch_hz <= 400.0);
         assert!(vp.f1_hz >= 200.0 && vp.f1_hz <= 900.0);
@@ -1521,10 +1736,34 @@ mod tests {
     #[test]
     fn test_synth_search_fingerprint() {
         let mut score = Score::new(120, 1);
-        score.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 60, velocity: 100, kind: NoteEventKind::NoteOn });
-        score.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 60, velocity: 0, kind: NoteEventKind::NoteOff });
-        score.add_event(NoteEvent { delta_tick: 0, channel: 0, note: 64, velocity: 80, kind: NoteEventKind::NoteOn });
-        score.add_event(NoteEvent { delta_tick: 96, channel: 0, note: 64, velocity: 0, kind: NoteEventKind::NoteOff });
+        score.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 60,
+            velocity: 100,
+            kind: NoteEventKind::NoteOn,
+        });
+        score.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 60,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
+        score.add_event(NoteEvent {
+            delta_tick: 0,
+            channel: 0,
+            note: 64,
+            velocity: 80,
+            kind: NoteEventKind::NoteOn,
+        });
+        score.add_event(NoteEvent {
+            delta_tick: 96,
+            channel: 0,
+            note: 64,
+            velocity: 0,
+            kind: NoteEventKind::NoteOff,
+        });
 
         let fp = synth_search_fingerprint(&score);
         assert_eq!(fp.event_count, 4);

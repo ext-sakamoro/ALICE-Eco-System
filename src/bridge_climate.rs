@@ -2,14 +2,15 @@
 //!
 //! 5 bridges connecting planetary climate data to the ALICE ecosystem.
 
-use alice_climate::{
-    ClimateAnomaly, ClimateResponse, AnomalyKind, Observation, WeatherStation,
-};
+use alice_climate::{AnomalyKind, ClimateAnomaly, ClimateResponse, Observation, WeatherStation};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -35,7 +36,11 @@ pub struct ClimateAnalyticsObservationEvent {
 
 /// Convert a weather observation into an analytics event.
 #[inline]
-pub fn climate_observation_to_analytics(station: &WeatherStation, obs: &Observation) -> ClimateAnalyticsObservationEvent {
+#[must_use]
+pub fn climate_observation_to_analytics(
+    station: &WeatherStation,
+    obs: &Observation,
+) -> ClimateAnalyticsObservationEvent {
     let mut key = [0u8; 40];
     key[0..8].copy_from_slice(&obs.station_id.0.to_le_bytes());
     key[8..16].copy_from_slice(&obs.temperature_c.to_bits().to_le_bytes());
@@ -72,6 +77,7 @@ pub struct ClimateAnalyticsFieldEvent {
 
 /// Convert a climate response into an analytics field event.
 #[inline]
+#[must_use]
 pub fn climate_response_to_analytics(resp: &ClimateResponse) -> ClimateAnalyticsFieldEvent {
     let mut key = [0u8; 32];
     key[0..8].copy_from_slice(&resp.atmosphere.temperature_c.to_bits().to_le_bytes());
@@ -112,6 +118,7 @@ pub struct ClimateDbSnapshotRecord {
 
 /// Convert a climate response into a DB snapshot record.
 #[inline]
+#[must_use]
 pub fn climate_response_to_db(resp: &ClimateResponse) -> ClimateDbSnapshotRecord {
     let ocean_temp = resp.ocean.as_ref().map(|o| o.temperature_c);
     let ocean_sal = resp.ocean.as_ref().map(|o| o.salinity_psu);
@@ -146,9 +153,9 @@ pub struct ClimateEdgeAnomalyAlert {
     pub anomaly_kind: u8,
     /// Temperature at the anomaly location (Celsius).
     pub temperature_c: f64,
-    /// Wind speed magnitude (m/s), computed from wind_velocity_ms.
+    /// Wind speed magnitude (m/s), computed from `wind_velocity_ms`.
     pub wind_speed_ms: f64,
-    /// Anomaly magnitude from detect_anomaly.
+    /// Anomaly magnitude from `detect_anomaly`.
     pub magnitude: f64,
     /// Location latitude.
     pub location_lat: f64,
@@ -156,9 +163,13 @@ pub struct ClimateEdgeAnomalyAlert {
     pub location_lon: f64,
 }
 
-/// Convert a ClimateAnomaly and associated ClimateResponse into an edge alert.
+/// Convert a `ClimateAnomaly` and associated `ClimateResponse` into an edge alert.
 #[inline]
-pub fn climate_anomaly_to_edge(anomaly: &ClimateAnomaly, resp: &ClimateResponse) -> ClimateEdgeAnomalyAlert {
+#[must_use]
+pub fn climate_anomaly_to_edge(
+    anomaly: &ClimateAnomaly,
+    resp: &ClimateResponse,
+) -> ClimateEdgeAnomalyAlert {
     let kind_byte = match anomaly.kind {
         AnomalyKind::HeatWave => 0u8,
         AnomalyKind::ColdSnap => 1,
@@ -209,6 +220,7 @@ pub struct ClimateCacheEntry {
 /// reduced by 55 s for extreme temperature (> 40 C or < -20 C).
 /// Minimum TTL: 10 s.
 #[inline]
+#[must_use]
 pub fn climate_response_to_cache(resp: &ClimateResponse) -> ClimateCacheEntry {
     let mut key = [0u8; 24];
     key[0..8].copy_from_slice(&resp.atmosphere.temperature_c.to_bits().to_le_bytes());
@@ -225,7 +237,7 @@ pub fn climate_response_to_cache(resp: &ClimateResponse) -> ClimateCacheEntry {
     let high_wind = (wind_speed > 20.0) as u32;
     ttl -= high_wind * 55;
     // Extreme temperature → shorter cache
-    let extreme_temp = (temp > 40.0 || temp < -20.0) as u32;
+    let extreme_temp = !(-20.0..=40.0).contains(&temp) as u32;
     ttl -= extreme_temp * 55;
     // Floor at 10 s — branchless: compiler emits a cmov for .max()
     let ttl = ttl.max(10);
@@ -245,9 +257,8 @@ pub fn climate_response_to_cache(resp: &ClimateResponse) -> ClimateCacheEntry {
 mod tests {
     use super::*;
     use alice_climate::{
-        AtmosphericLayer, AtmosphericState, ClimateQuery, ClimateResponse,
-        OceanState, StationId, WeatherStation, Observation, AnomalyKind,
-        detect_anomaly, evaluate_climate,
+        detect_anomaly, evaluate_climate, AnomalyKind, AtmosphericLayer, AtmosphericState,
+        ClimateQuery, ClimateResponse, Observation, OceanState, StationId, WeatherStation,
     };
 
     fn make_station() -> WeatherStation {

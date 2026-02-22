@@ -3,7 +3,7 @@
 //! 3 bridges connecting ALICE-FIX to the ALICE ecosystem:
 //!
 //! - Bridge 1: FIX Message → Analytics (protocol metrics)
-//! - Bridge 2: Ledger Fill → FIX ExecutionReport (outbound notification)
+//! - Bridge 2: Ledger Fill → FIX `ExecutionReport` (outbound notification)
 //! - Bridge 3: FIX Session → Semantic Telemetry (session lifecycle events)
 
 use alice_fix::{FixMessage, FixSession};
@@ -16,7 +16,10 @@ use alice_ledger::Fill;
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -27,7 +30,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// Protocol metrics derived from a parsed FIX message, ready for
 /// ALICE-Analytics ingestion.
 pub struct FixAnalyticsMessageEvent {
-    /// Content hash over msg_type bytes and field_count bytes.
+    /// Content hash over `msg_type` bytes and `field_count` bytes.
     pub content_hash: u64,
     /// FNV-1a hash of the message type string (e.g. "D", "8", "A").
     pub msg_type_hash: u64,
@@ -39,17 +42,20 @@ pub struct FixAnalyticsMessageEvent {
 
 /// Convert a parsed [`FixMessage`] into an analytics event.
 ///
-/// `content_hash` is computed over the concatenation of the msg_type bytes
+/// `content_hash` is computed over the concatenation of the `msg_type` bytes
 /// and the little-endian bytes of `field_count`, giving a compact fingerprint
 /// that distinguishes message types and payload sizes.
 #[inline]
+#[must_use]
 pub fn fix_message_to_analytics(msg: &FixMessage, timestamp_ns: u64) -> FixAnalyticsMessageEvent {
     let field_count = msg.fields.len() as u32;
     let msg_type_hash = fnv1a(msg.msg_type.as_bytes());
 
     // Hash input: msg_type bytes || field_count as 4-byte LE
     let field_count_bytes = field_count.to_le_bytes();
-    let hash_data: Vec<u8> = msg.msg_type.as_bytes()
+    let hash_data: Vec<u8> = msg
+        .msg_type
+        .as_bytes()
         .iter()
         .copied()
         .chain(field_count_bytes.iter().copied())
@@ -67,12 +73,12 @@ pub fn fix_message_to_analytics(msg: &FixMessage, timestamp_ns: u64) -> FixAnaly
 // Bridge 2: Ledger Fill → FIX ExecutionReport (outbound notification)
 // ---------------------------------------------------------------------------
 
-/// FIX ExecutionReport (MsgType "8") data derived from a ledger fill event.
+/// FIX `ExecutionReport` (`MsgType` "8") data derived from a ledger fill event.
 ///
 /// This struct carries the minimum fields required to construct an outbound
-/// ExecutionReport notification without referencing the full FIX wire format.
+/// `ExecutionReport` notification without referencing the full FIX wire format.
 pub struct LedgerFixExecReport {
-    /// Content hash over maker_id, taker_id, price, and quantity bytes.
+    /// Content hash over `maker_id`, `taker_id`, price, and quantity bytes.
     pub content_hash: u64,
     /// Inner u64 of the maker [`OrderId`](alice_ledger::OrderId).
     pub maker_id: u64,
@@ -82,16 +88,17 @@ pub struct LedgerFixExecReport {
     pub fill_price: i64,
     /// Quantity matched in this fill event.
     pub fill_qty: u64,
-    /// ExecType tag value: 1 = PartialFill, 2 = Fill.
+    /// `ExecType` tag value: 1 = `PartialFill`, 2 = Fill.
     pub exec_type: u8,
 }
 
-/// Convert a ledger [`Fill`] into a FIX ExecutionReport event.
+/// Convert a ledger [`Fill`] into a FIX `ExecutionReport` event.
 ///
 /// `exec_type` is computed branchlessly: `1 + fully_filled as u8` yields
-/// `1` (PartialFill) when `fully_filled` is `false` and `2` (Fill) when
+/// `1` (`PartialFill`) when `fully_filled` is `false` and `2` (Fill) when
 /// `fully_filled` is `true`.
 #[inline]
+#[must_use]
 pub fn ledger_fill_to_fix_exec(fill: &Fill, fully_filled: bool) -> LedgerFixExecReport {
     let maker_id = fill.maker_id.0;
     let taker_id = fill.taker_id.0;
@@ -145,18 +152,19 @@ pub struct FixSessionSemanticEvent {
 /// Convert a [`FixSession`] snapshot into a semantic telemetry event.
 ///
 /// Only the session state is accessible through the public API.  The state
-/// discriminant (0 = Disconnected, 1 = LogonSent, 2 = Active, 3 = LogoutSent)
+/// discriminant (0 = Disconnected, 1 = `LogonSent`, 2 = Active, 3 = `LogoutSent`)
 /// is packed with `timestamp_ns` to form the `content_hash`.
 #[inline]
+#[must_use]
 pub fn fix_session_to_semantic(session: &FixSession, timestamp_ns: u64) -> FixSessionSemanticEvent {
     use alice_fix::SessionState;
 
     // Map SessionState to a u8 discriminant for hashing.
     let state_disc: u8 = match session.state() {
         SessionState::Disconnected => 0,
-        SessionState::LogonSent    => 1,
-        SessionState::Active       => 2,
-        SessionState::LogoutSent   => 3,
+        SessionState::LogonSent => 1,
+        SessionState::Active => 2,
+        SessionState::LogoutSent => 3,
     };
 
     // Hash input: timestamp_ns (8 bytes) || state discriminant (1 byte)
@@ -166,8 +174,8 @@ pub fn fix_session_to_semantic(session: &FixSession, timestamp_ns: u64) -> FixSe
 
     FixSessionSemanticEvent {
         content_hash: fnv1a(&hash_data),
-        sender_hash:  0,
-        target_hash:  0,
+        sender_hash: 0,
+        target_hash: 0,
         outgoing_seq: 0,
         incoming_seq: 0,
         timestamp_ns,
@@ -178,15 +186,15 @@ pub fn fix_session_to_semantic(session: &FixSession, timestamp_ns: u64) -> FixSe
 // Bridge 4: FixMessage → Risk pre-trade check input
 // ---------------------------------------------------------------------------
 
-/// Pre-trade risk check input derived from a parsed FIX NewOrderSingle message.
+/// Pre-trade risk check input derived from a parsed FIX `NewOrderSingle` message.
 ///
 /// Extracts the order quantity, price, side, and symbol hash from the FIX
 /// message fields so the risk layer can perform checks without inspecting
 /// the raw tag/value map on the hot path.
 pub struct FixRiskInput {
-    /// Content hash over order_qty, price, side, and symbol_hash bytes.
+    /// Content hash over `order_qty`, price, side, and `symbol_hash` bytes.
     pub content_hash: u64,
-    /// Order quantity from FIX tag 38 (OrderQty), or 0 if absent.
+    /// Order quantity from FIX tag 38 (`OrderQty`), or 0 if absent.
     pub order_qty: u64,
     /// Limit price from FIX tag 44 (Price) as f64 ticks, or 0.0 if absent.
     pub price: f64,
@@ -194,7 +202,7 @@ pub struct FixRiskInput {
     pub side: u8,
     /// FNV-1a hash of the symbol string from FIX tag 55, or 0 if absent.
     pub symbol_hash: u64,
-    /// True when order_qty > 1000 or price > 10000.0, indicating that a
+    /// True when `order_qty` > 1000 or price > 10000.0, indicating that a
     /// margin check is required before the order may proceed.
     pub requires_margin_check: bool,
 }
@@ -202,7 +210,7 @@ pub struct FixRiskInput {
 /// Convert a parsed [`FixMessage`] into a [`FixRiskInput`] for pre-trade risk evaluation.
 ///
 /// FIX tag mapping:
-/// - Tag 38 (OrderQty)  → `order_qty`
+/// - Tag 38 (`OrderQty`)  → `order_qty`
 /// - Tag 44 (Price)     → `price`
 /// - Tag 54 (Side)      → `side` (first byte of the value string)
 /// - Tag 55 (Symbol)    → `symbol_hash` (FNV-1a of the symbol string)
@@ -210,19 +218,20 @@ pub struct FixRiskInput {
 /// `content_hash` is computed over `order_qty || price || side || symbol_hash`
 /// in little-endian byte order.
 #[inline]
+#[must_use]
 pub fn fix_message_to_risk(msg: &FixMessage) -> FixRiskInput {
     use alice_fix::tag;
 
     let order_qty: u64 = msg.get_u64(tag::ORDER_QTY).unwrap_or(0);
-    let price: f64 = msg.get(tag::PRICE)
+    let price: f64 = msg
+        .get(tag::PRICE)
         .and_then(|s| s.parse::<f64>().ok())
         .unwrap_or(0.0);
-    let side: u8 = msg.get(tag::SIDE)
+    let side: u8 = msg
+        .get(tag::SIDE)
         .and_then(|s| s.bytes().next())
         .unwrap_or(0);
-    let symbol_hash: u64 = msg.get(tag::SYMBOL)
-        .map(|s| fnv1a(s.as_bytes()))
-        .unwrap_or(0);
+    let symbol_hash: u64 = msg.get(tag::SYMBOL).map_or(0, |s| fnv1a(s.as_bytes()));
 
     let requires_margin_check = order_qty > 1000 || price > 10000.0;
 
@@ -277,13 +286,16 @@ mod tests {
 
     #[test]
     fn test_message_to_analytics() {
-        let msg = make_fix_message("D", &[
-            (49, "ALICE"),
-            (56, "BROKER"),
-            (34, "1"),
-            (11, "42"),
-            (55, "BTCUSD"),
-        ]);
+        let msg = make_fix_message(
+            "D",
+            &[
+                (49, "ALICE"),
+                (56, "BROKER"),
+                (34, "1"),
+                (11, "42"),
+                (55, "BTCUSD"),
+            ],
+        );
         let ts = 1_700_000_000_000_000_000u64;
         let ev = fix_message_to_analytics(&msg, ts);
 
@@ -364,9 +376,9 @@ mod tests {
         // Verify that exec_type = 1 + fully_filled as u8 holds for both cases.
         let fill = make_fill(1, 2, 100, 1);
         let partial = ledger_fill_to_fix_exec(&fill, false);
-        let full    = ledger_fill_to_fix_exec(&fill, true);
+        let full = ledger_fill_to_fix_exec(&fill, true);
         assert_eq!(partial.exec_type, 1);
-        assert_eq!(full.exec_type,    2);
+        assert_eq!(full.exec_type, 2);
     }
 
     #[test]
@@ -398,8 +410,8 @@ mod tests {
         assert_ne!(ev.content_hash, 0);
         assert_eq!(ev.timestamp_ns, ts);
         // Fields not accessible through public API default to 0.
-        assert_eq!(ev.sender_hash,  0);
-        assert_eq!(ev.target_hash,  0);
+        assert_eq!(ev.sender_hash, 0);
+        assert_eq!(ev.target_hash, 0);
         assert_eq!(ev.outgoing_seq, 0);
         assert_eq!(ev.incoming_seq, 0);
     }
@@ -451,10 +463,10 @@ mod tests {
     #[test]
     fn test_fix_message_to_risk_standard_order() {
         let mut msg = FixMessage::new("FIX.4.4", "D");
-        msg.set(38, "500");      // OrderQty
-        msg.set(44, "9500.0");   // Price
-        msg.set(54, "1");        // Side: Buy
-        msg.set(55, "BTCUSD");   // Symbol
+        msg.set(38, "500"); // OrderQty
+        msg.set(44, "9500.0"); // Price
+        msg.set(54, "1"); // Side: Buy
+        msg.set(55, "BTCUSD"); // Symbol
 
         let ri = fix_message_to_risk(&msg);
 
@@ -471,9 +483,9 @@ mod tests {
     #[test]
     fn test_fix_message_to_risk_large_qty_triggers_margin() {
         let mut msg = FixMessage::new("FIX.4.4", "D");
-        msg.set(38, "1001");     // OrderQty > 1000
-        msg.set(44, "100.0");    // Price
-        msg.set(54, "2");        // Side: Sell
+        msg.set(38, "1001"); // OrderQty > 1000
+        msg.set(44, "100.0"); // Price
+        msg.set(54, "2"); // Side: Sell
         msg.set(55, "ETHUSD");
 
         let ri = fix_message_to_risk(&msg);
@@ -487,8 +499,8 @@ mod tests {
     #[test]
     fn test_fix_message_to_risk_high_price_triggers_margin() {
         let mut msg = FixMessage::new("FIX.4.4", "D");
-        msg.set(38, "10");       // OrderQty <= 1000
-        msg.set(44, "10001.0");  // Price > 10000.0
+        msg.set(38, "10"); // OrderQty <= 1000
+        msg.set(44, "10001.0"); // Price > 10000.0
         msg.set(54, "1");
         msg.set(55, "SOLUSD");
 
@@ -516,27 +528,36 @@ mod tests {
     #[test]
     fn test_fix_message_to_risk_deterministic() {
         let mut msg = FixMessage::new("FIX.4.4", "D");
-        msg.set(38, "200").set(44, "5000.0").set(54, "1").set(55, "XRPUSD");
+        msg.set(38, "200")
+            .set(44, "5000.0")
+            .set(54, "1")
+            .set(55, "XRPUSD");
 
         let ri1 = fix_message_to_risk(&msg);
         let ri2 = fix_message_to_risk(&msg);
 
         assert_eq!(ri1.content_hash, ri2.content_hash);
-        assert_eq!(ri1.symbol_hash,  ri2.symbol_hash);
+        assert_eq!(ri1.symbol_hash, ri2.symbol_hash);
     }
 
     #[test]
     fn test_fix_message_to_risk_different_symbols_differ() {
         let mut msg1 = FixMessage::new("FIX.4.4", "D");
-        msg1.set(38, "10").set(44, "100.0").set(54, "1").set(55, "BTCUSD");
+        msg1.set(38, "10")
+            .set(44, "100.0")
+            .set(54, "1")
+            .set(55, "BTCUSD");
 
         let mut msg2 = FixMessage::new("FIX.4.4", "D");
-        msg2.set(38, "10").set(44, "100.0").set(54, "1").set(55, "ETHUSD");
+        msg2.set(38, "10")
+            .set(44, "100.0")
+            .set(54, "1")
+            .set(55, "ETHUSD");
 
         let ri1 = fix_message_to_risk(&msg1);
         let ri2 = fix_message_to_risk(&msg2);
 
-        assert_ne!(ri1.symbol_hash,  ri2.symbol_hash);
+        assert_ne!(ri1.symbol_hash, ri2.symbol_hash);
         assert_ne!(ri1.content_hash, ri2.content_hash);
     }
 }

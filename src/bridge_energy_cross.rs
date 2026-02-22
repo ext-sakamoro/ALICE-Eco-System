@@ -4,12 +4,17 @@
 //! representations, RTOS real-time monitoring tasks, ML battery degradation
 //! features, and sync phase correction events.
 
-use alice_energy::{PowerNode, NodeKind, PowerGrid, BatteryState, BatteryChemistry, PhaseCorrection};
+use alice_energy::{
+    BatteryChemistry, BatteryState, NodeKind, PhaseCorrection, PowerGrid, PowerNode,
+};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -21,7 +26,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// so the Physics layer can simulate grid topology as a spring-mass
 /// system for layout optimisation and stability analysis.
 pub struct EnergyPhysicsBody {
-    /// FNV-1a hash over node_id, kind, power_mw, mass_equivalent, position_x bytes.
+    /// FNV-1a hash over `node_id`, kind, `power_mw`, `mass_equivalent`, `position_x` bytes.
     pub content_hash: u64,
     /// Node identifier.
     pub node_id: u64,
@@ -29,14 +34,15 @@ pub struct EnergyPhysicsBody {
     pub kind: u8,
     /// Current power output/consumption in megawatts.
     pub power_mw: f64,
-    /// Virtual mass for physics simulation: power_mw * 1000.0.
+    /// Virtual mass for physics simulation: `power_mw` * 1000.0.
     pub mass_equivalent: f64,
-    /// Spatial X position: node_id as f64 * 10.0 (linear layout).
+    /// Spatial X position: `node_id` as f64 * 10.0 (linear layout).
     pub position_x: f64,
 }
 
 /// Convert a power node into a physics rigid body representation.
 #[inline]
+#[must_use]
 pub fn energy_node_to_physics_body(node: &PowerNode) -> EnergyPhysicsBody {
     let kind_byte = match node.kind {
         NodeKind::Generator => 0,
@@ -74,13 +80,13 @@ pub fn energy_node_to_physics_body(node: &PowerNode) -> EnergyPhysicsBody {
 /// balance so the RTOS kernel can schedule grid monitoring at the correct
 /// frequency without accessing grid internals at runtime.
 pub struct EnergyRtosTask {
-    /// FNV-1a hash over grid_id, node_count, period_us, priority, balance_mw bytes.
+    /// FNV-1a hash over `grid_id`, `node_count`, `period_us`, priority, `balance_mw` bytes.
     pub content_hash: u64,
     /// Grid identifier.
     pub grid_id: u64,
     /// Number of nodes in the grid.
     pub node_count: usize,
-    /// Monitoring period in microseconds: 1_000_000 / 50 = 20_000us for 50Hz grid.
+    /// Monitoring period in microseconds: `1_000_000` / 50 = `20_000us` for 50Hz grid.
     pub period_us: u64,
     /// Task priority: always high (1).
     pub priority: u8,
@@ -90,6 +96,7 @@ pub struct EnergyRtosTask {
 
 /// Convert a power grid into an RTOS monitoring task descriptor.
 #[inline]
+#[must_use]
 pub fn energy_grid_to_rtos_task(grid: &PowerGrid) -> EnergyRtosTask {
     let node_count = grid.node_count();
     let nominal = grid.nominal_frequency_hz;
@@ -125,7 +132,7 @@ pub fn energy_grid_to_rtos_task(grid: &PowerGrid) -> EnergyRtosTask {
 /// as a normalised feature set so the ML layer can train degradation
 /// models without accessing raw battery internals.
 pub struct EnergyMlFeatures {
-    /// FNV-1a hash over battery_id, chemistry, soc, voltage, temperature, cycle_count, degradation bytes.
+    /// FNV-1a hash over `battery_id`, chemistry, soc, voltage, temperature, `cycle_count`, degradation bytes.
     pub content_hash: u64,
     /// Battery identifier.
     pub battery_id: u64,
@@ -133,18 +140,19 @@ pub struct EnergyMlFeatures {
     pub chemistry: u8,
     /// Current state of charge (0.0 to 1.0).
     pub soc: f64,
-    /// Current voltage (approximated from SoC: 3.0 + soc * 1.2 for Li-ion range).
+    /// Current voltage (approximated from `SoC`: 3.0 + soc * 1.2 for Li-ion range).
     pub voltage_v: f64,
     /// Current temperature in Celsius.
     pub temperature_c: f64,
     /// Total charge/discharge cycles.
     pub cycle_count: u32,
-    /// Normalised degradation index: cycle_count / 5000.0.
+    /// Normalised degradation index: `cycle_count` / 5000.0.
     pub degradation_index: f64,
 }
 
 /// Convert a battery state into ML feature metadata.
 #[inline]
+#[must_use]
 pub fn energy_battery_to_ml_features(battery: &BatteryState) -> EnergyMlFeatures {
     let chemistry_byte = match battery.chemistry {
         BatteryChemistry::LithiumIon => 0,
@@ -187,24 +195,25 @@ pub fn energy_battery_to_ml_features(battery: &BatteryState) -> EnergyMlFeatures
 /// Sync layer can prioritise replication of large deviations without
 /// parsing the full correction payload.
 pub struct EnergySyncEvent {
-    /// FNV-1a hash over node_id, timestamp_ns, correction_mw, deviation_hz, is_critical bytes.
+    /// FNV-1a hash over `node_id`, `timestamp_ns`, `correction_mw`, `deviation_hz`, `is_critical` bytes.
     pub content_hash: u64,
     /// Node receiving the correction.
     pub node_id: u64,
     /// Correction timestamp in Unix nanoseconds.
     pub timestamp_ns: u64,
-    /// Frequency correction magnitude in Hz (mapped from correction_hz).
+    /// Frequency correction magnitude in Hz (mapped from `correction_hz`).
     pub correction_mw: f64,
     /// Frequency deviation in Hz.
     pub deviation_hz: f64,
     /// True if the absolute deviation exceeds 0.5 Hz (safety-critical).
     pub is_critical: bool,
-    /// Fixed wire size: 24 bytes (node_id:8 + timestamp:8 + correction:8).
+    /// Fixed wire size: 24 bytes (`node_id:8` + timestamp:8 + correction:8).
     pub wire_bytes: usize,
 }
 
 /// Convert a phase correction into a sync event.
 #[inline]
+#[must_use]
 pub fn energy_phase_to_sync_event(correction: &PhaseCorrection) -> EnergySyncEvent {
     let deviation_hz = correction.correction_hz;
     let is_critical = deviation_hz.abs() > 0.5;
@@ -232,7 +241,10 @@ pub fn energy_phase_to_sync_event(correction: &PhaseCorrection) -> EnergySyncEve
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_energy::{NodeId, BatteryId, PowerNode, NodeKind, PowerGrid, BatteryState, BatteryChemistry, PhaseCorrection};
+    use alice_energy::{
+        BatteryChemistry, BatteryId, BatteryState, NodeId, NodeKind, PhaseCorrection, PowerGrid,
+        PowerNode,
+    };
 
     // ── Bridge 1: node → physics body ───────────────────────────────────
 
@@ -322,7 +334,9 @@ mod tests {
         let mut battery = BatteryState::new(10, BatteryChemistry::LithiumIon, 100.0, 5000);
         battery.state_of_charge = 0.8;
         battery.temperature_c = 35.0;
-        for _ in 0..1000 { battery.complete_cycle(); }
+        for _ in 0..1000 {
+            battery.complete_cycle();
+        }
 
         let features = energy_battery_to_ml_features(&battery);
         assert_ne!(features.content_hash, 0);

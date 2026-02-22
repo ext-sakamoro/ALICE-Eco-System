@@ -2,7 +2,7 @@
 //!
 //! 12 bridges connecting video streaming protocol to the ALICE ecosystem.
 
-use libasp::{AspPacket, AspPayload, PacketType, StreamStats, QualityLevel, Color, Rect};
+use libasp::{AspPacket, AspPayload, Color, PacketType, QualityLevel, Rect, StreamStats};
 
 // ── Bridge 1: ASP → Cache (packet metadata for caching) ─────────────────
 
@@ -25,6 +25,7 @@ pub struct AspCacheEntry {
 /// Hashes header bytes via FNV-1a for deduplication. Branchless `is_keyframe`
 /// uses a bool cast to avoid an extra branch on the hot path.
 #[inline]
+#[must_use]
 pub fn asp_to_cache_entry(packet: &AspPacket) -> AspCacheEntry {
     // Build a compact key from sequence + type byte for hashing
     let seq_bytes = packet.header.sequence.to_le_bytes();
@@ -70,6 +71,7 @@ pub struct AspCodecTuning {
 ///
 /// Uses reciprocal multiplication instead of division throughout.
 #[inline]
+#[must_use]
 pub fn asp_stats_to_codec_tuning(stats: &StreamStats) -> AspCodecTuning {
     // Reciprocal guards: avoid division by checking for zero
     let rcp_packets = if stats.total_packets > 0 {
@@ -139,6 +141,7 @@ pub struct AspSdfDescriptor {
 ///
 /// Returns `None` if `packet` is not an I-Packet.
 #[inline]
+#[must_use]
 pub fn asp_i_packet_to_sdf(packet: &AspPacket) -> Option<AspSdfDescriptor> {
     let ip = match &packet.payload {
         AspPayload::IPacket(p) => p,
@@ -146,30 +149,42 @@ pub fn asp_i_packet_to_sdf(packet: &AspPacket) -> Option<AspSdfDescriptor> {
     };
 
     // Reciprocals for normalized center computation
-    let rcp_w = if ip.width > 0 { 1.0 / ip.width as f32 } else { 0.0 };
-    let rcp_h = if ip.height > 0 { 1.0 / ip.height as f32 } else { 0.0 };
+    let rcp_w = if ip.width > 0 {
+        1.0 / ip.width as f32
+    } else {
+        0.0
+    };
+    let rcp_h = if ip.height > 0 {
+        1.0 / ip.height as f32
+    } else {
+        0.0
+    };
 
-    let regions: Vec<AspSdfRegion> = ip.regions.iter().map(|r| {
-        let dominant_color: [u8; 3] = r.palette
-            .dominant_color()
-            .map(|c: Color| c.to_array())
-            .unwrap_or([0u8; 3]);
+    let regions: Vec<AspSdfRegion> = ip
+        .regions
+        .iter()
+        .map(|r| {
+            let dominant_color: [u8; 3] = r
+                .palette
+                .dominant_color()
+                .map_or([0u8; 3], |c: Color| c.to_array());
 
-        // area = width * height (no branch needed, both are u32)
-        let area_px = r.bounds.width as u64 * r.bounds.height as u64;
+            // area = width * height (no branch needed, both are u32)
+            let area_px = r.bounds.width as u64 * r.bounds.height as u64;
 
-        // Normalized center via reciprocal multiply
-        let center_x = (r.bounds.x as f32 + r.bounds.width as f32 * 0.5) * rcp_w;
-        let center_y = (r.bounds.y as f32 + r.bounds.height as f32 * 0.5) * rcp_h;
+            // Normalized center via reciprocal multiply
+            let center_x = (r.bounds.x as f32 + r.bounds.width as f32 * 0.5) * rcp_w;
+            let center_y = (r.bounds.y as f32 + r.bounds.height as f32 * 0.5) * rcp_h;
 
-        AspSdfRegion {
-            bounds: r.bounds,
-            dominant_color,
-            area_px,
-            center_x,
-            center_y,
-        }
-    }).collect();
+            AspSdfRegion {
+                bounds: r.bounds,
+                dominant_color,
+                area_px,
+                center_x,
+                center_y,
+            }
+        })
+        .collect();
 
     // Hash the scene using dimensions + region count as a compact fingerprint
     let mut hash_buf = [0u8; 12];
@@ -209,13 +224,12 @@ pub struct AspViewConfig {
 ///
 /// Falls back to a 1280×720 / 30 fps default when no I-Packet is supplied.
 #[inline]
+#[must_use]
 pub fn asp_to_view_config(stats: &StreamStats, last_i_packet: Option<&AspPacket>) -> AspViewConfig {
     // Pull dimensions/fps from the last I-Packet when available
     let (render_width, render_height, fps, quality) = match last_i_packet {
         Some(pkt) => match &pkt.payload {
-            AspPayload::IPacket(ip) => {
-                (ip.width, ip.height, ip.fps, ip.quality)
-            }
+            AspPayload::IPacket(ip) => (ip.width, ip.height, ip.fps, ip.quality),
             AspPayload::DPacket(_) | AspPayload::CPacket(_) | AspPayload::SPacket(_) => {
                 (1280, 720, 30.0, QualityLevel::Medium)
             }
@@ -241,7 +255,7 @@ pub struct AspCdnMeta {
     pub content_hash: u64,
     /// Packet size in bytes (payload + header overhead).
     pub total_bytes: u32,
-    /// Packet type as a routing priority hint (IPacket = highest priority).
+    /// Packet type as a routing priority hint (`IPacket` = highest priority).
     pub packet_type: PacketType,
     /// Sequence number for ordering.
     pub sequence: u32,
@@ -256,6 +270,7 @@ pub struct AspCdnMeta {
 /// Priority is mapped branchlessly via a const table lookup on the packet type
 /// discriminant byte.
 #[inline]
+#[must_use]
 pub fn asp_to_cdn_meta(packet: &AspPacket) -> AspCdnMeta {
     // Const priority table indexed by PacketType discriminant (0x01–0x04)
     // Index 0 unused; 1=IPacket, 2=DPacket, 3=CPacket, 4=SPacket
@@ -309,7 +324,7 @@ pub struct AspStreamMetrics {
     pub avg_encode_time_us: f64,
     /// Average bytes per packet (reciprocal-multiply).
     pub avg_bytes_per_packet: f64,
-    /// Keyframe ratio (i_packets / total_packets).
+    /// Keyframe ratio (`i_packets` / `total_packets`).
     pub keyframe_ratio: f32,
     /// Content fingerprint (FNV-1a of key counters).
     pub content_hash: u64,
@@ -319,6 +334,7 @@ pub struct AspStreamMetrics {
 ///
 /// Uses reciprocal multiplication for all per-packet averages.
 #[inline]
+#[must_use]
 pub fn asp_to_stream_metrics(stats: &StreamStats) -> AspStreamMetrics {
     let rcp_packets = if stats.total_packets > 0 {
         1.0 / stats.total_packets as f64
@@ -357,7 +373,7 @@ pub fn asp_to_stream_metrics(stats: &StreamStats) -> AspStreamMetrics {
 /// Stream session record for ALICE-DB persistence.
 ///
 /// Captures a snapshot of streaming state suitable for database storage.
-/// Fields are chosen for efficient indexing (session_hash, channel_id, quality).
+/// Fields are chosen for efficient indexing (`session_hash`, `channel_id`, quality).
 pub struct AspDbSessionRecord {
     /// Session fingerprint (FNV-1a of stream stats counters).
     pub session_hash: u64,
@@ -384,6 +400,7 @@ pub struct AspDbSessionRecord {
 /// Uses FNV-1a to generate a deterministic session fingerprint from the
 /// stream's counter state. Bitrate uses reciprocal multiplication.
 #[inline]
+#[must_use]
 pub fn asp_to_db_session_record(stats: &StreamStats, quality: QualityLevel) -> AspDbSessionRecord {
     // Session fingerprint from counters
     let mut buf = [0u8; 32];
@@ -428,7 +445,7 @@ pub struct AspSyncFrame {
     pub payload_bytes: u32,
     /// Is this a keyframe?
     pub is_keyframe: bool,
-    /// Sync tick (from InputFrame's tick counter, or 0 if unavailable).
+    /// Sync tick (from `InputFrame`'s tick counter, or 0 if unavailable).
     pub sync_tick: u64,
     /// Content hash for deduplication.
     pub content_hash: u64,
@@ -439,8 +456,9 @@ pub struct AspSyncFrame {
 /// Build a sync-aware ASP frame descriptor for the Eco-System sync pipeline.
 ///
 /// `sync_tick` is the current ALICE-Sync clock tick at time of packet creation.
-/// This bridges libasp's internal sync_bridge to the Eco-System layer.
+/// This bridges libasp's internal `sync_bridge` to the Eco-System layer.
 #[inline]
+#[must_use]
 pub fn asp_to_sync_frame(packet: &AspPacket, sync_tick: u64) -> AspSyncFrame {
     const PRIORITY: [u8; 5] = [0, 3, 1, 2, 0];
     let type_idx = (packet.header.packet_type as u8) as usize;
@@ -497,7 +515,9 @@ pub struct AspVoiceChannel {
 /// `speaker_hash` identifies the voice source (e.g., FNV-1a of speaker embedding).
 /// `voice_sequence` is the monotonic frame counter from the voice encoder.
 /// `payload_bytes` is the encoded LPC frame size.
+#[allow(clippy::too_many_arguments)]
 #[inline]
+#[must_use]
 pub fn asp_to_voice_channel(
     asp_sequence: u32,
     speaker_hash: u64,
@@ -553,6 +573,7 @@ pub struct AspQueueMessage {
 /// I-Packets are marked `is_undropable = true` because losing a keyframe
 /// causes decoder desync. Priority mapping uses the same const table as CDN.
 #[inline]
+#[must_use]
 pub fn asp_to_queue_message(packet: &AspPacket) -> AspQueueMessage {
     const PRIORITY: [u8; 5] = [0, 3, 1, 2, 0];
     let type_idx = (packet.header.packet_type as u8) as usize;
@@ -582,15 +603,15 @@ pub fn asp_to_queue_message(packet: &AspPacket) -> AspQueueMessage {
 
 /// Stream authentication token for ALICE-Auth integration.
 ///
-/// Binds an ALICE-Auth identity to a streaming session. The session_token
+/// Binds an ALICE-Auth identity to a streaming session. The `session_token`
 /// is derived from the identity hash + stream fingerprint, allowing
 /// stateless session validation.
 pub struct AspAuthStreamToken {
-    /// Identity fingerprint (FNV-1a of the 32-byte AliceId public key).
+    /// Identity fingerprint (FNV-1a of the 32-byte `AliceId` public key).
     pub identity_hash: u64,
     /// Stream session fingerprint (FNV-1a of stats counters).
     pub session_hash: u64,
-    /// Combined token (identity_hash XOR session_hash, rotated).
+    /// Combined token (`identity_hash` XOR `session_hash`, rotated).
     pub token: u64,
     /// Quality level the identity is authorized for.
     pub authorized_quality: QualityLevel,
@@ -604,6 +625,7 @@ pub struct AspAuthStreamToken {
 /// `identity_bytes` is the 32-byte Ed25519 public key from `AliceId`.
 /// The token combines identity and session hashes for stateless validation.
 #[inline]
+#[must_use]
 pub fn asp_auth_stream_token(
     identity_bytes: &[u8; 32],
     stats: &StreamStats,
@@ -635,7 +657,7 @@ pub fn asp_auth_stream_token(
 
 /// Feature vector for ML-based adaptive bitrate prediction.
 ///
-/// Extracts streaming metrics from ASP StreamStats as a fixed-size f32
+/// Extracts streaming metrics from ASP `StreamStats` as a fixed-size f32
 /// feature vector suitable for ALICE-ML ternary neural inference.
 /// Features are normalized to roughly [0, 1] range for stable inference.
 pub struct AspMlBitrateFeatures {
@@ -649,12 +671,13 @@ pub struct AspMlBitrateFeatures {
 ///
 /// Features are normalized:
 /// - Packet ratios: naturally [0, 1]
-/// - Bitrate: divided by 10_000 kbps (10 Mbps baseline)
+/// - Bitrate: divided by `10_000` kbps (10 Mbps baseline)
 /// - Compression ratio: divided by 1000 (practical max)
-/// - Encode time: divided by 10_000 µs (10 ms baseline)
+/// - Encode time: divided by `10_000` µs (10 ms baseline)
 ///
 /// Uses reciprocal multiplication for all normalizations.
 #[inline]
+#[must_use]
 pub fn asp_to_ml_bitrate_features(stats: &StreamStats) -> AspMlBitrateFeatures {
     let rcp_packets = if stats.total_packets > 0 {
         1.0 / stats.total_packets as f32
@@ -673,7 +696,7 @@ pub fn asp_to_ml_bitrate_features(stats: &StreamStats) -> AspMlBitrateFeatures {
     // Feature 4: Normalized bitrate (kbps / 10000)
     let bitrate_kbps = stats.avg_bits_per_frame as f32 * 30.0 * 0.001;
     let f4 = bitrate_kbps * 0.0001; // ÷ 10000
-    // Feature 5: Normalized compression ratio (/ 1000)
+                                    // Feature 5: Normalized compression ratio (/ 1000)
     let f5 = stats.compression_ratio as f32 * 0.001;
     // Feature 6: Normalized encode time (µs / 10000)
     let f6 = stats.avg_encode_time_us as f32 * 0.0001;
@@ -704,8 +727,10 @@ pub fn asp_to_ml_bitrate_features(stats: &StreamStats) -> AspMlBitrateFeatures {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use libasp::{AspPacket, IPacketPayload, DPacketPayload, StreamStats, PacketType,
-                  RegionDescriptor, Rect, Color, ColorPalette};
+    use libasp::{
+        AspPacket, Color, ColorPalette, DPacketPayload, IPacketPayload, PacketType, Rect,
+        RegionDescriptor, StreamStats,
+    };
 
     // ── Bridge 1 test ─────────────────────────────────────────────────────
 
@@ -935,9 +960,7 @@ mod tests {
     #[test]
     fn test_asp_to_voice_channel() {
         let speaker_hash: u64 = 0xDEADBEEF_CAFEBABE;
-        let ch = asp_to_voice_channel(
-            10, speaker_hash, 500, 128, true, true, 0.95, 16000,
-        );
+        let ch = asp_to_voice_channel(10, speaker_hash, 500, 128, true, true, 0.95, 16000);
 
         assert_ne!(ch.channel_hash, 0);
         assert_eq!(ch.speaker_hash, speaker_hash);
@@ -949,9 +972,8 @@ mod tests {
         assert_eq!(ch.sample_rate, 16000);
 
         // Different speaker → different channel hash
-        let ch2 = asp_to_voice_channel(
-            10, 0x1234_5678_9ABC_DEF0, 500, 128, true, true, 0.95, 16000,
-        );
+        let ch2 =
+            asp_to_voice_channel(10, 0x1234_5678_9ABC_DEF0, 500, 128, true, true, 0.95, 16000);
         assert_ne!(ch.channel_hash, ch2.channel_hash);
     }
 

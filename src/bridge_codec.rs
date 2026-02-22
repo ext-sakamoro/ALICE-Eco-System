@@ -2,8 +2,8 @@
 //!
 //! 6 bridges connecting 3D wavelet video/audio codec to the ALICE ecosystem.
 
-use alice_codec::{Wavelet1D, SubBand3D};
 use alice_codec::rans::FrequencyTable;
+use alice_codec::{SubBand3D, Wavelet1D};
 
 // ── Bridge 1: Codec → Synth (wavelet → audio compression) ──────────────
 
@@ -19,9 +19,14 @@ pub struct CodecSynthPayload {
 
 /// Compress Synth PCM via ALICE-Codec wavelet transform.
 #[inline]
+#[must_use]
 pub fn codec_compress_synth_pcm(pcm: &[f32]) -> CodecSynthPayload {
     if pcm.is_empty() {
-        return CodecSynthPayload { original_samples: 0, compressed_bytes: 0, compression_ratio: 0.0 };
+        return CodecSynthPayload {
+            original_samples: 0,
+            compressed_bytes: 0,
+            compression_ratio: 0.0,
+        };
     }
     // Quantize f32 to i32 and apply wavelet
     let n = pcm.len().next_power_of_two();
@@ -35,7 +40,11 @@ pub fn codec_compress_synth_pcm(pcm: &[f32]) -> CodecSynthPayload {
     CodecSynthPayload {
         original_samples: pcm.len(),
         compressed_bytes,
-        compression_ratio: if compressed_bytes > 0 { raw_bytes as f32 / compressed_bytes as f32 } else { 0.0 },
+        compression_ratio: if compressed_bytes > 0 {
+            raw_bytes as f32 / compressed_bytes as f32
+        } else {
+            0.0
+        },
     }
 }
 
@@ -55,13 +64,27 @@ pub struct CodecAnimFrame {
 
 /// Analyze sub-band structure for anime episode compression.
 #[inline]
-pub fn codec_animation_frame_analysis(width: usize, height: usize, frames: usize) -> CodecAnimFrame {
+#[must_use]
+pub fn codec_animation_frame_analysis(
+    width: usize,
+    height: usize,
+    frames: usize,
+) -> CodecAnimFrame {
     let subbands = [
-        SubBand3D::LLL, SubBand3D::LLH, SubBand3D::LHL, SubBand3D::LHH,
-        SubBand3D::HLL, SubBand3D::HLH, SubBand3D::HHL, SubBand3D::HHH,
+        SubBand3D::LLL,
+        SubBand3D::LLH,
+        SubBand3D::LHL,
+        SubBand3D::LHH,
+        SubBand3D::HLL,
+        SubBand3D::HLH,
+        SubBand3D::HHL,
+        SubBand3D::HHH,
     ];
     let temporal_high_count = subbands.iter().filter(|s| s.is_temporal_high()).count();
-    let quant_strengths: Vec<u8> = subbands.iter().map(|s| s.quant_strength()).collect();
+    let quant_strengths: Vec<u8> = subbands
+        .iter()
+        .map(alice_codec::SubBand3D::quant_strength)
+        .collect();
     let dc_size = (width / 2) * (height / 2) * (frames / 2);
     CodecAnimFrame {
         subband_count: 8,
@@ -87,9 +110,15 @@ pub struct CodecSdfVolume {
 
 /// Compress quantized SDF distance field via rANS entropy coding.
 #[inline]
+#[must_use]
 pub fn codec_compress_sdf_volume(quantized_distances: &[u8]) -> CodecSdfVolume {
     if quantized_distances.is_empty() {
-        return CodecSdfVolume { compressed_bytes: 0, voxel_count: 0, bits_per_voxel: 0.0, compression_ratio: 0.0 };
+        return CodecSdfVolume {
+            compressed_bytes: 0,
+            voxel_count: 0,
+            bits_per_voxel: 0.0,
+            compression_ratio: 0.0,
+        };
     }
     // Build histogram
     let mut freq = [0u32; 256];
@@ -112,8 +141,16 @@ pub fn codec_compress_sdf_volume(quantized_distances: &[u8]) -> CodecSdfVolume {
     CodecSdfVolume {
         compressed_bytes,
         voxel_count: quantized_distances.len(),
-        bits_per_voxel: if quantized_distances.is_empty() { 0.0 } else { (compressed_bytes * 8) as f32 / quantized_distances.len() as f32 },
-        compression_ratio: if compressed_bytes > 0 { quantized_distances.len() as f32 / compressed_bytes as f32 } else { 0.0 },
+        bits_per_voxel: if quantized_distances.is_empty() {
+            0.0
+        } else {
+            (compressed_bytes * 8) as f32 / quantized_distances.len() as f32
+        },
+        compression_ratio: if compressed_bytes > 0 {
+            quantized_distances.len() as f32 / compressed_bytes as f32
+        } else {
+            0.0
+        },
     }
 }
 
@@ -133,7 +170,15 @@ pub struct CodecViewFrame {
 
 /// Reconstruct RGB frame from YCoCg-R wavelet decode for ALICE-View.
 #[inline]
-pub fn codec_to_view_frame(y: &[i16], co: &[i16], cg: &[i16], width: usize, height: usize, frame_number: u32) -> CodecViewFrame {
+#[must_use]
+pub fn codec_to_view_frame(
+    y: &[i16],
+    co: &[i16],
+    cg: &[i16],
+    width: usize,
+    height: usize,
+    frame_number: u32,
+) -> CodecViewFrame {
     let n = width * height;
     let pixel_count = n.min(y.len()).min(co.len()).min(cg.len());
     let mut rgb = vec![0u8; n * 3];
@@ -144,10 +189,15 @@ pub fn codec_to_view_frame(y: &[i16], co: &[i16], cg: &[i16], width: usize, heig
         let cgv = cg[i] as i32;
         let tmp = yv - cgv;
         chunk[0] = (tmp + cov).clamp(0, 255) as u8; // R
-        chunk[1] = (yv + cgv).clamp(0, 255) as u8;  // G
-        chunk[2] = (tmp - cov).clamp(0, 255) as u8;  // B
+        chunk[1] = (yv + cgv).clamp(0, 255) as u8; // G
+        chunk[2] = (tmp - cov).clamp(0, 255) as u8; // B
     }
-    CodecViewFrame { width, height, rgb_pixels: rgb, frame_number }
+    CodecViewFrame {
+        width,
+        height,
+        rgb_pixels: rgb,
+        frame_number,
+    }
 }
 
 // ── Bridge 5: Codec → DB (compressed data persistence) ──────────────────
@@ -166,6 +216,7 @@ pub struct CodecDbRecord {
 
 /// Serialize compressed SDF volume metadata for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn codec_to_db_record(quantized: &[u8]) -> CodecDbRecord {
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in quantized {
@@ -173,7 +224,9 @@ pub fn codec_to_db_record(quantized: &[u8]) -> CodecDbRecord {
         hash = hash.wrapping_mul(0x100000001b3);
     }
     let mut freq = [0u32; 256];
-    for &b in quantized { freq[b as usize] += 1; }
+    for &b in quantized {
+        freq[b as usize] += 1;
+    }
     let total = quantized.len() as f64;
     let rcp_total = 1.0 / total;
     let mut entropy_bits = 0.0f64;
@@ -188,7 +241,11 @@ pub fn codec_to_db_record(quantized: &[u8]) -> CodecDbRecord {
         content_hash: hash,
         voxel_count: quantized.len(),
         compressed_bytes,
-        bits_per_voxel: if quantized.is_empty() { 0.0 } else { (compressed_bytes * 8) as f32 / quantized.len() as f32 },
+        bits_per_voxel: if quantized.is_empty() {
+            0.0
+        } else {
+            (compressed_bytes * 8) as f32 / quantized.len() as f32
+        },
     }
 }
 
@@ -208,12 +265,20 @@ pub struct CodecAnalyticsMetrics {
 
 /// Extract compression metrics for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn codec_to_analytics_metrics(data: &[u8]) -> CodecAnalyticsMetrics {
     if data.is_empty() {
-        return CodecAnalyticsMetrics { original_bytes: 0, compressed_bytes: 0, compression_ratio: 0.0, entropy_bps: 0.0 };
+        return CodecAnalyticsMetrics {
+            original_bytes: 0,
+            compressed_bytes: 0,
+            compression_ratio: 0.0,
+            entropy_bps: 0.0,
+        };
     }
     let mut freq = [0u32; 256];
-    for &b in data { freq[b as usize] += 1; }
+    for &b in data {
+        freq[b as usize] += 1;
+    }
     let total = data.len() as f64;
     let rcp_total = 1.0 / total;
     let mut entropy = 0.0f64;
@@ -227,7 +292,11 @@ pub fn codec_to_analytics_metrics(data: &[u8]) -> CodecAnalyticsMetrics {
     CodecAnalyticsMetrics {
         original_bytes: data.len(),
         compressed_bytes: compressed,
-        compression_ratio: if compressed > 0 { data.len() as f32 / compressed as f32 } else { 0.0 },
+        compression_ratio: if compressed > 0 {
+            data.len() as f32 / compressed as f32
+        } else {
+            0.0
+        },
         entropy_bps: entropy as f32,
     }
 }
@@ -254,7 +323,9 @@ pub struct CodecCdnPackage {
 /// `bitrate_kbps` is estimated from `encoded_bytes` assuming 30 fps delivery.
 /// `is_streamable` is always `true`: codec output is always streamable for CDN.
 #[inline]
+#[must_use]
 pub fn codec_to_cdn_package(encoded: &[u8]) -> CodecCdnPackage {
+    const RCP_1000: f64 = 1.0 / 1000.0;
     // FNV-1a hash for CDN cache keying (inline — no shared fnv1a in this file).
     let mut hash: u64 = 0xcbf29ce484222325;
     for &b in encoded {
@@ -263,7 +334,6 @@ pub fn codec_to_cdn_package(encoded: &[u8]) -> CodecCdnPackage {
     }
     // bitrate_kbps: encoded_bytes * 8 bits / 1000 bits-per-kbit / (1/30 s per frame)
     // = encoded_bytes * 8 * 30 / 1000 = encoded_bytes * 240 / 1000.
-    const RCP_1000: f64 = 1.0 / 1000.0;
     let bitrate_kbps = (encoded.len() as f64 * 240.0 * RCP_1000) as u32;
     CodecCdnPackage {
         content_hash: hash,

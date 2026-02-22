@@ -2,8 +2,8 @@
 //!
 //! 8 bridges connecting the math-first RTOS to the ALICE ecosystem.
 
-use alice_rtos::{Kernel, Task, TaskPriority};
 use alice_rtos::kernel::KernelStats;
+use alice_rtos::{Kernel, Task, TaskPriority};
 
 // ── Bridge 1: RTOS → Edge (real-time sensor scheduling) ─────────────────
 
@@ -35,11 +35,18 @@ pub fn rtos_edge_sensor_task(
 
 /// Configure a sensor acquisition schedule and verify schedulability.
 #[inline]
+#[must_use]
 pub fn rtos_edge_schedule(tasks: &[EdgeSensorTask]) -> RtosScheduleResult {
     let mut kernel = Kernel::testing();
     let dummy_fn: fn(&mut [u8]) = |_| {};
     for t in tasks {
-        kernel.add_task(&t.name, dummy_fn, TaskPriority(t.priority), t.period_us, t.wcet_us);
+        kernel.add_task(
+            &t.name,
+            dummy_fn,
+            TaskPriority(t.priority),
+            t.period_us,
+            t.wcet_us,
+        );
     }
     let schedulable = kernel.is_schedulable();
     let stats = kernel.run_for(1_000_000, 100); // 1 second simulation
@@ -66,15 +73,21 @@ pub struct RtosScheduleResult {
 pub struct RtosQueueMessage {
     /// Task ID that produced the message.
     pub source_task: u8,
-    /// Message payload (u32 from SpscRing).
+    /// Message payload (u32 from `SpscRing`).
     pub payload: u32,
     /// Timestamp in microseconds.
     pub timestamp_us: u64,
 }
 
-/// Convert RTOS SpscRing u32 values to queue messages for ALICE-Queue.
+/// Convert RTOS `SpscRing` u32 values to queue messages for ALICE-Queue.
 #[inline]
-pub fn rtos_to_queue_messages(values: &[u32], source_task: u8, base_time_us: u64, period_us: u32) -> Vec<RtosQueueMessage> {
+#[must_use]
+pub fn rtos_to_queue_messages(
+    values: &[u32],
+    source_task: u8,
+    base_time_us: u64,
+    period_us: u32,
+) -> Vec<RtosQueueMessage> {
     values
         .iter()
         .enumerate()
@@ -104,7 +117,12 @@ pub struct RtosContainerLimits {
 
 /// Analyze RTOS kernel for ALICE-Container resource allocation.
 #[inline]
-pub fn rtos_to_container_limits(stats: &KernelStats, task_count: usize, min_period_us: u32) -> RtosContainerLimits {
+#[must_use]
+pub fn rtos_to_container_limits(
+    stats: &KernelStats,
+    task_count: usize,
+    min_period_us: u32,
+) -> RtosContainerLimits {
     RtosContainerLimits {
         memory_bytes: 2048 + task_count * 32, // Kernel + task table
         cpu_utilization: stats.utilization,
@@ -132,8 +150,9 @@ pub struct RtosTelemetryRecord {
     pub schedulable: bool,
 }
 
-/// Convert KernelStats to telemetry record for ALICE-Analytics DDSketch/HLL.
+/// Convert `KernelStats` to telemetry record for ALICE-Analytics DDSketch/HLL.
 #[inline]
+#[must_use]
 pub fn rtos_to_analytics_telemetry(stats: &KernelStats) -> RtosTelemetryRecord {
     RtosTelemetryRecord {
         duration_us: stats.total_us,
@@ -151,16 +170,18 @@ pub fn rtos_to_analytics_telemetry(stats: &KernelStats) -> RtosTelemetryRecord {
 pub struct RtosDbLogEntry {
     /// Timestamp (microseconds since kernel start).
     pub timestamp_us: i64,
-    /// Compact log value: (tasks_executed << 16) | context_switches.
+    /// Compact log value: (`tasks_executed` << 16) | `context_switches`.
     pub compact_value: f32,
     /// Utilization.
     pub utilization: f32,
 }
 
-/// Convert KernelStats to DB log entries for ALICE-DB.
+/// Convert `KernelStats` to DB log entries for ALICE-DB.
 #[inline]
+#[must_use]
 pub fn rtos_to_db_log(stats: &KernelStats, timestamp_us: i64) -> RtosDbLogEntry {
-    let compact = ((stats.tasks_executed as u32) << 16 | (stats.context_switches as u32 & 0xFFFF)) as f32;
+    let compact =
+        ((stats.tasks_executed as u32) << 16 | (stats.context_switches as u32 & 0xFFFF)) as f32;
     RtosDbLogEntry {
         timestamp_us,
         compact_value: compact,
@@ -184,6 +205,7 @@ pub struct RtosSyncState {
 
 /// Package RTOS kernel state for ALICE-Sync P2P exchange.
 #[inline]
+#[must_use]
 pub fn rtos_to_sync_state(stats: &KernelStats) -> RtosSyncState {
     RtosSyncState {
         utilization: stats.utilization,
@@ -207,6 +229,7 @@ pub struct RtosCryptoPayload {
 
 /// Prepare RTOS telemetry for ALICE-Crypto encryption.
 #[inline]
+#[must_use]
 pub fn rtos_to_crypto_payload(stats: &KernelStats) -> RtosCryptoPayload {
     let mut data = Vec::with_capacity(32);
     data.extend_from_slice(&stats.total_us.to_le_bytes());
@@ -243,6 +266,7 @@ pub struct RtosCacheEntry {
 
 /// Prepare RTOS kernel analysis for ALICE-Cache storage.
 #[inline]
+#[must_use]
 pub fn rtos_to_cache_entry(stats: &KernelStats, task_count: usize) -> RtosCacheEntry {
     let mut data = Vec::with_capacity(16);
     data.extend_from_slice(&stats.utilization.to_le_bytes());
@@ -278,8 +302,20 @@ mod tests {
     #[test]
     fn test_rtos_edge_schedule() {
         let tasks = vec![
-            EdgeSensorTask { name: *b"temperat", period_us: 10_000, wcet_us: 500, priority: 2, compression_mode: 0 },
-            EdgeSensorTask { name: *b"pressure", period_us: 50_000, wcet_us: 1000, priority: 3, compression_mode: 0 },
+            EdgeSensorTask {
+                name: *b"temperat",
+                period_us: 10_000,
+                wcet_us: 500,
+                priority: 2,
+                compression_mode: 0,
+            },
+            EdgeSensorTask {
+                name: *b"pressure",
+                period_us: 50_000,
+                wcet_us: 1000,
+                priority: 3,
+                compression_mode: 0,
+            },
         ];
         let result = rtos_edge_schedule(&tasks);
         assert!(result.schedulable);

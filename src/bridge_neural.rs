@@ -2,12 +2,15 @@
 //!
 //! 5 bridges connecting brain-computer interface data to the ALICE ecosystem.
 
-use alice_neural::{ElectrodeArray, SpikeTrain, NeuralField, IntentPacket, IntentKind};
+use alice_neural::{ElectrodeArray, IntentKind, IntentPacket, NeuralField, SpikeTrain};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -70,7 +73,10 @@ pub struct NeuralAnalyticsSpikeEvent {
 ///
 /// `electrode_id` selects which electrode's firing rate to report.
 #[inline]
-pub fn neural_spike_to_analytics(train: &SpikeTrain, electrode_id: u32) -> NeuralAnalyticsSpikeEvent {
+pub fn neural_spike_to_analytics(
+    train: &SpikeTrain,
+    electrode_id: u32,
+) -> NeuralAnalyticsSpikeEvent {
     let firing_rate = train.firing_rate(electrode_id);
     let mean_amp = train.mean_amplitude();
     let count = train.spike_count();
@@ -213,7 +219,7 @@ pub fn neural_intent_to_cache(packet: &IntentPacket) -> NeuralCacheIntent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_neural::{ElectrodeArray, SpikeTrain, NeuralField, IntentPacket, IntentKind};
+    use alice_neural::{ElectrodeArray, IntentKind, IntentPacket, NeuralField, SpikeTrain};
 
     #[test]
     fn test_array_to_analytics() {

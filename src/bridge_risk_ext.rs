@@ -2,12 +2,15 @@
 //!
 //! 3 bridges connecting pre-trade risk management to the ALICE ecosystem.
 
-use alice_risk::{RiskReject, RiskLimits};
+use alice_risk::{RiskLimits, RiskReject};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -40,17 +43,18 @@ pub struct RiskAnalyticsRejectEvent {
 ///
 /// The content hash is `fnv1a([reject_code] ++ timestamp_ns.to_le_bytes())`.
 #[inline]
+#[must_use]
 pub fn risk_reject_to_analytics(
     reject: &RiskReject,
     timestamp_ns: u64,
 ) -> RiskAnalyticsRejectEvent {
     let reject_code: u8 = match reject {
         RiskReject::PositionLimitBreached { .. } => 1,
-        RiskReject::OrderSizeTooLarge { .. }     => 2,
-        RiskReject::NotionalExceeded { .. }      => 3,
-        RiskReject::MaxOpenOrdersReached { .. }  => 4,
-        RiskReject::DailyLossLimitHit { .. }     => 5,
-        RiskReject::CircuitBreakerTripped        => 6,
+        RiskReject::OrderSizeTooLarge { .. } => 2,
+        RiskReject::NotionalExceeded { .. } => 3,
+        RiskReject::MaxOpenOrdersReached { .. } => 4,
+        RiskReject::DailyLossLimitHit { .. } => 5,
+        RiskReject::CircuitBreakerTripped => 6,
     };
 
     // Hash: reject_code byte followed by timestamp bytes.
@@ -95,10 +99,8 @@ pub struct RiskLimitsCacheEntry {
 /// TTL is always 3600 s so that stale limits are evicted within one hour.
 /// The content hash is `fnv1a(account_id.to_le_bytes() ++ max_position.to_le_bytes())`.
 #[inline]
-pub fn risk_limits_to_cache(
-    limits: &RiskLimits,
-    account_id: u64,
-) -> RiskLimitsCacheEntry {
+#[must_use]
+pub fn risk_limits_to_cache(limits: &RiskLimits, account_id: u64) -> RiskLimitsCacheEntry {
     let mut buf = [0u8; 16];
     buf[0..8].copy_from_slice(&account_id.to_le_bytes());
     buf[8..16].copy_from_slice(&limits.max_position.to_le_bytes());
@@ -106,11 +108,11 @@ pub fn risk_limits_to_cache(
 
     RiskLimitsCacheEntry {
         content_hash,
-        max_position:    limits.max_position,
-        max_order_size:  limits.max_order_size,
-        max_notional:    limits.max_notional,
+        max_position: limits.max_position,
+        max_order_size: limits.max_order_size,
+        max_notional: limits.max_notional,
         max_open_orders: limits.max_open_orders,
-        max_daily_loss:  limits.max_daily_loss,
+        max_daily_loss: limits.max_daily_loss,
         ttl_secs: 3600,
     }
 }
@@ -143,17 +145,15 @@ pub struct RiskSemanticEvent {
 ///
 /// The content hash uses the same scheme as `risk_reject_to_analytics`.
 #[inline]
-pub fn risk_reject_to_semantic(
-    reject: &RiskReject,
-    timestamp_ns: u64,
-) -> RiskSemanticEvent {
+#[must_use]
+pub fn risk_reject_to_semantic(reject: &RiskReject, timestamp_ns: u64) -> RiskSemanticEvent {
     let (reject_code, severity): (u8, u8) = match reject {
         RiskReject::PositionLimitBreached { .. } => (1, 2),
-        RiskReject::OrderSizeTooLarge { .. }     => (2, 1),
-        RiskReject::NotionalExceeded { .. }      => (3, 2),
-        RiskReject::MaxOpenOrdersReached { .. }  => (4, 1),
-        RiskReject::DailyLossLimitHit { .. }     => (5, 3),
-        RiskReject::CircuitBreakerTripped        => (6, 3),
+        RiskReject::OrderSizeTooLarge { .. } => (2, 1),
+        RiskReject::NotionalExceeded { .. } => (3, 2),
+        RiskReject::MaxOpenOrdersReached { .. } => (4, 1),
+        RiskReject::DailyLossLimitHit { .. } => (5, 3),
+        RiskReject::CircuitBreakerTripped => (6, 3),
     };
 
     let mut buf = [0u8; 9];
@@ -176,7 +176,7 @@ pub fn risk_reject_to_semantic(
 /// Encodes approval status, position ceiling, and utilization so the ledger
 /// layer can gate order entry without re-querying the risk-config store.
 pub struct RiskLedgerEntry {
-    /// FNV-1a hash over max_position bytes and limit_utilization bits bytes.
+    /// FNV-1a hash over `max_position` bytes and `limit_utilization` bits bytes.
     pub content_hash: u64,
     /// True when `limit_utilization < 1.0` (the order is within limits).
     pub approved: bool,
@@ -199,13 +199,11 @@ pub struct RiskLedgerEntry {
 /// `content_hash` is FNV-1a over `max_position.to_le_bytes()` concatenated
 /// with the little-endian bytes of the f64 bit-pattern of `limit_utilization`.
 #[inline]
-pub fn risk_limits_to_ledger_entry(
-    limits: &RiskLimits,
-    used_position: u64,
-) -> RiskLedgerEntry {
+#[must_use]
+pub fn risk_limits_to_ledger_entry(limits: &RiskLimits, used_position: u64) -> RiskLedgerEntry {
     let limit_utilization = used_position as f64 / limits.max_position as f64;
-    let approved  = limit_utilization < 1.0;
-    let priority  = if limit_utilization > 0.8 { 1 } else { 2 };
+    let approved = limit_utilization < 1.0;
+    let priority = if limit_utilization > 0.8 { 1 } else { 2 };
 
     // Hash input: max_position (8 bytes) || limit_utilization bits (8 bytes).
     let mut buf = [0u8; 16];
@@ -227,7 +225,7 @@ pub fn risk_limits_to_ledger_entry(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_risk::{RiskReject, RiskLimits};
+    use alice_risk::{RiskLimits, RiskReject};
 
     // ── Bridge 1: Risk Reject → Analytics ────────────────────────────────
 
@@ -236,27 +234,67 @@ mod tests {
         let ts: u64 = 1_700_000_000_000_000_000;
 
         let cases: &[(RiskReject, u8)] = &[
-            (RiskReject::PositionLimitBreached { current: 100, after: 200, limit: 150 }, 1),
-            (RiskReject::OrderSizeTooLarge { size: 500, limit: 200 }, 2),
-            (RiskReject::NotionalExceeded { notional: 1_000_000, limit: 500_000 }, 3),
-            (RiskReject::MaxOpenOrdersReached { count: 10, limit: 5 }, 4),
-            (RiskReject::DailyLossLimitHit { loss: -50_000, limit: -10_000 }, 5),
+            (
+                RiskReject::PositionLimitBreached {
+                    current: 100,
+                    after: 200,
+                    limit: 150,
+                },
+                1,
+            ),
+            (
+                RiskReject::OrderSizeTooLarge {
+                    size: 500,
+                    limit: 200,
+                },
+                2,
+            ),
+            (
+                RiskReject::NotionalExceeded {
+                    notional: 1_000_000,
+                    limit: 500_000,
+                },
+                3,
+            ),
+            (
+                RiskReject::MaxOpenOrdersReached {
+                    count: 10,
+                    limit: 5,
+                },
+                4,
+            ),
+            (
+                RiskReject::DailyLossLimitHit {
+                    loss: -50_000,
+                    limit: -10_000,
+                },
+                5,
+            ),
             (RiskReject::CircuitBreakerTripped, 6),
         ];
 
         for (reject, expected_code) in cases {
             let event = risk_reject_to_analytics(reject, ts);
 
-            assert_eq!(event.reject_code, *expected_code,
-                "reject_code mismatch for variant {}", expected_code);
+            assert_eq!(
+                event.reject_code, *expected_code,
+                "reject_code mismatch for variant {}",
+                expected_code
+            );
             assert_eq!(event.timestamp_ns, ts);
-            assert_ne!(event.content_hash, 0,
-                "content_hash must be non-zero for code {}", expected_code);
+            assert_ne!(
+                event.content_hash, 0,
+                "content_hash must be non-zero for code {}",
+                expected_code
+            );
 
             // Hash must be deterministic across two calls with same inputs.
             let event2 = risk_reject_to_analytics(reject, ts);
-            assert_eq!(event.content_hash, event2.content_hash,
-                "content_hash must be deterministic for code {}", expected_code);
+            assert_eq!(
+                event.content_hash, event2.content_hash,
+                "content_hash must be deterministic for code {}",
+                expected_code
+            );
         }
 
         // Different timestamps must produce different hashes.
@@ -271,22 +309,22 @@ mod tests {
     #[test]
     fn test_limits_to_cache() {
         let limits = RiskLimits {
-            max_position:    10_000,
-            max_order_size:  1_000,
-            max_notional:    5_000_000,
+            max_position: 10_000,
+            max_order_size: 1_000,
+            max_notional: 5_000_000,
             max_open_orders: 20,
-            max_daily_loss:  -100_000,
+            max_daily_loss: -100_000,
         };
 
         let account_id: u64 = 0xABCD_EF01_2345_6789;
         let entry = risk_limits_to_cache(&limits, account_id);
 
         // All limit fields must be faithfully copied.
-        assert_eq!(entry.max_position,    10_000);
-        assert_eq!(entry.max_order_size,  1_000);
-        assert_eq!(entry.max_notional,    5_000_000);
+        assert_eq!(entry.max_position, 10_000);
+        assert_eq!(entry.max_order_size, 1_000);
+        assert_eq!(entry.max_notional, 5_000_000);
         assert_eq!(entry.max_open_orders, 20);
-        assert_eq!(entry.max_daily_loss,  -100_000);
+        assert_eq!(entry.max_daily_loss, -100_000);
 
         // TTL must be exactly 3600 s.
         assert_eq!(entry.ttl_secs, 3600);
@@ -298,8 +336,10 @@ mod tests {
 
         // Different account IDs must produce different hashes.
         let entry_other = risk_limits_to_cache(&limits, account_id + 1);
-        assert_ne!(entry.content_hash, entry_other.content_hash,
-            "distinct account_ids must yield distinct hashes");
+        assert_ne!(
+            entry.content_hash, entry_other.content_hash,
+            "distinct account_ids must yield distinct hashes"
+        );
     }
 
     // ── Bridge 3: Risk Reject → Semantic Telemetry ───────────────────────
@@ -317,7 +357,10 @@ mod tests {
 
         // DailyLossLimitHit → severity 3.
         let dl = risk_reject_to_semantic(
-            &RiskReject::DailyLossLimitHit { loss: -200_000, limit: -50_000 },
+            &RiskReject::DailyLossLimitHit {
+                loss: -200_000,
+                limit: -50_000,
+            },
             ts,
         );
         assert_eq!(dl.reject_code, 5);
@@ -334,7 +377,10 @@ mod tests {
 
         // OrderSizeTooLarge → severity 1.
         let os = risk_reject_to_semantic(
-            &RiskReject::OrderSizeTooLarge { size: 999, limit: 500 },
+            &RiskReject::OrderSizeTooLarge {
+                size: 999,
+                limit: 500,
+            },
             ts,
         );
         assert_eq!(os.reject_code, 2);
@@ -344,7 +390,10 @@ mod tests {
 
         // MaxOpenOrdersReached → severity 1.
         let mo = risk_reject_to_semantic(
-            &RiskReject::MaxOpenOrdersReached { count: 50, limit: 10 },
+            &RiskReject::MaxOpenOrdersReached {
+                count: 50,
+                limit: 10,
+            },
             ts,
         );
         assert_eq!(mo.reject_code, 4);
@@ -353,7 +402,11 @@ mod tests {
 
         // PositionLimitBreached → severity 2 (medium, not low).
         let pl = risk_reject_to_semantic(
-            &RiskReject::PositionLimitBreached { current: 200, after: 300, limit: 250 },
+            &RiskReject::PositionLimitBreached {
+                current: 200,
+                after: 300,
+                limit: 250,
+            },
             ts,
         );
         assert_eq!(pl.reject_code, 1);
@@ -361,7 +414,10 @@ mod tests {
 
         // NotionalExceeded → severity 2 (medium, not low).
         let ne = risk_reject_to_semantic(
-            &RiskReject::NotionalExceeded { notional: 2_000_000, limit: 1_000_000 },
+            &RiskReject::NotionalExceeded {
+                notional: 2_000_000,
+                limit: 1_000_000,
+            },
             ts,
         );
         assert_eq!(ne.reject_code, 3);
@@ -378,10 +434,10 @@ mod tests {
     fn make_limits(max_position: u64) -> RiskLimits {
         RiskLimits {
             max_position,
-            max_order_size:  100,
-            max_notional:    10_000_000,
+            max_order_size: 100,
+            max_notional: 10_000_000,
             max_open_orders: 50,
-            max_daily_loss:  -500_000,
+            max_daily_loss: -500_000,
         }
     }
 
@@ -395,7 +451,10 @@ mod tests {
         assert_eq!(entry.max_position, 1000);
         assert!((entry.limit_utilization - 0.5).abs() < f64::EPSILON);
         assert!(entry.approved, "utilization 0.5 < 1.0 must be approved");
-        assert_eq!(entry.priority, 2, "utilization 0.5 <= 0.8 must have priority 2");
+        assert_eq!(
+            entry.priority, 2,
+            "utilization 0.5 <= 0.8 must have priority 2"
+        );
     }
 
     #[test]
@@ -406,7 +465,10 @@ mod tests {
 
         assert_ne!(entry.content_hash, 0);
         assert!(entry.approved, "utilization 0.9 < 1.0 must be approved");
-        assert_eq!(entry.priority, 1, "utilization 0.9 > 0.8 must have priority 1");
+        assert_eq!(
+            entry.priority, 1,
+            "utilization 0.9 > 0.8 must have priority 1"
+        );
         assert!((entry.limit_utilization - 0.9).abs() < 1e-12);
     }
 
@@ -417,7 +479,10 @@ mod tests {
         let entry = risk_limits_to_ledger_entry(&limits, 1000);
 
         assert!(!entry.approved, "utilization 1.0 must not be approved");
-        assert_eq!(entry.priority, 1, "utilization 1.0 > 0.8 must have priority 1");
+        assert_eq!(
+            entry.priority, 1,
+            "utilization 1.0 > 0.8 must have priority 1"
+        );
     }
 
     #[test]

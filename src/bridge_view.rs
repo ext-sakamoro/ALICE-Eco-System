@@ -7,7 +7,10 @@
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -19,7 +22,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// index and timing values so duplicate submissions are detectable without
 /// storing raw timestamps.
 pub struct ViewDbFrameRecord {
-    /// FNV-1a hash over frame_index ++ frame_ms bytes.
+    /// FNV-1a hash over `frame_index` ++ `frame_ms` bytes.
     pub content_hash: u64,
     /// Sequential frame index within the session.
     pub frame_index: u64,
@@ -29,7 +32,7 @@ pub struct ViewDbFrameRecord {
     pub triangle_count: u32,
     /// Draw call count for this frame.
     pub draw_calls: u32,
-    /// Whether the frame missed its deadline (frame_ms > budget_ms).
+    /// Whether the frame missed its deadline (`frame_ms` > `budget_ms`).
     pub is_dropped: bool,
 }
 
@@ -38,6 +41,7 @@ pub struct ViewDbFrameRecord {
 /// `budget_ms` is the target frame budget (e.g. 16.67 for 60 Hz).
 /// `is_dropped` is set branchlessly when `frame_ms > budget_ms`.
 #[inline]
+#[must_use]
 pub fn view_to_db_frame_record(
     frame_index: u64,
     frame_ms: f32,
@@ -87,6 +91,7 @@ pub struct ViewCdnAssetRequest {
 /// - texture (0) or mesh (1) → 1 (normal)
 /// - animation (3) or audio (4) → 0 (background)
 #[inline]
+#[must_use]
 pub fn view_to_cdn_asset_request(
     asset_uri: &str,
     asset_type: u8,
@@ -130,9 +135,10 @@ pub struct ViewCacheRenderState {
 
 /// Build a render state cache entry for ALICE-Cache.
 ///
-/// `compile_cost_us` is estimated from blend_mode and shader_variant:
+/// `compile_cost_us` is estimated from `blend_mode` and `shader_variant`:
 /// transparent blends are more expensive due to order-dependent compositing.
 #[inline]
+#[must_use]
 pub fn view_to_cache_render_state(
     shader_variant: u32,
     blend_mode: u8,
@@ -165,7 +171,7 @@ pub fn view_to_cache_render_state(
 /// Aggregates per-frame data into analytics-friendly statistics so that
 /// the analytics layer can build latency histograms and detect GPU stalls.
 pub struct ViewAnalyticsFrameMetrics {
-    /// FNV-1a hash of session_id bytes — analytics stream key.
+    /// FNV-1a hash of `session_id` bytes — analytics stream key.
     pub session_hash: u64,
     /// Mean frame time over the sample window, in milliseconds.
     pub mean_frame_ms: f32,
@@ -173,7 +179,7 @@ pub struct ViewAnalyticsFrameMetrics {
     pub min_frame_ms: f32,
     /// Maximum frame time in the window.
     pub max_frame_ms: f32,
-    /// Frames per second (branchless reciprocal: 1000 / mean_frame_ms).
+    /// Frames per second (branchless reciprocal: 1000 / `mean_frame_ms`).
     pub fps_estimate: f32,
     /// Drop rate in permille (dropped frames * 1000 / total frames).
     pub drop_rate_permille: u32,
@@ -187,6 +193,7 @@ pub struct ViewAnalyticsFrameMetrics {
 /// `budget_ms` is the target deadline (16.67 for 60 Hz, 33.33 for 30 Hz).
 /// `session_id` is an opaque string identifier for the render session.
 #[inline]
+#[must_use]
 pub fn view_to_analytics_frame_metrics(
     session_id: &str,
     frame_ms_samples: &[f32],
@@ -196,15 +203,11 @@ pub fn view_to_analytics_frame_metrics(
     let frame_count = frame_ms_samples.len();
 
     // Single-pass statistics — no heap allocation.
-    let (min_ms, max_ms, sum_ms, dropped) = frame_ms_samples.iter().fold(
-        (f32::MAX, 0.0f32, 0.0f32, 0u32),
-        |(mn, mx, s, d), &t| (
-            mn.min(t),
-            mx.max(t),
-            s + t,
-            d + (t > budget_ms) as u32,
-        ),
-    );
+    let (min_ms, max_ms, sum_ms, dropped) = frame_ms_samples
+        .iter()
+        .fold((f32::MAX, 0.0f32, 0.0f32, 0u32), |(mn, mx, s, d), &t| {
+            (mn.min(t), mx.max(t), s + t, d + (t > budget_ms) as u32)
+        });
 
     let count_safe = (frame_count as f32).max(1.0);
     let mean_frame_ms = sum_ms / count_safe;
@@ -257,6 +260,7 @@ pub struct ViewDbViewportConfig {
 
 /// Persist viewport configuration for ALICE-DB.
 #[inline]
+#[must_use]
 pub fn view_to_db_viewport_config(
     width: u32,
     height: u32,
@@ -310,6 +314,7 @@ pub struct ViewCacheTextureEntry {
 /// `gpu_bytes` is computed as `width * height * bpp * mip_factor` where
 /// `bpp` depends on format (branchless lookup table).
 #[inline]
+#[must_use]
 pub fn view_to_cache_texture_entry(
     texture_data: &[u8],
     width: u32,
@@ -317,10 +322,10 @@ pub fn view_to_cache_texture_entry(
     format: u8,
     mip_levels: u8,
 ) -> ViewCacheTextureEntry {
-    let texture_hash = fnv1a(texture_data);
     // Bytes-per-pixel lookup (branchless): RGBA8=4, BC7=1 (block compressed ~1Bpp),
     // ASTC4x4=1, R16F=2.  Index clamped to table size.
     const BPP_TABLE: [usize; 4] = [4, 1, 1, 2];
+    let texture_hash = fnv1a(texture_data);
     let fmt_idx = (format as usize).min(3);
     let bpp = BPP_TABLE[fmt_idx];
     // Mipmap overhead: sum of geometric series ≈ 1.33x for full mip chain.
@@ -344,7 +349,7 @@ pub fn view_to_cache_texture_entry(
 /// Issued when the view layer predicts that the camera will approach a mesh
 /// cluster requiring a higher-fidelity LOD level within `lookahead_ms`.
 pub struct ViewCdnLodPrefetch {
-    /// FNV-1a hash of mesh_id bytes — CDN routing key.
+    /// FNV-1a hash of `mesh_id` bytes — CDN routing key.
     pub mesh_hash: u64,
     /// Target LOD level to prefetch (0=highest detail, 4=lowest).
     pub lod_level: u8,
@@ -358,6 +363,7 @@ pub struct ViewCdnLodPrefetch {
 
 /// Build a LOD prefetch request for ALICE-CDN.
 #[inline]
+#[must_use]
 pub fn view_to_cdn_lod_prefetch(
     mesh_id: &str,
     lod_level: u8,
@@ -388,13 +394,19 @@ mod tests {
         assert!((rec.frame_ms - 10.0).abs() < f32::EPSILON);
         assert_eq!(rec.triangle_count, 50_000);
         assert_eq!(rec.draw_calls, 200);
-        assert!(!rec.is_dropped, "10ms frame should not be dropped at 16.67ms budget");
+        assert!(
+            !rec.is_dropped,
+            "10ms frame should not be dropped at 16.67ms budget"
+        );
     }
 
     #[test]
     fn test_view_to_db_frame_record_dropped() {
         let rec = view_to_db_frame_record(1, 33.5, 80_000, 300, 16.67);
-        assert!(rec.is_dropped, "33.5ms frame should be dropped at 16.67ms budget");
+        assert!(
+            rec.is_dropped,
+            "33.5ms frame should be dropped at 16.67ms budget"
+        );
     }
 
     #[test]

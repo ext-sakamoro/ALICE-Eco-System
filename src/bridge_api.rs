@@ -2,9 +2,9 @@
 //!
 //! 5 bridges connecting API gateway to the ALICE ecosystem.
 
+use crate::hash::fnv1a;
 use alice_api::{GcraCell, GcraDecision, HttpMethod};
 use alice_queue::{Message, SenderKey};
-use crate::hash::fnv1a;
 
 // ── Bridge 1: API → Auth (rate limiting → auth check) ───────────────────
 
@@ -22,14 +22,21 @@ pub struct ApiAuthDecision {
 
 /// Check API rate limit and prepare auth context for ALICE-Auth.
 #[inline]
-pub fn api_auth_check(rate_limiter: &GcraCell, client_id: &str, method: HttpMethod, now_ns: u64) -> ApiAuthDecision {
+pub fn api_auth_check(
+    rate_limiter: &GcraCell,
+    client_id: &str,
+    method: HttpMethod,
+    now_ns: u64,
+) -> ApiAuthDecision {
     let decision = rate_limiter.check(now_ns);
     let allowed = matches!(decision, GcraDecision::Allow { .. });
     let operation = match method {
         HttpMethod::Get | HttpMethod::Head => "read",
         HttpMethod::Post | HttpMethod::Put | HttpMethod::Patch => "write",
         HttpMethod::Delete => "delete",
-        HttpMethod::Options | HttpMethod::Connect | HttpMethod::Trace | HttpMethod::Unknown => "other",
+        HttpMethod::Options | HttpMethod::Connect | HttpMethod::Trace | HttpMethod::Unknown => {
+            "other"
+        }
     };
     ApiAuthDecision {
         rate_allowed: allowed,
@@ -55,6 +62,7 @@ pub struct ApiCdnRoute {
 
 /// Route API gateway request to ALICE-CDN for content delivery.
 #[inline]
+#[must_use]
 pub fn api_to_cdn_route(path: &str, method: HttpMethod, rate_allowed: bool) -> ApiCdnRoute {
     let ext = path.rsplit('.').next().unwrap_or("");
     let content_type_hint = match ext {
@@ -101,6 +109,7 @@ pub struct ApiQueueRequest {
 /// The payload encodes `method_byte | path_hash_bytes` (9 bytes total).
 /// Branchless method encoding uses a lookup with no branches at runtime.
 #[inline]
+#[must_use]
 pub fn api_to_queue_message(
     path: &str,
     method: HttpMethod,
@@ -112,15 +121,15 @@ pub fn api_to_queue_message(
     let path_hash = fnv1a(path.as_bytes());
     // Branchless method byte: map variant index to byte constant via small array.
     let method_byte: u8 = match method {
-        HttpMethod::Get     => b'G',
-        HttpMethod::Post    => b'P',
-        HttpMethod::Put     => b'U',
-        HttpMethod::Delete  => b'D',
-        HttpMethod::Patch   => b'A',
-        HttpMethod::Head    => b'H',
+        HttpMethod::Get => b'G',
+        HttpMethod::Post => b'P',
+        HttpMethod::Put => b'U',
+        HttpMethod::Delete => b'D',
+        HttpMethod::Patch => b'A',
+        HttpMethod::Head => b'H',
         HttpMethod::Options => b'O',
         HttpMethod::Connect => b'C',
-        HttpMethod::Trace   => b'T',
+        HttpMethod::Trace => b'T',
         HttpMethod::Unknown => b'?',
     };
     // 9-byte payload: method_byte ++ path_hash (LE u64)
@@ -135,7 +144,11 @@ pub fn api_to_queue_message(
     sender[8..16].copy_from_slice(&now_ns.to_le_bytes());
 
     let message = Message::new(sender, seq, payload.to_vec());
-    ApiQueueRequest { message, path_hash, admitted: rate_allowed }
+    ApiQueueRequest {
+        message,
+        path_hash,
+        admitted: rate_allowed,
+    }
 }
 
 // ── Bridge 4: API → Analytics (request metrics) ──────────────────────────
@@ -157,6 +170,7 @@ pub struct ApiAnalyticsRecord {
 /// `path_hash` is computed via `fnv1a` so the analytics store never
 /// receives raw PII-carrying paths.
 #[inline]
+#[must_use]
 pub fn api_analytics_record(
     method: HttpMethod,
     latency_ns: u64,
@@ -164,15 +178,15 @@ pub fn api_analytics_record(
     path: &str,
 ) -> ApiAnalyticsRecord {
     let method = match method {
-        HttpMethod::Get     => "GET",
-        HttpMethod::Post    => "POST",
-        HttpMethod::Put     => "PUT",
-        HttpMethod::Delete  => "DELETE",
-        HttpMethod::Patch   => "PATCH",
-        HttpMethod::Head    => "HEAD",
+        HttpMethod::Get => "GET",
+        HttpMethod::Post => "POST",
+        HttpMethod::Put => "PUT",
+        HttpMethod::Delete => "DELETE",
+        HttpMethod::Patch => "PATCH",
+        HttpMethod::Head => "HEAD",
         HttpMethod::Options => "OPTIONS",
         HttpMethod::Connect => "CONNECT",
-        HttpMethod::Trace   => "TRACE",
+        HttpMethod::Trace => "TRACE",
         HttpMethod::Unknown => "OTHER",
     };
     ApiAnalyticsRecord {
@@ -202,6 +216,7 @@ pub struct ApiDbLogRecord {
 /// `client_hash` is derived via `fnv1a(client_id.as_bytes())` so the
 /// DB index column is fixed-width u64 rather than a variable string.
 #[inline]
+#[must_use]
 pub fn api_db_log(
     method: HttpMethod,
     path: &str,
@@ -209,15 +224,15 @@ pub fn api_db_log(
     client_id: &str,
 ) -> ApiDbLogRecord {
     let method = match method {
-        HttpMethod::Get     => "GET",
-        HttpMethod::Post    => "POST",
-        HttpMethod::Put     => "PUT",
-        HttpMethod::Delete  => "DELETE",
-        HttpMethod::Patch   => "PATCH",
-        HttpMethod::Head    => "HEAD",
+        HttpMethod::Get => "GET",
+        HttpMethod::Post => "POST",
+        HttpMethod::Put => "PUT",
+        HttpMethod::Delete => "DELETE",
+        HttpMethod::Patch => "PATCH",
+        HttpMethod::Head => "HEAD",
         HttpMethod::Options => "OPTIONS",
         HttpMethod::Connect => "CONNECT",
-        HttpMethod::Trace   => "TRACE",
+        HttpMethod::Trace => "TRACE",
         HttpMethod::Unknown => "OTHER",
     };
     ApiDbLogRecord {
@@ -253,6 +268,7 @@ pub struct ApiCacheEntry {
 /// `response_bytes` so two responses at the same path but different sizes
 /// produce distinct cache keys.
 #[inline]
+#[must_use]
 pub fn api_to_cache_entry(path: &str, response_bytes: usize, is_public: bool) -> ApiCacheEntry {
     let route_hash = fnv1a(path.as_bytes());
     // Mix response_bytes into content_hash for per-payload uniqueness.
@@ -311,7 +327,14 @@ mod tests {
 
     #[test]
     fn test_api_to_queue_message() {
-        let req = api_to_queue_message("/api/infer", HttpMethod::Post, "client-7", 1, 5_000_000_000, true);
+        let req = api_to_queue_message(
+            "/api/infer",
+            HttpMethod::Post,
+            "client-7",
+            1,
+            5_000_000_000,
+            true,
+        );
         assert!(req.admitted);
         assert_ne!(req.path_hash, 0);
         // Payload byte 0 is the method byte for POST

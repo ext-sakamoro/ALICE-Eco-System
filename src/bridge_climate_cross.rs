@@ -8,7 +8,10 @@ use alice_climate::{ClimateResponse, Observation};
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -26,7 +29,7 @@ pub struct ClimateSdfField {
     pub temperature_c: f64,
     /// Atmospheric pressure (hPa).
     pub pressure_hpa: f64,
-    /// Iso-surface value: temperature_c / 100.0 (normalised for SDF eval).
+    /// Iso-surface value: `temperature_c` / 100.0 (normalised for SDF eval).
     pub iso_surface_value: f64,
     /// Gradient strength: wind speed magnitude * 0.01.
     pub gradient_strength: f64,
@@ -36,6 +39,7 @@ pub struct ClimateSdfField {
 
 /// Convert a climate response into SDF field parameters.
 #[inline]
+#[must_use]
 pub fn climate_response_to_sdf_field(resp: &ClimateResponse) -> ClimateSdfField {
     let wind_speed = (resp.atmosphere.wind_velocity_ms[0].powi(2)
         + resp.atmosphere.wind_velocity_ms[1].powi(2)
@@ -69,7 +73,7 @@ pub fn climate_response_to_sdf_field(resp: &ClimateResponse) -> ClimateSdfField 
 /// wind direction, time-of-day normalised) for downstream classifiers
 /// and regression models.
 pub struct ClimateMlFeatures {
-    /// FNV-1a hash over station_id, timestamp, temperature, and pressure bytes.
+    /// FNV-1a hash over `station_id`, timestamp, temperature, and pressure bytes.
     pub content_hash: u64,
     /// Station ID.
     pub station_id: u64,
@@ -83,12 +87,13 @@ pub struct ClimateMlFeatures {
     pub pressure_hpa: f64,
     /// Humidity (percentage, 0-100).
     pub humidity_pct: f64,
-    /// Normalised time-of-day: (timestamp_ns % (24*3600*1e9)) / (24*3600*1e9).
+    /// Normalised time-of-day: (`timestamp_ns` % (24*3600*1e9)) / (24*3600*1e9).
     pub normalized_time: f64,
 }
 
 /// Convert a weather observation into an ML feature vector.
 #[inline]
+#[must_use]
 pub fn climate_observation_to_ml_features(obs: &Observation) -> ClimateMlFeatures {
     let nanos_per_day: u64 = 24 * 3600 * 1_000_000_000;
     let time_of_day_ns = obs.timestamp_ns % nanos_per_day;
@@ -124,11 +129,11 @@ pub struct ClimateViewData {
     pub content_hash: u64,
     /// Temperature-mapped red channel: clamp((temp + 40) / 80, 0, 1).
     pub temperature_color_r: f32,
-    /// Temperature-mapped blue channel: 1.0 - color_r.
+    /// Temperature-mapped blue channel: 1.0 - `color_r`.
     pub temperature_color_b: f32,
-    /// Wind arrow X component: wind_u * 0.01.
+    /// Wind arrow X component: `wind_u` * 0.01.
     pub wind_arrow_dx: f32,
-    /// Wind arrow Y component: wind_v * 0.01.
+    /// Wind arrow Y component: `wind_v` * 0.01.
     pub wind_arrow_dy: f32,
     /// Ocean surface opacity: 0.8 if ocean is present, else 0.3.
     pub ocean_opacity: f32,
@@ -138,6 +143,7 @@ pub struct ClimateViewData {
 
 /// Convert a climate response into View render data.
 #[inline]
+#[must_use]
 pub fn climate_response_to_view_data(resp: &ClimateResponse) -> ClimateViewData {
     let temp = resp.atmosphere.temperature_c;
     let color_r = ((temp + 40.0) / 80.0).clamp(0.0, 1.0) as f32;
@@ -174,8 +180,8 @@ pub fn climate_response_to_view_data(resp: &ClimateResponse) -> ClimateViewData 
 mod tests {
     use super::*;
     use alice_climate::{
-        AtmosphericLayer, AtmosphericState, ClimateQuery, ClimateResponse,
-        OceanState, StationId, WeatherStation, Observation, evaluate_climate,
+        evaluate_climate, AtmosphericLayer, AtmosphericState, ClimateQuery, ClimateResponse,
+        Observation, OceanState, StationId, WeatherStation,
     };
 
     fn make_surface_response() -> ClimateResponse {
@@ -234,7 +240,7 @@ mod tests {
         assert!((sdf.temperature_c - 25.0).abs() < 1e-10);
         assert!((sdf.pressure_hpa - 1013.25).abs() < 1e-10);
         assert!((sdf.iso_surface_value - 0.25).abs() < 1e-10); // 25/100
-        // wind_speed = sqrt(9+1+0) = sqrt(10) ≈ 3.162, gradient = 3.162*0.01
+                                                               // wind_speed = sqrt(9+1+0) = sqrt(10) ≈ 3.162, gradient = 3.162*0.01
         assert!(sdf.gradient_strength > 0.03 && sdf.gradient_strength < 0.04);
         assert!(sdf.density_kg_m3 > 0.0);
     }

@@ -2,12 +2,18 @@
 //!
 //! 5 bridges connecting molecular compilation to the ALICE ecosystem.
 
-use alice_atoms::{Crystal, BandStructure, CompilationResult, MaterialProperties, predict_properties, compute_band_structure};
+use alice_atoms::{
+    compute_band_structure, predict_properties, BandStructure, CompilationResult, Crystal,
+    MaterialProperties,
+};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -68,7 +74,13 @@ pub struct AtomsAnalyticsBandEvent {
 /// Convert a band structure into an analytics event.
 #[inline]
 pub fn atoms_band_to_analytics(bs: &BandStructure) -> AtomsAnalyticsBandEvent {
-    let class_byte = if bs.is_metal { 0u8 } else if bs.is_semiconductor { 1 } else { 2 };
+    let class_byte = if bs.is_metal {
+        0u8
+    } else if bs.is_semiconductor {
+        1
+    } else {
+        2
+    };
 
     let mut key = [0u8; 25];
     key[0..8].copy_from_slice(&bs.band_gap_ev.to_bits().to_le_bytes());
@@ -195,7 +207,10 @@ pub fn atoms_compilation_to_cache(result: &CompilationResult) -> AtomsCacheCompi
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_atoms::{Element, LatticeType, Atom, Crystal, PropertyTarget, CompilerConfig, compile, compute_band_structure, predict_properties};
+    use alice_atoms::{
+        compile, compute_band_structure, predict_properties, Atom, CompilerConfig, Crystal,
+        Element, LatticeType, PropertyTarget,
+    };
     use std::f64::consts::PI;
 
     fn make_si_crystal() -> Crystal {

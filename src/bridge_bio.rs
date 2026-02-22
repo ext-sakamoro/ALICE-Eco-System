@@ -2,12 +2,15 @@
 //!
 //! 5 bridges connecting molecular structure data to the ALICE ecosystem.
 
-use alice_bio::{Residue, ProteinSdf, TotalEnergy};
+use alice_bio::{ProteinSdf, Residue, TotalEnergy};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -27,6 +30,7 @@ pub struct BioSdfSample {
 
 /// Evaluate a protein SDF at a point and produce an SDF pipeline sample.
 #[inline]
+#[must_use]
 pub fn bio_sdf_eval(protein: &ProteinSdf, point: [f64; 3]) -> BioSdfSample {
     let distance = protein.eval(&point);
     let mut key = [0u8; 32];
@@ -61,6 +65,7 @@ pub struct BioAnalyticsBoundsEvent {
 
 /// Convert a protein SDF bounding box into an analytics event.
 #[inline]
+#[must_use]
 pub fn bio_bounds_to_analytics(protein: &ProteinSdf) -> BioAnalyticsBoundsEvent {
     let (min_c, max_c) = protein.bounding_box();
     let extent = [
@@ -103,6 +108,7 @@ pub struct BioAnalyticsBackboneEvent {
 
 /// Convert a residue into a backbone angle analytics event.
 #[inline]
+#[must_use]
 pub fn bio_residue_to_analytics(residue: &Residue) -> BioAnalyticsBackboneEvent {
     let mut key = [0u8; 25];
     key[0] = residue.amino.one_letter() as u8;
@@ -140,6 +146,7 @@ pub struct BioDbEnergyRecord {
 
 /// Convert a total energy report into a DB energy record.
 #[inline]
+#[must_use]
 pub fn bio_energy_to_db(energy: &TotalEnergy) -> BioDbEnergyRecord {
     let mut key = [0u8; 40];
     key[0..8].copy_from_slice(&energy.van_der_waals.to_bits().to_le_bytes());
@@ -174,6 +181,7 @@ pub struct BioCacheEnergy {
 
 /// Convert a total energy into a cache entry with adaptive TTL.
 #[inline]
+#[must_use]
 pub fn bio_energy_to_cache(energy: &TotalEnergy) -> BioCacheEnergy {
     let total = energy.total();
     let mut key = [0u8; 8];
@@ -195,7 +203,7 @@ pub fn bio_energy_to_cache(energy: &TotalEnergy) -> BioCacheEnergy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_bio::{AminoAcid, Residue, ProteinSdf, TotalEnergy};
+    use alice_bio::{AminoAcid, ProteinSdf, Residue, TotalEnergy};
 
     fn make_residue(aa: AminoAcid, phi: f64, psi: f64) -> Residue {
         Residue::new(aa, phi, psi, std::f64::consts::PI)
@@ -242,7 +250,12 @@ mod tests {
 
     #[test]
     fn test_bio_energy_to_db() {
-        let energy = TotalEnergy { van_der_waals: -5.0, electrostatic: -2.0, hydrogen_bonds: -1.5, torsional: 0.3 };
+        let energy = TotalEnergy {
+            van_der_waals: -5.0,
+            electrostatic: -2.0,
+            hydrogen_bonds: -1.5,
+            torsional: 0.3,
+        };
         let rec = bio_energy_to_db(&energy);
         assert_ne!(rec.content_hash, 0);
         assert!((rec.vdw_energy - (-5.0)).abs() < 1e-10);
@@ -251,7 +264,12 @@ mod tests {
 
     #[test]
     fn test_bio_energy_to_cache_favorable() {
-        let energy = TotalEnergy { van_der_waals: -500.0, electrostatic: -200.0, hydrogen_bonds: -100.0, torsional: 50.0 };
+        let energy = TotalEnergy {
+            van_der_waals: -500.0,
+            electrostatic: -200.0,
+            hydrogen_bonds: -100.0,
+            torsional: 50.0,
+        };
         let entry = bio_energy_to_cache(&energy);
         assert_ne!(entry.content_hash, 0);
         assert!(entry.is_favorable);
@@ -260,7 +278,12 @@ mod tests {
 
     #[test]
     fn test_bio_energy_to_cache_unstable() {
-        let energy = TotalEnergy { van_der_waals: -2000.0, electrostatic: -500.0, hydrogen_bonds: 0.0, torsional: 100.0 };
+        let energy = TotalEnergy {
+            van_der_waals: -2000.0,
+            electrostatic: -500.0,
+            hydrogen_bonds: 0.0,
+            torsional: 100.0,
+        };
         let entry = bio_energy_to_cache(&energy);
         assert_eq!(entry.ttl_secs, 10); // |total| = 2400 > 1000
     }

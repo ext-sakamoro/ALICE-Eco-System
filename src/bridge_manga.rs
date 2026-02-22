@@ -7,7 +7,10 @@ use alice_manga::MangaPage;
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -110,7 +113,11 @@ pub struct MangaDbRecord {
 pub fn manga_to_db_record(pages: &[&MangaPage]) -> MangaDbRecord {
     let total_elements: usize = pages.iter().map(|p| p.element_count()).sum();
     let total_bytes: usize = pages.iter().map(|p| p.estimate_size()).sum();
-    let data = [pages.len().to_le_bytes().as_slice(), &total_elements.to_le_bytes()].concat();
+    let data = [
+        pages.len().to_le_bytes().as_slice(),
+        &total_elements.to_le_bytes(),
+    ]
+    .concat();
     MangaDbRecord {
         content_hash: fnv1a(&data),
         page_count: pages.len(),
@@ -215,7 +222,12 @@ pub fn manga_to_codec_config(page: &MangaPage) -> MangaCodecConfig {
     let elements = page.element_count();
     // Manga is mostly black/white → low bpp
     let bpp = if elements > 10 { 2.0 } else { 1.0 };
-    MangaCodecConfig { width: px_w, height: px_h, element_count: elements, estimated_bits_per_pixel: bpp }
+    MangaCodecConfig {
+        width: px_w,
+        height: px_h,
+        element_count: elements,
+        estimated_bits_per_pixel: bpp,
+    }
 }
 
 // ── Bridge 9: Manga → Font (balloon glyph metrics request) ──────────────

@@ -5,7 +5,10 @@
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -29,6 +32,7 @@ pub struct ContainerDbRecord {
 
 /// Serialize a container deployment descriptor for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn container_to_db_record(
     image_hash: u64,
     cpu_limit_us: u64,
@@ -70,6 +74,7 @@ pub struct ContainerCacheEntry {
 
 /// Build a cache entry for an image layer targeting ALICE-Cache.
 #[inline]
+#[must_use]
 pub fn container_to_cache_entry(layer_data: &[u8], layer_index: u16) -> ContainerCacheEntry {
     let layer_hash = fnv1a(layer_data);
     // Estimate compressed size as 60 % of raw (typical OCI layer ratio).
@@ -102,6 +107,7 @@ pub struct ContainerAnalyticsMetrics {
 
 /// Package container resource metrics for ALICE-Analytics ingestion.
 #[inline]
+#[must_use]
 pub fn container_to_analytics_metrics(
     id: u64,
     cpu_pct: f32,
@@ -141,6 +147,7 @@ pub struct ContainerAuthRequest {
 ///
 /// `scope`: 0=pull, 1=push, 2=admin.
 #[inline]
+#[must_use]
 pub fn container_to_auth_request(
     registry: &str,
     image_ref: &str,
@@ -176,6 +183,7 @@ pub struct ContainerCryptoPayload {
 ///
 /// `algo`: 0=Ed25519, 1=ECDSA-P256, 2=RSA-PSS-4096.
 #[inline]
+#[must_use]
 pub fn container_to_crypto_payload(
     image_hash: u64,
     manifest_size: usize,
@@ -192,11 +200,11 @@ pub fn container_to_crypto_payload(
 
 /// Container lifecycle event for ALICE-Queue publication.
 ///
-/// Event type values: 0=created, 1=started, 2=stopped, 3=destroyed, 4=oom_killed.
+/// Event type values: 0=created, 1=started, 2=stopped, 3=destroyed, `4=oom_killed`.
 pub struct ContainerQueueEvent {
     /// FNV-1a hash of the container identifier.
     pub container_hash: u64,
-    /// Lifecycle event kind (0=created, 1=started, 2=stopped, 3=destroyed, 4=oom_killed).
+    /// Lifecycle event kind (0=created, 1=started, 2=stopped, 3=destroyed, `4=oom_killed`).
     pub event_type: u8,
     /// Event timestamp in milliseconds since Unix epoch.
     pub timestamp_ms: u64,
@@ -206,13 +214,10 @@ pub struct ContainerQueueEvent {
 
 /// Build a lifecycle event message for ALICE-Queue.
 ///
-/// `event_type`: 0=created, 1=started, 2=stopped, 3=destroyed, 4=oom_killed.
+/// `event_type`: 0=created, 1=started, 2=stopped, 3=destroyed, `4=oom_killed`.
 #[inline]
-pub fn container_to_queue_event(
-    id: u64,
-    event_type: u8,
-    timestamp_ms: u64,
-) -> ContainerQueueEvent {
+#[must_use]
+pub fn container_to_queue_event(id: u64, event_type: u8, timestamp_ms: u64) -> ContainerQueueEvent {
     let container_hash = fnv1a(&id.to_le_bytes());
     // Estimate payload size: base JSON envelope is ~64 B; OOM events carry
     // an additional cgroup dump of ~256 B.
@@ -243,6 +248,7 @@ pub struct ContainerRtosTask {
 
 /// Map a container workload to an ALICE-RTOS periodic task descriptor.
 #[inline]
+#[must_use]
 pub fn container_to_rtos_task(
     id: u64,
     priority: u8,

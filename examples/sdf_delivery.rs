@@ -85,18 +85,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sphere_asdf = serialize_asdf(&sphere_tree);
 
     // Asset 1002: CSG hollow sphere (sphere - box = 3 nodes)
-    let csg_tree = SdfTree::new(
-        SdfNode::sphere(1.5).subtract(SdfNode::box3d(1.0, 1.0, 1.0)),
-    );
+    let csg_tree = SdfTree::new(SdfNode::sphere(1.5).subtract(SdfNode::box3d(1.0, 1.0, 1.0)));
     let csg_nodes = csg_tree.node_count();
     let csg_asdf = serialize_asdf(&csg_tree);
 
     // Asset 1003: Complex scene (10 CSG unions = 31 nodes)
     let mut complex_shape = SdfNode::sphere(1.0);
     for i in 0..10 {
-        complex_shape = complex_shape.union(
-            SdfNode::box3d(0.8, 0.8, 0.8).translate(i as f32 * 2.0, 0.0, 0.0),
-        );
+        complex_shape =
+            complex_shape.union(SdfNode::box3d(0.8, 0.8, 0.8).translate(i as f32 * 2.0, 0.0, 0.0));
     }
     let complex_tree = SdfTree::new(complex_shape);
     let complex_nodes = complex_tree.node_count();
@@ -126,24 +123,65 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     // PHASE 2: SETUP CDN EDGE NODES (Vivaldi + Maglev)
     // ========================================================================
-    println!("━━━ PHASE 2: CDN Edge Node Setup ({} Global Nodes) ━━━", NUM_CDN_NODES);
+    println!(
+        "━━━ PHASE 2: CDN Edge Node Setup ({} Global Nodes) ━━━",
+        NUM_CDN_NODES
+    );
 
     let nodes: [CdnNode; NUM_CDN_NODES] = [
-        CdnNode { id: 1, name: "Tokyo",      coord: VivaldiCoord::at(0.0, 0.0, 0.0, 2.0) },
-        CdnNode { id: 2, name: "London",     coord: VivaldiCoord::at(30.0, 20.0, 0.0, 3.0) },
-        CdnNode { id: 3, name: "New York",   coord: VivaldiCoord::at(50.0, 10.0, 0.0, 4.0) },
-        CdnNode { id: 4, name: "Sydney",     coord: VivaldiCoord::at(-20.0, -30.0, 0.0, 5.0) },
-        CdnNode { id: 5, name: "Singapore",  coord: VivaldiCoord::at(5.0, -15.0, 0.0, 2.0) },
-        CdnNode { id: 6, name: "Frankfurt",  coord: VivaldiCoord::at(28.0, 18.0, 0.0, 3.0) },
-        CdnNode { id: 7, name: "São Paulo",  coord: VivaldiCoord::at(45.0, -25.0, 0.0, 6.0) },
-        CdnNode { id: 8, name: "Mumbai",     coord: VivaldiCoord::at(15.0, -10.0, 0.0, 3.0) },
+        CdnNode {
+            id: 1,
+            name: "Tokyo",
+            coord: VivaldiCoord::at(0.0, 0.0, 0.0, 2.0),
+        },
+        CdnNode {
+            id: 2,
+            name: "London",
+            coord: VivaldiCoord::at(30.0, 20.0, 0.0, 3.0),
+        },
+        CdnNode {
+            id: 3,
+            name: "New York",
+            coord: VivaldiCoord::at(50.0, 10.0, 0.0, 4.0),
+        },
+        CdnNode {
+            id: 4,
+            name: "Sydney",
+            coord: VivaldiCoord::at(-20.0, -30.0, 0.0, 5.0),
+        },
+        CdnNode {
+            id: 5,
+            name: "Singapore",
+            coord: VivaldiCoord::at(5.0, -15.0, 0.0, 2.0),
+        },
+        CdnNode {
+            id: 6,
+            name: "Frankfurt",
+            coord: VivaldiCoord::at(28.0, 18.0, 0.0, 3.0),
+        },
+        CdnNode {
+            id: 7,
+            name: "São Paulo",
+            coord: VivaldiCoord::at(45.0, -25.0, 0.0, 6.0),
+        },
+        CdnNode {
+            id: 8,
+            name: "Mumbai",
+            coord: VivaldiCoord::at(15.0, -10.0, 0.0, 3.0),
+        },
     ];
 
     // Pre-built node name lookup: id → name (O(1) array index, no iter().find())
     let node_names: [&str; NUM_CDN_NODES + 1] = [
         "?", // id=0 (unused)
-        "Tokyo", "London", "New York", "Sydney",
-        "Singapore", "Frankfurt", "São Paulo", "Mumbai",
+        "Tokyo",
+        "London",
+        "New York",
+        "Sydney",
+        "Singapore",
+        "Frankfurt",
+        "São Paulo",
+        "Mumbai",
     ];
 
     // Maglev: O(1) content → node assignment
@@ -155,8 +193,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let locator = ContentLocator::with_weights(client_coord, 0.3, 0.7);
 
     // Pre-built node reference list (reused across all routing calls)
-    let node_refs: Vec<(u64, &VivaldiCoord)> =
-        nodes.iter().map(|n| (n.id, &n.coord)).collect();
+    let node_refs: Vec<(u64, &VivaldiCoord)> = nodes.iter().map(|n| (n.id, &n.coord)).collect();
 
     println!("  Maglev hash table: {} nodes, O(1) lookup", NUM_CDN_NODES);
     println!("  Client location:   Near Tokyo (1.0, 1.0, 0.0)");
@@ -220,19 +257,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // Cold requests
-    println!("  Cold start ({} requests → {} misses):", NUM_ASSETS, NUM_ASSETS);
+    println!(
+        "  Cold start ({} requests → {} misses):",
+        NUM_ASSETS, NUM_ASSETS
+    );
     for (i, &id) in asset_ids.iter().enumerate() {
         if cache.get(&id).is_some() {
             println!("    Asset {} ({}): HIT", id, ASSET_NAMES[i]);
         } else {
-            println!("    Asset {} ({}): MISS → fetch from origin", id, ASSET_NAMES[i]);
+            println!(
+                "    Asset {} ({}): MISS → fetch from origin",
+                id, ASSET_NAMES[i]
+            );
             cache.put(id, assets[i].to_vec()); // single allocation
         }
     }
     println!();
 
     // Warm requests (should all hit)
-    println!("  Warm requests ({} requests → should be cached):", NUM_ASSETS);
+    println!(
+        "  Warm requests ({} requests → should be cached):",
+        NUM_ASSETS
+    );
     for (i, &id) in asset_ids.iter().enumerate() {
         if cache.get(&id).is_some() {
             println!("    Asset {} ({}): HIT", id, ASSET_NAMES[i]);
@@ -246,8 +292,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "  Cache hit rate: {:.1}%  (hits: {}, misses: {})",
         cache.hit_rate() * 100.0,
-        cache.stats().hits.load(std::sync::atomic::Ordering::Relaxed),
-        cache.stats().misses.load(std::sync::atomic::Ordering::Relaxed),
+        cache
+            .stats()
+            .hits
+            .load(std::sync::atomic::Ordering::Relaxed),
+        cache
+            .stats()
+            .misses
+            .load(std::sync::atomic::Ordering::Relaxed),
     );
     println!();
 
@@ -255,18 +307,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Markov Prefetch Predictions:");
     println!(
         "    1001 → 1002: {}",
-        if cache.should_prefetch(&1001, &1002) { "PREFETCH" } else { "no signal" },
+        if cache.should_prefetch(&1001, &1002) {
+            "PREFETCH"
+        } else {
+            "no signal"
+        },
     );
     println!(
         "    1002 → 1003: {}",
-        if cache.should_prefetch(&1002, &1003) { "PREFETCH" } else { "no signal" },
+        if cache.should_prefetch(&1002, &1003) {
+            "PREFETCH"
+        } else {
+            "no signal"
+        },
     );
     println!();
 
     // ========================================================================
     // PHASE 5: FULL PIPELINE SIMULATION
     // ========================================================================
-    println!("━━━ PHASE 5: Full Pipeline Simulation ({} Requests) ━━━", SIMULATION_REQUESTS);
+    println!(
+        "━━━ PHASE 5: Full Pipeline Simulation ({} Requests) ━━━",
+        SIMULATION_REQUESTS
+    );
 
     cache.stats().reset();
 
@@ -324,27 +387,50 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║     │ Request asset_id                                       ║");
     println!("║     ▼                                                        ║");
     println!("║  [ALICE-CDN] Vivaldi Routing + Maglev O(1)                   ║");
-    println!("║     │ {} edge nodes, RTT-optimized                            ║", NUM_CDN_NODES);
-    println!("║     │ Nearest: Tokyo ({:.1}ms)                               ║", client_rtt);
+    println!(
+        "║     │ {} edge nodes, RTT-optimized                            ║",
+        NUM_CDN_NODES
+    );
+    println!(
+        "║     │ Nearest: Tokyo ({:.1}ms)                               ║",
+        client_rtt
+    );
     println!("║     ▼                                                        ║");
     println!("║  [ALICE-Cache] 256-shard + Markov Prefetch                   ║");
-    println!("║     │ Hit rate: {:.1}%, TinyLFU eviction                     ║", hit_rate * 100.0);
+    println!(
+        "║     │ Hit rate: {:.1}%, TinyLFU eviction                     ║",
+        hit_rate * 100.0
+    );
     println!("║     ▼                                                        ║");
     println!("║  [ALICE-SDF] ASDF Binary Format (in-memory serialization)    ║");
-    println!("║     │ Sphere:  {} B vs glTF {} KB ({:.0}x)                 ║",
-        asset_sizes[0], GLTF_SIZES[0] / 1024, GLTF_SIZES[0] as f64 / asset_sizes[0] as f64);
-    println!("║     │ CSG:     {} B vs glTF {} KB ({:.0}x)                ║",
-        asset_sizes[1], GLTF_SIZES[1] / 1024, GLTF_SIZES[1] as f64 / asset_sizes[1] as f64);
-    println!("║     │ Complex: {} B vs glTF {} KB ({:.0}x)               ║",
-        asset_sizes[2], GLTF_SIZES[2] / 1024, GLTF_SIZES[2] as f64 / asset_sizes[2] as f64);
+    println!(
+        "║     │ Sphere:  {} B vs glTF {} KB ({:.0}x)                 ║",
+        asset_sizes[0],
+        GLTF_SIZES[0] / 1024,
+        GLTF_SIZES[0] as f64 / asset_sizes[0] as f64
+    );
+    println!(
+        "║     │ CSG:     {} B vs glTF {} KB ({:.0}x)                ║",
+        asset_sizes[1],
+        GLTF_SIZES[1] / 1024,
+        GLTF_SIZES[1] as f64 / asset_sizes[1] as f64
+    );
+    println!(
+        "║     │ Complex: {} B vs glTF {} KB ({:.0}x)               ║",
+        asset_sizes[2],
+        GLTF_SIZES[2] / 1024,
+        GLTF_SIZES[2] as f64 / asset_sizes[2] as f64
+    );
     println!("║                                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  BANDWIDTH SAVINGS:                                          ║");
-    println!("║    {} req: {:.1} KB (ASDF) vs {:.1} MB (glTF) = {:.0}x     ║",
+    println!(
+        "║    {} req: {:.1} KB (ASDF) vs {:.1} MB (glTF) = {:.0}x     ║",
         SIMULATION_REQUESTS,
         total_asdf_bytes as f64 / 1024.0,
         total_gltf_equiv as f64 / 1_048_576.0,
-        bandwidth_ratio);
+        bandwidth_ratio
+    );
     println!("║                                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  OPTIMIZATIONS:                                              ║");
@@ -354,8 +440,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║    ✓ Single-clone cache population                           ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  COMPONENTS:                                                 ║");
-    println!("║    ALICE-SDF   v{}  ALICE-CDN  v{}  ALICE-Cache v{} ║",
-        alice_sdf::VERSION, alice_cdn::VERSION, alice_cache::VERSION);
+    println!(
+        "║    ALICE-SDF   v{}  ALICE-CDN  v{}  ALICE-Cache v{} ║",
+        alice_sdf::VERSION,
+        alice_cdn::VERSION,
+        alice_cache::VERSION
+    );
     println!("╚══════════════════════════════════════════════════════════════╝");
     println!();
     println!("✓ SDF Asset Delivery Pipeline: SUCCESS");

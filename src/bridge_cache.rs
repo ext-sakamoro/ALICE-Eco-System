@@ -7,7 +7,10 @@
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -20,7 +23,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 pub struct CacheDbEvictionRecord {
     /// FNV-1a hash of the evicted cache key.
     pub key_hash: u64,
-    /// Eviction reason: 0=capacity, 1=ttl_expired, 2=explicit_invalidate.
+    /// Eviction reason: 0=capacity, `1=ttl_expired`, `2=explicit_invalidate`.
     pub reason: u8,
     /// Entry size in bytes at eviction time.
     pub entry_bytes: usize,
@@ -32,6 +35,7 @@ pub struct CacheDbEvictionRecord {
 
 /// Build a cache eviction log record for ALICE-DB.
 #[inline]
+#[must_use]
 pub fn cache_to_db_eviction_record(
     cache_key: &[u8],
     reason: u8,
@@ -69,6 +73,7 @@ pub struct CacheAnalyticsLookupEvent {
 
 /// Build a cache lookup telemetry event for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn cache_to_analytics_lookup_event(
     cache_key: &[u8],
     is_hit: bool,
@@ -97,11 +102,11 @@ pub struct CacheCryptoEntry {
     pub content_hash: u64,
     /// Cipher algorithm: 0=AES-256-GCM, 1=ChaCha20-Poly1305.
     pub cipher: u8,
-    /// Nonce derived from content_hash (first 12 bytes).
+    /// Nonce derived from `content_hash` (first 12 bytes).
     pub nonce: [u8; 12],
     /// Authentication tag length in bytes (16 for both supported ciphers).
     pub tag_bytes: u8,
-    /// Ciphertext size in bytes (plaintext_size + tag_bytes).
+    /// Ciphertext size in bytes (`plaintext_size` + `tag_bytes`).
     pub ciphertext_bytes: usize,
     /// Cache TTL in seconds.
     pub ttl_secs: u32,
@@ -111,14 +116,11 @@ pub struct CacheCryptoEntry {
 ///
 /// `cipher`: 0=AES-256-GCM, 1=ChaCha20-Poly1305.
 /// The nonce is derived from the low 96 bits of `content_hash` (12 bytes).
-/// This is safe here because each plaintext produces a unique content_hash,
+/// This is safe here because each plaintext produces a unique `content_hash`,
 /// so nonce reuse across different plaintexts is statistically excluded.
 #[inline]
-pub fn cache_to_crypto_entry(
-    plaintext: &[u8],
-    cipher: u8,
-    ttl_secs: u32,
-) -> CacheCryptoEntry {
+#[must_use]
+pub fn cache_to_crypto_entry(plaintext: &[u8], cipher: u8, ttl_secs: u32) -> CacheCryptoEntry {
     let content_hash = fnv1a(plaintext);
     // Derive 12-byte nonce from content_hash: repeat hash bytes cyclically.
     let hash_bytes = content_hash.to_le_bytes();
@@ -162,6 +164,7 @@ pub struct CacheDbWarmupSnapshot {
 ///
 /// `fill_permille` is computed branchlessly from `entry_count / capacity`.
 #[inline]
+#[must_use]
 pub fn cache_to_db_warmup_snapshot(
     entry_count: u32,
     total_bytes: usize,
@@ -207,6 +210,7 @@ pub struct CacheAnalyticsEvictionMetrics {
 
 /// Build eviction rate metrics for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn cache_to_analytics_eviction_metrics(
     instance_name: &str,
     eviction_count: u64,
@@ -241,7 +245,7 @@ pub fn cache_to_analytics_eviction_metrics(
 pub struct CacheCryptoKeyRequest {
     /// FNV-1a hash of the namespace identifier.
     pub namespace_hash: u64,
-    /// Requested key length in bytes (16, 24, or 32 for AES; 32 for ChaCha20).
+    /// Requested key length in bytes (16, 24, or 32 for AES; 32 for `ChaCha20`).
     pub key_bytes: u8,
     /// KDF algorithm: 0=HKDF-SHA256, 1=PBKDF2-SHA256.
     pub kdf_algo: u8,
@@ -253,15 +257,16 @@ pub struct CacheCryptoKeyRequest {
 ///
 /// `key_bytes` is rounded up to the nearest supported size: 16, 24, or 32.
 #[inline]
+#[must_use]
 pub fn cache_to_crypto_key_request(
     namespace: &str,
     requested_key_bytes: u8,
     kdf_algo: u8,
 ) -> CacheCryptoKeyRequest {
-    let namespace_hash = fnv1a(namespace.as_bytes());
-    // Round up to nearest supported key size (branchless table).
     const KEY_SIZES: [u8; 3] = [16, 24, 32];
-    let key_bytes = KEY_SIZES.iter()
+    let namespace_hash = fnv1a(namespace.as_bytes());
+    let key_bytes = KEY_SIZES
+        .iter()
         .copied()
         .find(|&s| s >= requested_key_bytes)
         .unwrap_or(32);
@@ -294,6 +299,7 @@ pub struct CacheDbMissLog {
 
 /// Build a cache miss log record for ALICE-DB.
 #[inline]
+#[must_use]
 pub fn cache_to_db_miss_log(
     cache_key: &[u8],
     missed_at_ms: u64,
@@ -383,9 +389,7 @@ mod tests {
 
     #[test]
     fn test_cache_to_analytics_eviction_metrics() {
-        let m = cache_to_analytics_eviction_metrics(
-            "l1-cache", 100, 60, 40, 10_000, 100 * 4096,
-        );
+        let m = cache_to_analytics_eviction_metrics("l1-cache", 100, 60, 40, 10_000, 100 * 4096);
         assert_ne!(m.instance_hash, 0);
         assert_eq!(m.eviction_count, 100);
         // 100 evictions / 10 000 lookups * 1000 = 10 permille.

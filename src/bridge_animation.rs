@@ -2,12 +2,15 @@
 //!
 //! 8 bridges connecting SDF anime direction engine to the ALICE ecosystem.
 
-use alice_animation::{SceneGraph, Director};
+use alice_animation::{Director, SceneGraph};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -27,7 +30,11 @@ pub struct AnimSdfScene {
 #[inline]
 pub fn animation_to_sdf_scene(scene: &SceneGraph, _time: f32) -> AnimSdfScene {
     let actors = scene.actor_count();
-    AnimSdfScene { node_count: actors, actor_count: actors, duration_secs: 0.0 }
+    AnimSdfScene {
+        node_count: actors,
+        actor_count: actors,
+        duration_secs: 0.0,
+    }
 }
 
 // ── Bridge 2: Animation → CDN (episode delivery) ────────────────────────
@@ -76,7 +83,11 @@ pub fn animation_to_cache_entry(scene: &SceneGraph, time: f32) -> AnimCacheEntry
     let actors = scene.actor_count();
     let time_key = (time * 100.0) as u32;
     let data = [actors.to_le_bytes().as_slice(), &time_key.to_le_bytes()].concat();
-    AnimCacheEntry { content_hash: fnv1a(&data), actor_count: actors, time_key }
+    AnimCacheEntry {
+        content_hash: fnv1a(&data),
+        actor_count: actors,
+        time_key,
+    }
 }
 
 // ── Bridge 4: Animation → DB (scene persistence) ────────────────────────
@@ -125,7 +136,12 @@ pub struct AnimSyncPacket {
 pub fn animation_to_sync_packet(scene: &SceneGraph, time: f32, player_slot: u8) -> AnimSyncPacket {
     let actors = scene.actor_count();
     let data = [&actors.to_le_bytes()[..], &time.to_le_bytes()].concat();
-    AnimSyncPacket { actor_count: actors, time, content_hash: fnv1a(&data), player_slot }
+    AnimSyncPacket {
+        actor_count: actors,
+        time,
+        content_hash: fnv1a(&data),
+        player_slot,
+    }
 }
 
 // ── Bridge 6: Animation → View (render pipeline config) ─────────────────
@@ -199,7 +215,11 @@ pub struct AnimMlFeatures {
 pub fn animation_to_ml_features(scene: &SceneGraph, time: f32, duration: f32) -> AnimMlFeatures {
     let actors = scene.actor_count() as f32;
     let complexity = actors * 0.1;
-    let t_norm = if duration > 0.0 { (time / duration).clamp(0.0, 1.0) } else { 0.0 };
+    let t_norm = if duration > 0.0 {
+        (time / duration).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
     AnimMlFeatures {
         actor_count: actors,
         scene_complexity: complexity,

@@ -7,7 +7,10 @@
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -34,6 +37,7 @@ pub struct DbAnalyticsQueryEvent {
 
 /// Build a query telemetry event for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn db_to_analytics_query_event(
     query: &str,
     exec_ms: f64,
@@ -80,20 +84,26 @@ pub struct DbCacheQueryResult {
 /// - `row_count` <= 10 000 → 60 s
 /// - larger → 10 s (high-cardinality result, likely to change soon)
 #[inline]
+#[must_use]
 pub fn db_to_cache_query_result(
     query: &str,
     result_bytes: usize,
     row_count: u64,
     schema_version: u16,
 ) -> DbCacheQueryResult {
+    const TTL_TABLE: [u32; 4] = [3_600, 300, 60, 10];
     let query_hash = fnv1a(query.as_bytes());
     // Branchless TTL via a 4-entry lookup indexed by cardinality tier.
     // Tier = number of bits needed to represent row_count / 7 (log₂ proxy), clamped to 3.
-    let tier = if row_count == 0 { 0usize }
-               else if row_count <= 100 { 1 }
-               else if row_count <= 10_000 { 2 }
-               else { 3 };
-    const TTL_TABLE: [u32; 4] = [3_600, 300, 60, 10];
+    let tier = if row_count == 0 {
+        0usize
+    } else if row_count <= 100 {
+        1
+    } else if row_count <= 10_000 {
+        2
+    } else {
+        3
+    };
     let ttl_secs = TTL_TABLE[tier];
     DbCacheQueryResult {
         query_hash,
@@ -131,6 +141,7 @@ pub struct DbQueueWriteRequest {
 /// - upsert (2) → 1 (normal)
 /// - insert (0) / update (1) → 0 (low: can be batched)
 #[inline]
+#[must_use]
 pub fn db_to_queue_write_request(
     table: &str,
     payload_bytes: usize,
@@ -159,7 +170,7 @@ pub fn db_to_queue_write_request(
 pub struct DbAnalyticsSchemaEvent {
     /// FNV-1a hash of `table_name` — stream key.
     pub table_hash: u64,
-    /// DDL operation: 0=create, 1=alter_add, 2=alter_drop, 3=drop, 4=index_create.
+    /// DDL operation: 0=create, `1=alter_add`, `2=alter_drop`, 3=drop, `4=index_create`.
     pub ddl_op: u8,
     /// New schema version after this change.
     pub schema_version: u16,
@@ -171,6 +182,7 @@ pub struct DbAnalyticsSchemaEvent {
 
 /// Build a schema change event for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn db_to_analytics_schema_event(
     table_name: &str,
     ddl_op: u8,
@@ -212,6 +224,7 @@ pub struct DbCacheTableStats {
 ///
 /// TTL is set to 1800 s (30 minutes) — a typical ANALYZE interval.
 #[inline]
+#[must_use]
 pub fn db_to_cache_table_stats(
     table_name: &str,
     row_count: u64,
@@ -251,6 +264,7 @@ pub struct DbQueueReplicationEvent {
 
 /// Build a CDC replication event for ALICE-Queue.
 #[inline]
+#[must_use]
 pub fn db_to_queue_replication_event(
     table_name: &str,
     change_type: u8,
@@ -287,7 +301,7 @@ pub struct DbAnalyticsPoolMetrics {
     pub active_connections: u32,
     /// Connections waiting for an available slot.
     pub wait_count: u32,
-    /// Pool utilisation in permille (active * 1000 / pool_size).
+    /// Pool utilisation in permille (active * 1000 / `pool_size`).
     pub utilisation_permille: u32,
     /// Mean connection wait time in milliseconds.
     pub mean_wait_ms: f64,
@@ -295,8 +309,9 @@ pub struct DbAnalyticsPoolMetrics {
 
 /// Build connection pool metrics for ALICE-Analytics.
 ///
-/// `utilisation_permille` is computed branchlessly (guard pool_size=0 with max(1)).
+/// `utilisation_permille` is computed branchlessly (guard `pool_size=0` with max(1)).
 #[inline]
+#[must_use]
 pub fn db_to_analytics_pool_metrics(
     pool_name: &str,
     pool_size: u32,
@@ -326,7 +341,8 @@ mod tests {
 
     #[test]
     fn test_db_to_analytics_query_event() {
-        let ev = db_to_analytics_query_event("SELECT * FROM users WHERE id = ?", 1.5, 1, 1, true, 0.02);
+        let ev =
+            db_to_analytics_query_event("SELECT * FROM users WHERE id = ?", 1.5, 1, 1, true, 0.02);
         assert_ne!(ev.query_hash, 0);
         assert!((ev.exec_ms - 1.5).abs() < f64::EPSILON);
         assert_eq!(ev.rows_scanned, 1);

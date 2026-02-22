@@ -109,8 +109,7 @@ pub fn font_to_browser_layout(
         for g in &line.glyphs {
             let (tx, ty) = atlas
                 .lookup(g.codepoint)
-                .map(|e| (e.tile_x, e.tile_y))
-                .unwrap_or((0, 0));
+                .map_or((0, 0), |e| (e.tile_x, e.tile_y));
             glyphs.push(DomGlyph {
                 codepoint: g.codepoint as u32,
                 x: g.x,
@@ -124,7 +123,12 @@ pub fn font_to_browser_layout(
         height = line.y_offset;
     }
 
-    DomTextLayout { glyphs, width: max_w, height, line_count }
+    DomTextLayout {
+        glyphs,
+        width: max_w,
+        height,
+        line_count,
+    }
 }
 
 // ── Bridge 3: Font → SDF (text as CSG scene) ───────────────────────────
@@ -147,6 +151,10 @@ pub struct FontSdfScene {
 }
 
 /// Convert shaped text to SDF tile data for ALICE-SDF integration.
+///
+/// # Panics
+///
+/// Panics if a glyph codepoint is not found in the atlas after pre-population.
 #[inline]
 pub fn font_to_sdf_scene(
     text: &str,
@@ -173,21 +181,31 @@ pub fn font_to_sdf_scene(
         for row in 0..GLYPH_SDF_SIZE {
             for col in 0..GLYPH_SDF_SIZE {
                 let idx = (tsy + row) * tex_size + (tsx + col);
-                sdf_data.push(if idx < atlas_px.len() { atlas_px[idx] } else { 1.0 });
+                sdf_data.push(if idx < atlas_px.len() {
+                    atlas_px[idx]
+                } else {
+                    1.0
+                });
             }
         }
         let x = g.x * scale;
         let right = x + g.advance * scale;
         min_x = min_x.min(x);
         max_x = max_x.max(right);
-        tiles.push(FontSdfTile { ch: g.codepoint, x, y: g.y * scale, sdf_data, advance: g.advance * scale });
+        tiles.push(FontSdfTile {
+            ch: g.codepoint,
+            x,
+            y: g.y * scale,
+            sdf_data,
+            advance: g.advance * scale,
+        });
     }
 
     FontSdfScene {
         tiles,
         tile_size: GLYPH_SDF_SIZE,
-        bbox_min: (if min_x == f32::MAX { 0.0 } else { min_x }, 0.0),
-        bbox_max: (if max_x == f32::MIN { 0.0 } else { max_x }, scale),
+        bbox_min: (if min_x >= f32::MAX { 0.0 } else { min_x }, 0.0),
+        bbox_max: (if max_x <= f32::MIN { 0.0 } else { max_x }, scale),
     }
 }
 
@@ -207,7 +225,13 @@ pub struct MangaTextLayout {
 
 /// Create vertical manga text layout for ALICE-Manga balloon rendering.
 #[inline]
-pub fn font_to_manga_layout(text: &str, balloon_w: f32, balloon_h: f32, font_size: f32) -> MangaTextLayout {
+#[must_use]
+pub fn font_to_manga_layout(
+    text: &str,
+    balloon_w: f32,
+    balloon_h: f32,
+    font_size: f32,
+) -> MangaTextLayout {
     let params = MetaFontParams::sans_regular();
     let chars: Vec<char> = text.chars().collect();
     let per_col = ((balloon_h / (font_size * 1.5)) as usize).max(1);
@@ -218,7 +242,9 @@ pub fn font_to_manga_layout(text: &str, balloon_w: f32, balloon_h: f32, font_siz
         let mut glyphs = Vec::new();
         let mut y = font_size;
         for _ in 0..per_col {
-            if i >= chars.len() { break; }
+            if i >= chars.len() {
+                break;
+            }
             glyphs.push((chars[i], col_x, y));
             y += font_size * 1.5;
             i += 1;
@@ -226,7 +252,10 @@ pub fn font_to_manga_layout(text: &str, balloon_w: f32, balloon_h: f32, font_siz
         columns.push(MangaColumn { x: col_x, glyphs });
         col_x -= font_size * 1.8;
     }
-    MangaTextLayout { params_wire: params.encode(), columns }
+    MangaTextLayout {
+        params_wire: params.encode(),
+        columns,
+    }
 }
 
 // ── Bridge 5: Font → Animation (animated text) ─────────────────────────
@@ -241,12 +270,23 @@ pub struct AnimTextFrame {
 
 /// Generate animated text transition between two font styles.
 #[inline]
-pub fn font_animation_frame(text: &str, from: &MetaFontParams, to: &MetaFontParams, t: f32) -> AnimTextFrame {
+#[must_use]
+pub fn font_animation_frame(
+    text: &str,
+    from: &MetaFontParams,
+    to: &MetaFontParams,
+    t: f32,
+) -> AnimTextFrame {
     let params = from.lerp(to, t);
     let shaper = TextShaper::new(params);
     let mut atlas = SdfAtlas::new(8, params);
     let line = shaper.shape_line(text, &mut atlas);
-    AnimTextFrame { params, glyphs: line.glyphs, width: line.width, progress: t }
+    AnimTextFrame {
+        params,
+        glyphs: line.glyphs,
+        width: line.width,
+        progress: t,
+    }
 }
 
 // ── Bridge 6: Font → CDN (parameter distribution) ──────────────────────
@@ -260,6 +300,7 @@ pub struct FontCdnPackage {
 
 /// Package font parameters for CDN distribution.
 #[inline]
+#[must_use]
 pub fn font_to_cdn_package(params: &MetaFontParams) -> FontCdnPackage {
     let bytes = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -289,8 +330,18 @@ pub struct TextEngravingResult {
 }
 
 /// Extract contours from text SDF for ALICE-Print G-code engraving.
+///
+/// # Panics
+///
+/// Panics if a glyph codepoint is not found in the atlas after pre-population.
 #[inline]
-pub fn font_to_print_contours(text: &str, params: &MetaFontParams, scale_mm: f32, threshold: f32) -> TextEngravingResult {
+#[must_use]
+pub fn font_to_print_contours(
+    text: &str,
+    params: &MetaFontParams,
+    scale_mm: f32,
+    threshold: f32,
+) -> TextEngravingResult {
     let shaper = TextShaper::new(*params);
     let mut atlas = SdfAtlas::new(8, *params);
     let line = shaper.shape_line(text, &mut atlas);
@@ -335,8 +386,10 @@ pub fn font_to_print_contours(text: &str, params: &MetaFontParams, scale_mm: f32
     TextEngravingResult {
         contours,
         bbox: (
-            if min_x == f32::MAX { 0.0 } else { min_x }, 0.0,
-            if max_x == f32::MIN { 0.0 } else { max_x }, scale_mm,
+            if min_x >= f32::MAX { 0.0 } else { min_x },
+            0.0,
+            if max_x <= f32::MIN { 0.0 } else { max_x },
+            scale_mm,
         ),
         path_length_mm: path_len,
     }
@@ -348,7 +401,7 @@ pub fn font_to_print_contours(text: &str, params: &MetaFontParams, scale_mm: f32
 pub struct FontDbRecord {
     /// Content hash for deduplication.
     pub content_hash: u64,
-    /// Serialized MetaFontParams bytes.
+    /// Serialized `MetaFontParams` bytes.
     pub data: [u8; 40],
     /// Weight value.
     pub weight: f32,
@@ -356,8 +409,9 @@ pub struct FontDbRecord {
     pub serif: f32,
 }
 
-/// Serialize MetaFontParams for ALICE-DB persistence.
+/// Serialize `MetaFontParams` for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn font_to_db_record(params: &MetaFontParams) -> FontDbRecord {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -385,8 +439,9 @@ pub struct FontCacheEntry {
     pub compression_ratio: f64,
 }
 
-/// Prepare MetaFontParams for ALICE-Cache storage.
+/// Prepare `MetaFontParams` for ALICE-Cache storage.
 #[inline]
+#[must_use]
 pub fn font_to_cache_entry(params: &MetaFontParams) -> FontCacheEntry {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -413,8 +468,9 @@ pub struct FontSyncPacket {
     pub player_id: u8,
 }
 
-/// Package MetaFontParams for ALICE-Sync P2P exchange.
+/// Package `MetaFontParams` for ALICE-Sync P2P exchange.
 #[inline]
+#[must_use]
 pub fn font_to_sync_packet(params: &MetaFontParams, player_id: u8) -> FontSyncPacket {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -441,8 +497,9 @@ pub struct FontCryptoPayload {
     pub payload_bytes: usize,
 }
 
-/// Prepare MetaFontParams for ALICE-Crypto encryption.
+/// Prepare `MetaFontParams` for ALICE-Crypto encryption.
 #[inline]
+#[must_use]
 pub fn font_to_crypto_payload(params: &MetaFontParams) -> FontCryptoPayload {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -469,8 +526,9 @@ pub struct FontQueueMessage {
     pub payload_bytes: usize,
 }
 
-/// Package MetaFontParams for ALICE-Queue message delivery.
+/// Package `MetaFontParams` for ALICE-Queue message delivery.
 #[inline]
+#[must_use]
 pub fn font_to_queue_message(params: &MetaFontParams) -> FontQueueMessage {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -503,6 +561,7 @@ pub struct FontAnalyticsMetrics {
 
 /// Extract font usage metrics for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn font_to_analytics_metrics(params: &MetaFontParams) -> FontAnalyticsMetrics {
     let data = params.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -545,6 +604,7 @@ pub struct MangaGlyphAtlas {
 /// ready for GPU-based manga panel compositing without going through
 /// ALICE-Text compression/decompression.
 #[inline]
+#[must_use]
 pub fn font_to_manga_glyph_atlas(text: &str, params: &MetaFontParams) -> MangaGlyphAtlas {
     let mut atlas = SdfAtlas::new(8, *params);
     let mut unique = 0usize;
@@ -611,7 +671,10 @@ mod tests {
         let scene = font_to_sdf_scene("X", &mut s, &mut a, 10.0);
         assert_eq!(scene.tiles.len(), 1);
         assert_eq!(scene.tile_size, GLYPH_SDF_SIZE);
-        assert_eq!(scene.tiles[0].sdf_data.len(), GLYPH_SDF_SIZE * GLYPH_SDF_SIZE);
+        assert_eq!(
+            scene.tiles[0].sdf_data.len(),
+            GLYPH_SDF_SIZE * GLYPH_SDF_SIZE
+        );
     }
 
     #[test]

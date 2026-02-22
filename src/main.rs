@@ -6,9 +6,9 @@
 //! [Sensor Generator (Iterator)] → [Edge: Stack Only] → [Network] → [DB: Batch Write] → [View]
 //! ```
 
-use alice_db::{AliceDB, Aggregation};
+use alice_db::{Aggregation, AliceDB};
 use alice_edge::fit_linear_fixed;
-use alice_view::{ViewerConfig, launch_viewer};
+use alice_view::{launch_viewer, ViewerConfig};
 use tempfile::tempdir;
 
 // Constants
@@ -27,7 +27,12 @@ struct SensorGenerator {
 impl SensorGenerator {
     #[inline(always)]
     fn new(count: usize, base_temp: f32, slope: f32) -> Self {
-        Self { current: 0, count, base_temp, slope }
+        Self {
+            current: 0,
+            count,
+            base_temp,
+            slope,
+        }
     }
 }
 
@@ -85,9 +90,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let raw_bytes = SAMPLE_COUNT * 4;
-    println!("  Sensor readings: {} samples (Stack: {}KB)", SAMPLE_COUNT, raw_bytes / 1024);
-    println!("  First value:     {:.2}°C", sensor_buffer[0] as f32 / 100.0);
-    println!("  Last value:      {:.2}°C", sensor_buffer[SAMPLE_COUNT - 1] as f32 / 100.0);
+    println!(
+        "  Sensor readings: {} samples (Stack: {}KB)",
+        SAMPLE_COUNT,
+        raw_bytes / 1024
+    );
+    println!(
+        "  First value:     {:.2}°C",
+        sensor_buffer[0] as f32 / 100.0
+    );
+    println!(
+        "  Last value:      {:.2}°C",
+        sensor_buffer[SAMPLE_COUNT - 1] as f32 / 100.0
+    );
     println!("  Raw data size:   {} bytes", raw_bytes);
     println!();
 
@@ -104,8 +119,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (slope, intercept) = fit_linear_fixed(&sensor_buffer);
 
     println!("  Model: y = slope × x + intercept (Q16.16 fixed-point)");
-    println!("  Slope:     {} (Q16.16) = {:.6}", slope, slope as f64 / 65536.0);
-    println!("  Intercept: {} (Q16.16) = {:.2}", intercept, intercept as f64 / 65536.0);
+    println!(
+        "  Slope:     {} (Q16.16) = {:.6}",
+        slope,
+        slope as f64 / 65536.0
+    );
+    println!(
+        "  Intercept: {} (Q16.16) = {:.2}",
+        intercept,
+        intercept as f64 / 65536.0
+    );
 
     // Serialize for transmission (8 bytes, stack only)
     let packet = serialize_coefficients(slope, intercept);
@@ -116,8 +139,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Packet size:  {} bytes", compressed_bytes);
     println!();
     println!("  ┌─────────────────────────────────────────────────┐");
-    println!("  │ COMPRESSION: {} bytes → {} bytes               │", raw_bytes, compressed_bytes);
-    println!("  │ RATIO:       {}x                              │", raw_bytes / compressed_bytes);
+    println!(
+        "  │ COMPRESSION: {} bytes → {} bytes               │",
+        raw_bytes, compressed_bytes
+    );
+    println!(
+        "  │ RATIO:       {}x                              │",
+        raw_bytes / compressed_bytes
+    );
     println!("  └─────────────────────────────────────────────────┘");
     println!();
 
@@ -126,7 +155,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     println!("━━━ PHASE 3: Network Transmission ━━━");
     println!("  [EDGE DEVICE] ──── 8 bytes ────▶ [CLOUD SERVER]");
-    println!("  Traditional:      {} bytes (LoRaWAN: ~{} packets)", raw_bytes, raw_bytes / 250);
+    println!(
+        "  Traditional:      {} bytes (LoRaWAN: ~{} packets)",
+        raw_bytes,
+        raw_bytes / 250
+    );
     println!("  ALICE-Edge:       8 bytes (LoRaWAN: 1 packet!)");
     println!();
 
@@ -158,7 +191,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     const Q16_SCALE: f32 = 1.0 / 65536.0;
     const CENTI_SCALE: f32 = 1.0 / 100.0;
 
-    println!("  Reconstructing {} points (stack mode, zero malloc)...", SAMPLE_COUNT);
+    println!(
+        "  Reconstructing {} points (stack mode, zero malloc)...",
+        SAMPLE_COUNT
+    );
 
     for i in 0..SAMPLE_COUNT {
         // Hand-optimized evaluation loop
@@ -259,20 +295,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║                                                              ║");
     println!("║  [Sensor]                                                    ║");
-    println!("║     │ {} samples × 4 bytes = {} bytes (Stack)            │", SAMPLE_COUNT, raw_bytes);
+    println!(
+        "║     │ {} samples × 4 bytes = {} bytes (Stack)            │",
+        SAMPLE_COUNT, raw_bytes
+    );
     println!("║     ▼                                                        ║");
     println!("║  [ALICE-Edge] (Ultimate Optimized)                           ║");
     println!("║     │ fit_linear_fixed() → 8 bytes                           ║");
     println!("║     │ O(1) formulas + 4x unroll + unsafe ptr                 ║");
-    println!("║     │ Compression: {}x                                      ║", raw_bytes / compressed_bytes);
+    println!(
+        "║     │ Compression: {}x                                      ║",
+        raw_bytes / compressed_bytes
+    );
     println!("║     ▼                                                        ║");
     println!("║  [Network: LoRaWAN/LTE-M]                                    ║");
     println!("║     │ 8 bytes transmitted                                    ║");
     println!("║     ▼                                                        ║");
     println!("║  [ALICE-DB] (Batch Insert)                                   ║");
     println!("║     │ put_batch() - Single lock acquisition                  ║");
-    println!("║     │ Disk: {} bytes, Compression: {:.1}x                   ║",
-             stats.total_disk_size, stats.average_compression_ratio);
+    println!(
+        "║     │ Disk: {} bytes, Compression: {:.1}x                   ║",
+        stats.total_disk_size, stats.average_compression_ratio
+    );
     println!("║     ▼                                                        ║");
     println!("║  [Query]                                                     ║");
     println!("║     │ Point, Range, Aggregation (SIMD accelerated)           ║");
@@ -290,8 +334,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║    ✓ #[inline(always)] on hot paths                          ║");
     println!("║    ✓ ZERO MALLOC IN USER CODE                                ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
-    println!("║  TOTAL: {} bytes → 8 bytes → {} bytes                     ║",
-             raw_bytes, stats.total_disk_size);
+    println!(
+        "║  TOTAL: {} bytes → 8 bytes → {} bytes                     ║",
+        raw_bytes, stats.total_disk_size
+    );
     println!("║  BANDWIDTH SAVED: 99.8%                                      ║");
     println!("╚══════════════════════════════════════════════════════════════╝");
     println!();

@@ -3,12 +3,15 @@
 //! 3 bridges connecting presence protocol events to sync frame transport,
 //! authentication token generation, and cryptographic proof sealing.
 
-use alice_presence::{PresenceEvent, IdentityCommitment, ProximityProof};
+use alice_presence::{IdentityCommitment, PresenceEvent, ProximityProof};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -20,7 +23,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// so the Sync layer can transport presence events over its existing
 /// delta-compression and ordered-delivery infrastructure.
 pub struct PresenceSyncFrame {
-    /// FNV-1a hash over party_a_id, party_b_id, timestamp_ns, flags bytes.
+    /// FNV-1a hash over `party_a_id`, `party_b_id`, `timestamp_ns`, flags bytes.
     pub content_hash: u64,
     /// Party A compact ID.
     pub party_a_id: u32,
@@ -28,7 +31,7 @@ pub struct PresenceSyncFrame {
     pub party_b_id: u32,
     /// Timestamp (nanoseconds).
     pub timestamp_ns: u64,
-    /// Wire size in bytes (always 18, same as PresenceEvent).
+    /// Wire size in bytes (always 18, same as `PresenceEvent`).
     pub wire_bytes: usize,
     /// Whether both parties are mutually present.
     pub is_mutual: bool,
@@ -40,6 +43,7 @@ pub struct PresenceSyncFrame {
 
 /// Convert a presence event into a sync frame record.
 #[inline]
+#[must_use]
 pub fn presence_event_to_sync_frame(event: &PresenceEvent) -> PresenceSyncFrame {
     let mut key = [0u8; 17];
     key[0..4].copy_from_slice(&event.party_a_id.to_le_bytes());
@@ -67,7 +71,7 @@ pub fn presence_event_to_sync_frame(event: &PresenceEvent) -> PresenceSyncFrame 
 /// Auth layer can verify presence identity claims using its existing
 /// token validation infrastructure.
 pub struct PresenceAuthToken {
-    /// FNV-1a hash over commitment_hash, nonce, timestamp_ns, token_hash bytes.
+    /// FNV-1a hash over `commitment_hash`, nonce, `timestamp_ns`, `token_hash` bytes.
     pub content_hash: u64,
     /// Commitment hash from the identity commitment.
     pub commitment_hash: u64,
@@ -75,7 +79,7 @@ pub struct PresenceAuthToken {
     pub nonce: u64,
     /// Timestamp (nanoseconds).
     pub timestamp_ns: u64,
-    /// Token hash: fnv1a of commitment_hash + nonce + timestamp.
+    /// Token hash: fnv1a of `commitment_hash` + nonce + timestamp.
     pub token_hash: u64,
     /// Time-to-live in seconds (3600 = 1 hour).
     pub ttl_secs: u32,
@@ -83,6 +87,7 @@ pub struct PresenceAuthToken {
 
 /// Convert an identity commitment into an auth verification token.
 #[inline]
+#[must_use]
 pub fn presence_identity_to_auth_token(commitment: &IdentityCommitment) -> PresenceAuthToken {
     // Compute token hash: fnv1a of commitment_hash + nonce + timestamp
     let mut tok_key = [0u8; 24];
@@ -116,7 +121,7 @@ pub fn presence_identity_to_auth_token(commitment: &IdentityCommitment) -> Prese
 /// layer can store and verify proximity claims using its existing
 /// authenticated encryption infrastructure.
 pub struct PresenceCryptoSealed {
-    /// FNV-1a hash over distance, threshold, is_proximate, coord_hash_a, coord_hash_b, seal_hash bytes.
+    /// FNV-1a hash over distance, threshold, `is_proximate`, `coord_hash_a`, `coord_hash_b`, `seal_hash` bytes.
     pub content_hash: u64,
     /// Vivaldi distance between the two parties.
     pub distance: f64,
@@ -136,6 +141,7 @@ pub struct PresenceCryptoSealed {
 
 /// Convert a proximity proof into a crypto-sealed proof.
 #[inline]
+#[must_use]
 pub fn presence_proof_to_crypto_sealed(proof: &ProximityProof) -> PresenceCryptoSealed {
     // Compute seal hash: fnv1a of all proof fields
     let mut seal_key = [0u8; 41];
@@ -174,7 +180,7 @@ pub fn presence_proof_to_crypto_sealed(proof: &ProximityProof) -> PresenceCrypto
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_presence::{VivaldiCoord, PresenceEvent, IdentityCommitment, ProximityProof};
+    use alice_presence::{IdentityCommitment, PresenceEvent, ProximityProof, VivaldiCoord};
 
     // ── Bridge 1: event → sync frame ──────────────────────────────────
 

@@ -1,12 +1,12 @@
-//! Edge core bridges — ALICE-Edge ↔ Analytics, DB, SemanticTelemetry
+//! Edge core bridges — ALICE-Edge ↔ Analytics, DB, `SemanticTelemetry`
 //!
 //! 3 bridges connecting the core Edge sensor pipeline to the ALICE ecosystem.
 //! Covers sensor pipeline throughput metrics, sensor reading persistence, and
 //! threshold-crossing event injection into the semantic telemetry ring.
 
-use alice_edge::{fit_linear_fixed, compute_residual_error, should_use_linear};
-use alice_semantic_telemetry::{SemanticEvent, EventKind, Severity};
 use crate::hash::fnv1a;
+use alice_edge::{compute_residual_error, fit_linear_fixed, should_use_linear};
+use alice_semantic_telemetry::{EventKind, SemanticEvent, Severity};
 
 /// Reciprocal of Q16.16 scale factor — replaces division in Q16 → f32.
 const RCP_Q16: f32 = 1.0 / 65536.0;
@@ -49,10 +49,12 @@ pub struct EdgePipelineMetrics {
 /// - `anomaly_count` uses a branchless integer cast of the boolean comparison.
 /// - `fit_quality` normalises error with `RCP_ERR_SCALE`, no runtime `/`.
 #[inline]
+#[must_use]
 pub fn edge_to_analytics_pipeline_metrics(
     data: &[i32],
     anomaly_threshold: i64,
 ) -> EdgePipelineMetrics {
+    const RCP_8: f32 = 1.0 / 8.0;
     let n = data.len();
     let (slope, intercept) = fit_linear_fixed(data);
     let error = compute_residual_error(data, slope, intercept);
@@ -62,7 +64,6 @@ pub fn edge_to_analytics_pipeline_metrics(
 
     // Compression ratio: raw = n * 4 bytes, transmitted = 8 bytes (slope + intercept).
     // ratio = n * 4 / 8 = n * 0.5.  Reciprocal multiply — no division.
-    const RCP_8: f32 = 1.0 / 8.0;
     let compression_ratio = (n as f32 * 4.0 * RCP_8).max(1.0);
 
     // Anomaly detection: branchless — cast boolean to u32 (0 or 1).
@@ -119,6 +120,7 @@ pub struct EdgeDbReadingRecord {
 /// - Q16 → f32 via reciprocal multiply (`* RCP_Q16`), not division.
 /// - `should_use_linear` result stored as plain bool (branchless downstream).
 #[inline]
+#[must_use]
 pub fn edge_to_db_reading_record(data: &[i32]) -> EdgeDbReadingRecord {
     let (slope, intercept) = fit_linear_fixed(data);
     let residual_error = compute_residual_error(data, slope, intercept);
@@ -165,7 +167,7 @@ pub struct EdgeThresholdEvent {
     pub threshold: i32,
     /// True when the value exceeded the upper bound; false for lower bound.
     pub is_upper_crossing: bool,
-    /// SemanticEvent ready for injection into ALICE-SemanticTelemetry ring.
+    /// `SemanticEvent` ready for injection into ALICE-SemanticTelemetry ring.
     pub semantic_event: SemanticEvent,
 }
 
@@ -183,6 +185,7 @@ pub struct EdgeThresholdEvent {
 /// Optimisation note: the `is_upper_crossing` flag is derived via a
 /// branchless integer comparison — no conditional branch in the hot path.
 #[inline]
+#[must_use]
 pub fn edge_to_semantic_threshold_event(
     sensor_id: u64,
     value: i32,
@@ -243,29 +246,33 @@ mod tests {
 
         // Content hash must be non-zero and deterministic.
         assert_ne!(metrics.content_hash, 0);
-        assert_eq!(
-            metrics.content_hash,
-            {
-                let (slope, intercept) = alice_edge::fit_linear_fixed(&data);
-                let mut key = [0u8; 8];
-                key[0..4].copy_from_slice(&slope.to_le_bytes());
-                key[4..8].copy_from_slice(&intercept.to_le_bytes());
-                crate::hash::fnv1a(&key)
-            }
-        );
+        assert_eq!(metrics.content_hash, {
+            let (slope, intercept) = alice_edge::fit_linear_fixed(&data);
+            let mut key = [0u8; 8];
+            key[0..4].copy_from_slice(&slope.to_le_bytes());
+            key[4..8].copy_from_slice(&intercept.to_le_bytes());
+            crate::hash::fnv1a(&key)
+        });
 
         // Throughput: 8 * 100 = 800 samples/sec.
         assert_eq!(metrics.samples_per_sec, 800);
 
         // Compression ratio: 8 * 4 / 8 = 4.0.
-        assert!((metrics.compression_ratio - 4.0).abs() < 0.01,
-            "ratio = {}", metrics.compression_ratio);
+        assert!(
+            (metrics.compression_ratio - 4.0).abs() < 0.01,
+            "ratio = {}",
+            metrics.compression_ratio
+        );
 
         // Perfect linear fit → error is tiny → no anomaly.
         assert_eq!(metrics.anomaly_count, 0);
 
         // Perfect fit → quality close to 1.0.
-        assert!(metrics.fit_quality > 0.9, "fit_quality = {}", metrics.fit_quality);
+        assert!(
+            metrics.fit_quality > 0.9,
+            "fit_quality = {}",
+            metrics.fit_quality
+        );
 
         // Threshold set to 0 → any non-zero error triggers anomaly flag.
         let metrics_anom = edge_to_analytics_pipeline_metrics(&data, 0);
@@ -288,16 +295,29 @@ mod tests {
         let rec = edge_to_db_reading_record(&data);
 
         // Slope should be ~10 in Q16 = 655360.
-        assert!((rec.slope_q16 - 655360).abs() < 1000,
-            "slope_q16 = {}", rec.slope_q16);
+        assert!(
+            (rec.slope_q16 - 655360).abs() < 1000,
+            "slope_q16 = {}",
+            rec.slope_q16
+        );
         // Intercept should be ~50 in Q16 = 3276800.
-        assert!((rec.intercept_q16 - 3276800).abs() < 1000,
-            "intercept_q16 = {}", rec.intercept_q16);
+        assert!(
+            (rec.intercept_q16 - 3276800).abs() < 1000,
+            "intercept_q16 = {}",
+            rec.intercept_q16
+        );
 
         // f32 conversions via RCP_Q16.
-        assert!((rec.slope_f32 - 10.0).abs() < 0.1, "slope_f32 = {}", rec.slope_f32);
-        assert!((rec.intercept_f32 - 50.0).abs() < 0.1,
-            "intercept_f32 = {}", rec.intercept_f32);
+        assert!(
+            (rec.slope_f32 - 10.0).abs() < 0.1,
+            "slope_f32 = {}",
+            rec.slope_f32
+        );
+        assert!(
+            (rec.intercept_f32 - 50.0).abs() < 0.1,
+            "intercept_f32 = {}",
+            rec.intercept_f32
+        );
 
         // Sample count.
         assert_eq!(rec.sample_count, 8);
@@ -354,7 +374,9 @@ mod tests {
 
         // Non-crossing with is_upper = true and value <= threshold.
         let ev_no_cross = edge_to_semantic_threshold_event(1, 50, 100, true, 0);
-        assert!(!ev_no_cross.is_upper_crossing,
-            "value <= threshold should not be an upper crossing");
+        assert!(
+            !ev_no_cross.is_upper_crossing,
+            "value <= threshold should not be an upper crossing"
+        );
     }
 }

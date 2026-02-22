@@ -20,6 +20,7 @@ pub struct SearchDbResult {
 
 /// Search text corpus indexed by FM-Index for ALICE-DB query results.
 #[inline]
+#[must_use]
 pub fn search_db_query(index: &AliceIndex, pattern: &[u8]) -> SearchDbResult {
     let count = index.count(pattern);
     SearchDbResult {
@@ -46,7 +47,12 @@ pub struct SearchBrowserResult {
 
 /// Perform in-page text search for ALICE-Browser using FM-Index.
 #[inline]
-pub fn search_browser_page(index: &AliceIndex, pattern: &[u8], max_positions: usize) -> SearchBrowserResult {
+#[must_use]
+pub fn search_browser_page(
+    index: &AliceIndex,
+    pattern: &[u8],
+    max_positions: usize,
+) -> SearchBrowserResult {
     let found = index.contains(pattern);
     let count = if found { index.count(pattern) } else { 0 };
     let positions: Vec<usize> = if found {
@@ -76,6 +82,7 @@ pub struct SearchVcsResult {
 
 /// Search VCS commit messages via FM-Index.
 #[inline]
+#[must_use]
 pub fn search_vcs_commits(commit_log: &str, pattern: &str) -> SearchVcsResult {
     let bytes = commit_log.as_bytes();
     let index = AliceIndex::build(bytes, 4);
@@ -105,6 +112,7 @@ pub struct SearchCacheEntry {
 
 /// Cache FM-Index search result for ALICE-Cache.
 #[inline]
+#[must_use]
 pub fn search_to_cache_entry(index: &AliceIndex, pattern: &[u8]) -> SearchCacheEntry {
     let count = index.count(pattern);
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -136,6 +144,7 @@ pub struct SearchAnalyticsMetrics {
 
 /// Extract search metrics for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn search_to_analytics_metrics(index: &AliceIndex, pattern: &[u8]) -> SearchAnalyticsMetrics {
     let count = index.count(pattern);
     let mut hash: u64 = 0xcbf29ce484222325;

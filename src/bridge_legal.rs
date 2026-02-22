@@ -2,12 +2,15 @@
 //!
 //! 5 bridges connecting legal domain data to the ALICE ecosystem.
 
-use alice_legal::{StatuteTree, ClauseKind, Contract, ContractStatus, AuditEntry, AuditEventKind};
+use alice_legal::{AuditEntry, AuditEventKind, ClauseKind, Contract, ContractStatus, StatuteTree};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -31,10 +34,13 @@ pub struct LegalAnalyticsStatuteEvent {
 
 /// Convert a statute tree into an analytics complexity event.
 #[inline]
+#[must_use]
 pub fn legal_statute_to_analytics(statute: &StatuteTree) -> LegalAnalyticsStatuteEvent {
     let clause_count = statute.clauses.len();
     let obligation_count = statute.obligations().len();
-    let prohibition_count = statute.clauses.iter()
+    let prohibition_count = statute
+        .clauses
+        .iter()
         .filter(|c| matches!(c.kind, ClauseKind::Prohibition))
         .count();
 
@@ -77,6 +83,7 @@ pub struct LegalAnalyticsContractEvent {
 /// bridge if an up-to-date status is needed. This bridge reads `contract.status`
 /// directly without mutating the contract.
 #[inline]
+#[must_use]
 pub fn legal_contract_to_analytics(contract: &Contract) -> LegalAnalyticsContractEvent {
     let status_byte = match contract.status {
         ContractStatus::Draft => 0,
@@ -124,10 +131,9 @@ pub struct LegalDbContractRecord {
 
 /// Convert a contract into a DB state record.
 #[inline]
+#[must_use]
 pub fn legal_contract_to_db(contract: &Contract) -> LegalDbContractRecord {
-    let fulfilled_count = contract.obligations.iter()
-        .filter(|o| o.fulfilled)
-        .count();
+    let fulfilled_count = contract.obligations.iter().filter(|o| o.fulfilled).count();
 
     let mut key = [0u8; 24];
     key[0..8].copy_from_slice(&contract.id.0.to_le_bytes());
@@ -163,6 +169,7 @@ pub struct LegalAnalyticsAuditEvent {
 
 /// Convert an audit entry into an analytics event.
 #[inline]
+#[must_use]
 pub fn legal_audit_to_analytics(entry: &AuditEntry) -> LegalAnalyticsAuditEvent {
     let kind_byte = match entry.kind {
         AuditEventKind::StatuteCreated => 0,
@@ -211,6 +218,7 @@ pub struct LegalDbAuditRecord {
 
 /// Convert an audit entry into a DB persistence record.
 #[inline]
+#[must_use]
 pub fn legal_audit_to_db(entry: &AuditEntry) -> LegalDbAuditRecord {
     let kind_byte = match entry.kind {
         AuditEventKind::StatuteCreated => 0,
@@ -244,7 +252,7 @@ pub fn legal_audit_to_db(entry: &AuditEntry) -> LegalDbAuditRecord {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_legal::{StatuteTree, ClauseKind, Contract, AuditLog, AuditEventKind};
+    use alice_legal::{AuditEventKind, AuditLog, ClauseKind, Contract, StatuteTree};
 
     #[test]
     fn test_statute_to_analytics() {
@@ -289,7 +297,13 @@ mod tests {
     #[test]
     fn test_audit_to_analytics() {
         let mut log = AuditLog::new();
-        log.append(AuditEventKind::StatuteCreated, 1, "admin", "Civil Code", 1000);
+        log.append(
+            AuditEventKind::StatuteCreated,
+            1,
+            "admin",
+            "Civil Code",
+            1000,
+        );
         let entry = &log.entries[0];
         let ev = legal_audit_to_analytics(entry);
         assert_ne!(ev.content_hash, 0);
@@ -301,7 +315,13 @@ mod tests {
     #[test]
     fn test_audit_to_db() {
         let mut log = AuditLog::new();
-        log.append(AuditEventKind::ContractCreated, 100, "alice", "new contract", 5000);
+        log.append(
+            AuditEventKind::ContractCreated,
+            100,
+            "alice",
+            "new contract",
+            5000,
+        );
         let entry = &log.entries[0];
         let rec = legal_audit_to_db(entry);
         assert_ne!(rec.content_hash, 0);
@@ -313,7 +333,13 @@ mod tests {
     #[test]
     fn test_hash_determinism() {
         let mut log = AuditLog::new();
-        log.append(AuditEventKind::StatuteAmended, 1, "admin", "amendment", 3000);
+        log.append(
+            AuditEventKind::StatuteAmended,
+            1,
+            "admin",
+            "amendment",
+            3000,
+        );
         let entry = &log.entries[0];
         let r1 = legal_audit_to_db(entry);
         let r2 = legal_audit_to_db(entry);

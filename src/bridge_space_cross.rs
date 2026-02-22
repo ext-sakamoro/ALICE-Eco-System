@@ -3,12 +3,15 @@
 //! 4 bridges connecting deep-space communication and mission data to
 //! codec compression, encrypted channels, sync events, and streaming payloads.
 
-use alice_space::{CommLink, ModelDifferential, MissionEvent, MissionPhase};
+use alice_space::{CommLink, MissionEvent, MissionPhase, ModelDifferential};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -27,23 +30,24 @@ pub struct SpaceCodecFrame {
     pub param_count: u32,
     /// Maximum absolute delta across all parameter updates.
     pub max_delta: f64,
-    /// Bit-width estimate: ceil(log2(|max_delta| * 1000 + 1)), min 1.
+    /// Bit-width estimate: `ceil(log2(|max_delta`| * 1000 + 1)), min 1.
     pub delta_bits: u32,
-    /// Estimated wire bytes: (delta_bits * param_count + 7) / 8.
+    /// Estimated wire bytes: (`delta_bits` * `param_count` + 7) / 8.
     pub estimated_bytes: usize,
 }
 
 /// Convert a model differential into codec compressed frame metadata.
 #[inline]
 pub fn space_differential_to_codec_frame(diff: &ModelDifferential) -> SpaceCodecFrame {
-    let max_delta = diff.param_updates
+    let max_delta = diff
+        .param_updates
         .iter()
         .map(|&(_, v)| v.abs())
         .fold(0.0f64, f64::max);
 
     let delta_bits = ((max_delta * 1000.0 + 1.0).log2().ceil() as u32).max(1);
     let total_bits = delta_bits as usize * diff.param_updates.len();
-    let estimated_bytes = (total_bits + 7) / 8;
+    let estimated_bytes = total_bits.div_ceil(8);
 
     let mut key = [0u8; 24];
     key[0..8].copy_from_slice(&diff.timestamp_ns.to_le_bytes());
@@ -78,7 +82,7 @@ pub struct SpaceCryptoChannel {
     pub distance_km: f64,
     /// FNV-1a hash of source + target + distance bytes (link identity).
     pub link_hash: u64,
-    /// Key rotation interval: ceil(latency_s) * 2, min 1.
+    /// Key rotation interval: `ceil(latency_s)` * 2, min 1.
     pub key_rotation_interval_s: u64,
     /// Fixed AEAD overhead: 40 bytes (tag + nonce).
     pub estimated_overhead_bytes: usize,
@@ -86,6 +90,7 @@ pub struct SpaceCryptoChannel {
 
 /// Convert a comm link into crypto encrypted channel metadata.
 #[inline]
+#[must_use]
 pub fn space_commlink_to_crypto_channel(link: &CommLink) -> SpaceCryptoChannel {
     let latency = link.latency_s();
 
@@ -132,6 +137,7 @@ pub struct SpaceSyncEvent {
 
 /// Convert a mission event into a sync event.
 #[inline]
+#[must_use]
 pub fn space_mission_to_sync_event(event: &MissionEvent) -> SpaceSyncEvent {
     let phase_byte = match event.phase {
         MissionPhase::Launch => 0,
@@ -178,7 +184,7 @@ pub struct SpaceAspPayload {
     pub sequence: u64,
     /// Number of parameter updates.
     pub param_count: u32,
-    /// Payload bytes: 20 (timestamp:8 + sequence:8 + param_count:4).
+    /// Payload bytes: 20 (timestamp:8 + sequence:8 + `param_count:4`).
     pub payload_bytes: usize,
     /// Priority: 1 (high) if any |delta| > 1.0, else 2 (normal).
     pub priority: u8,
@@ -186,10 +192,9 @@ pub struct SpaceAspPayload {
 
 /// Convert a model differential into an ASP streaming payload.
 #[inline]
+#[must_use]
 pub fn space_differential_to_asp_payload(diff: &ModelDifferential) -> SpaceAspPayload {
-    let has_large_delta = diff.param_updates
-        .iter()
-        .any(|&(_, v)| v.abs() > 1.0);
+    let has_large_delta = diff.param_updates.iter().any(|&(_, v)| v.abs() > 1.0);
     let priority = if has_large_delta { 1 } else { 2 };
 
     let mut key = [0u8; 20];
@@ -212,7 +217,7 @@ pub fn space_differential_to_asp_payload(diff: &ModelDifferential) -> SpaceAspPa
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_space::{CommLink, ModelDifferential, MissionLog, MissionPhase};
+    use alice_space::{CommLink, MissionLog, MissionPhase, ModelDifferential};
 
     fn make_earth_moon_link() -> CommLink {
         CommLink::new(1, 2, 384400.0, 9600.0)

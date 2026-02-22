@@ -18,8 +18,9 @@ pub struct IntentSyncPacket {
     pub player_id: u8,
 }
 
-/// Convert Intent to InputFrame for ALICE-Sync lockstep.
+/// Convert Intent to `InputFrame` for ALICE-Sync lockstep.
 #[inline]
+#[must_use]
 pub fn kinematics_to_sync_input(intent: &Intent, frame: u64, player: u8) -> InputFrame {
     let bytes = intent.encode();
     // Pack intent bytes into InputFrame movement fields
@@ -29,8 +30,9 @@ pub fn kinematics_to_sync_input(intent: &Intent, frame: u64, player: u8) -> Inpu
     InputFrame::new(frame, player).with_movement(mx, my, mz)
 }
 
-/// Reconstruct Intent from InputFrame received via ALICE-Sync.
+/// Reconstruct Intent from `InputFrame` received via ALICE-Sync.
 #[inline]
+#[must_use]
 pub fn sync_input_to_kinematics(input: &InputFrame) -> Intent {
     let mx = input.movement[0].to_le_bytes();
     let my = input.movement[1].to_le_bytes();
@@ -41,7 +43,7 @@ pub fn sync_input_to_kinematics(input: &InputFrame) -> Intent {
 
 // ── Bridge 2: Kinematics → Edge (motion capture compression) ────────────
 
-/// Compressed motion capture sample for ALICE-Edge IoT streaming.
+/// Compressed motion capture sample for ALICE-Edge `IoT` streaming.
 pub struct MocapEdgePacket {
     /// Intent bytes (8 bytes, 10,000x compression).
     pub intent_bytes: [u8; 8],
@@ -51,9 +53,14 @@ pub struct MocapEdgePacket {
     pub compression_ratio: f64,
 }
 
-/// Compress raw position into Intent for ALICE-Edge IoT transport.
+/// Compress raw position into Intent for ALICE-Edge `IoT` transport.
 #[inline]
-pub fn kinematics_to_edge_packet(target: Vec3k, duration_ms: u8, timestamp_us: u64) -> MocapEdgePacket {
+#[must_use]
+pub fn kinematics_to_edge_packet(
+    target: Vec3k,
+    duration_ms: u8,
+    timestamp_us: u64,
+) -> MocapEdgePacket {
     let intent = Intent::reach(target, duration_ms);
     let raw_size = 12 * (1000.0 * duration_ms as f64 / 1000.0) as usize; // 12 bytes/sample at 1000Hz
     let raw_size = raw_size.max(12);
@@ -76,8 +83,9 @@ pub struct KinematicsPhysicsState {
     pub joint_count: usize,
 }
 
-/// Convert ArmChain state to ALICE-Physics Vec3Fix coordinates.
+/// Convert `ArmChain` state to ALICE-Physics `Vec3Fix` coordinates.
 #[inline]
+#[must_use]
 pub fn kinematics_to_physics_state(chain: &ArmChain) -> KinematicsPhysicsState {
     let ee = chain.forward_kinematics();
     let mut joints = Vec::new();
@@ -92,8 +100,9 @@ pub fn kinematics_to_physics_state(chain: &ArmChain) -> KinematicsPhysicsState {
     }
 }
 
-/// Convert Physics Vec3Fix back to Kinematics Vec3k (for IK target).
+/// Convert Physics `Vec3Fix` back to Kinematics Vec3k (for IK target).
 #[inline(always)]
+#[must_use]
 pub fn physics_to_kinematics_target(pos: &Vec3Fix) -> Vec3k {
     Vec3k::new(pos.x.to_f32(), pos.y.to_f32(), pos.z.to_f32())
 }
@@ -114,6 +123,7 @@ pub struct KinematicsAnimKeyframe {
 
 /// Generate animation keyframes from Intent sequence for ALICE-Animation.
 #[inline]
+#[must_use]
 pub fn kinematics_to_animation_keyframes(intents: &[Intent]) -> Vec<KinematicsAnimKeyframe> {
     let mut chain = ArmChain::right_arm();
     let mut predictor = Predictor::new();
@@ -153,6 +163,7 @@ pub struct IntentAspPayload {
 
 /// Package Intent for ALICE-Streaming-Protocol transport.
 #[inline]
+#[must_use]
 pub fn kinematics_to_asp_payload(intent: &Intent, sequence: u32) -> IntentAspPayload {
     IntentAspPayload {
         intent_bytes: intent.encode(),
@@ -177,6 +188,7 @@ pub struct MocapDbRecord {
 
 /// Serialize Intent sequence for ALICE-DB storage.
 #[inline]
+#[must_use]
 pub fn kinematics_to_db_records(intents: &[Intent], start_timestamp: i64) -> Vec<MocapDbRecord> {
     let mut predictor = Predictor::new();
     let mut records = Vec::new();
@@ -222,6 +234,7 @@ pub struct IntentCacheEntry {
 
 /// Prepare Intent for ALICE-Cache storage.
 #[inline]
+#[must_use]
 pub fn kinematics_to_cache_entry(intent: &Intent) -> IntentCacheEntry {
     let bytes = intent.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -250,6 +263,7 @@ pub struct IntentCryptoPayload {
 
 /// Prepare Intent for ALICE-Crypto encryption.
 #[inline]
+#[must_use]
 pub fn kinematics_to_crypto_payload(intent: &Intent) -> IntentCryptoPayload {
     let bytes = intent.encode();
     let mut hash: u64 = 0xcbf29ce484222325;
@@ -280,6 +294,7 @@ pub struct MocapCdnPackage {
 
 /// Package Intent sequence for ALICE-CDN distribution.
 #[inline]
+#[must_use]
 pub fn kinematics_to_cdn_package(intents: &[Intent]) -> MocapCdnPackage {
     let mut data = Vec::with_capacity(intents.len() * 8);
     let mut total_dur = 0.0f32;
@@ -363,9 +378,7 @@ mod tests {
 
     #[test]
     fn test_kinematics_to_db_records() {
-        let intents = vec![
-            Intent::reach(Vec3k::new(0.5, 0.5, 0.0), 100),
-        ];
+        let intents = vec![Intent::reach(Vec3k::new(0.5, 0.5, 0.0), 100)];
         let recs = kinematics_to_db_records(&intents, 0);
         assert_eq!(recs.len(), 1);
         assert_eq!(recs[0].timestamp, 0);

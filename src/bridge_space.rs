@@ -2,12 +2,15 @@
 //!
 //! 5 bridges connecting deep-space communication data to the ALICE ecosystem.
 
-use alice_space::{CommLink, ModelDifferential, MissionEvent, MissionPhase, ControlDecision};
+use alice_space::{CommLink, ControlDecision, MissionEvent, MissionPhase, ModelDifferential};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -31,6 +34,7 @@ pub struct SpaceAnalyticsLinkEvent {
 
 /// Convert a comm link into an analytics link quality event.
 #[inline]
+#[must_use]
 pub fn space_link_to_analytics(link: &CommLink) -> SpaceAnalyticsLinkEvent {
     let latency = link.latency_s();
     let mut key = [0u8; 32];
@@ -69,6 +73,7 @@ pub struct SpaceEdgeDifferentialEvent {
 
 /// Convert a model differential into an edge telemetry event.
 #[inline]
+#[must_use]
 pub fn space_differential_to_edge(diff: &ModelDifferential) -> SpaceEdgeDifferentialEvent {
     let byte_size = diff.byte_size();
     let mut key = [0u8; 24];
@@ -108,6 +113,7 @@ pub struct SpaceDbMissionRecord {
 
 /// Convert a mission event into a DB record.
 #[inline]
+#[must_use]
 pub fn space_mission_to_db(event: &MissionEvent) -> SpaceDbMissionRecord {
     let phase_byte = match event.phase {
         MissionPhase::Launch => 0,
@@ -155,6 +161,7 @@ pub struct SpaceAnalyticsCorrectionEvent {
 
 /// Convert a control decision into an analytics correction event.
 #[inline]
+#[must_use]
 pub fn space_correction_to_analytics(decision: &ControlDecision) -> SpaceAnalyticsCorrectionEvent {
     let mut key = [0u8; 40];
     key[0..8].copy_from_slice(&decision.thrust_vector[0].to_bits().to_le_bytes());
@@ -190,6 +197,7 @@ pub struct SpaceCacheLinkStatus {
 
 /// Convert a comm link into a cache status entry with adaptive TTL.
 #[inline]
+#[must_use]
 pub fn space_link_to_cache(link: &CommLink) -> SpaceCacheLinkStatus {
     let latency = link.latency_s();
     let mut key = [0u8; 24];
@@ -214,7 +222,10 @@ pub fn space_link_to_cache(link: &CommLink) -> SpaceCacheLinkStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_space::{CommLink, ModelDifferential, MissionLog, MissionPhase, SpacecraftState, TrajectoryModel, compute_correction};
+    use alice_space::{
+        compute_correction, CommLink, MissionLog, MissionPhase, ModelDifferential, SpacecraftState,
+        TrajectoryModel,
+    };
 
     #[test]
     fn test_link_to_analytics() {

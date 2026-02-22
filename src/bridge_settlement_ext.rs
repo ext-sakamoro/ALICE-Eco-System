@@ -7,7 +7,10 @@ use alice_settlement::{JournalEntry, JournalEvent, NetObligation, SettlementStat
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -18,7 +21,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// Captures the full trade lifecycle state so the database layer can store
 /// and query confirmed trades by trade ID, symbol, or settlement status.
 pub struct SettlementDbTradeRecord {
-    /// FNV-1a hash over trade_id, symbol_hash, price, and quantity bytes.
+    /// FNV-1a hash over `trade_id`, `symbol_hash`, price, and quantity bytes.
     pub content_hash: u64,
     /// Unique trade identifier.
     pub trade_id: u64,
@@ -44,11 +47,11 @@ pub struct SettlementDbTradeRecord {
 #[inline(always)]
 fn status_to_u8(status: SettlementStatus) -> u8 {
     match status {
-        SettlementStatus::Pending  => 0,
-        SettlementStatus::Netted   => 1,
-        SettlementStatus::Cleared  => 2,
-        SettlementStatus::Settled  => 3,
-        SettlementStatus::Failed   => 4,
+        SettlementStatus::Pending => 0,
+        SettlementStatus::Netted => 1,
+        SettlementStatus::Cleared => 2,
+        SettlementStatus::Settled => 3,
+        SettlementStatus::Failed => 4,
     }
 }
 
@@ -57,6 +60,7 @@ fn status_to_u8(status: SettlementStatus) -> u8 {
 /// The `content_hash` is computed as FNV-1a over the concatenation of
 /// `trade_id`, `symbol_hash`, `price`, and `quantity` in little-endian byte order.
 #[inline]
+#[must_use]
 pub fn settlement_trade_to_db(trade: &Trade) -> SettlementDbTradeRecord {
     let data: Vec<u8> = [
         trade.trade_id.to_le_bytes().as_slice(),
@@ -87,7 +91,7 @@ pub fn settlement_trade_to_db(trade: &Trade) -> SettlementDbTradeRecord {
 /// Provides a compact, typed representation of journal events for the
 /// analytics layer to aggregate settlement throughput and failure rates.
 pub struct SettlementAnalyticsEvent {
-    /// FNV-1a hash over sequence bytes and event_type byte.
+    /// FNV-1a hash over sequence bytes and `event_type` byte.
     pub content_hash: u64,
     /// Event type code: TradeReceived=1, NettingCompleted=2,
     /// ClearingAttempted=3, SettlementCompleted=4, SettlementFailed=5.
@@ -105,26 +109,23 @@ pub struct SettlementAnalyticsEvent {
 #[inline(always)]
 fn journal_event_to_type(event: &JournalEvent) -> u8 {
     match event {
-        JournalEvent::TradeReceived { .. }       => 1,
-        JournalEvent::NettingCompleted { .. }    => 2,
-        JournalEvent::ClearingAttempted { .. }   => 3,
+        JournalEvent::TradeReceived { .. } => 1,
+        JournalEvent::NettingCompleted { .. } => 2,
+        JournalEvent::ClearingAttempted { .. } => 3,
         JournalEvent::SettlementCompleted { .. } => 4,
-        JournalEvent::SettlementFailed { .. }    => 5,
+        JournalEvent::SettlementFailed { .. } => 5,
     }
 }
 
 /// Convert a settlement `JournalEntry` into a `SettlementAnalyticsEvent`.
 ///
 /// The `content_hash` is computed as FNV-1a over the concatenation of
-/// the sequence bytes (little-endian u64) and the single event_type byte.
+/// the sequence bytes (little-endian u64) and the single `event_type` byte.
 #[inline]
+#[must_use]
 pub fn settlement_journal_entry_to_analytics(entry: &JournalEntry) -> SettlementAnalyticsEvent {
     let event_type = journal_event_to_type(&entry.event);
-    let data: Vec<u8> = [
-        entry.sequence.to_le_bytes().as_slice(),
-        &[event_type],
-    ]
-    .concat();
+    let data: Vec<u8> = [entry.sequence.to_le_bytes().as_slice(), &[event_type]].concat();
     let content_hash = fnv1a(&data);
 
     SettlementAnalyticsEvent {
@@ -142,7 +143,7 @@ pub fn settlement_journal_entry_to_analytics(entry: &JournalEntry) -> Settlement
 /// Carries the full bilateral net obligation so the clearing house can
 /// process deliveries asynchronously without blocking the settlement engine.
 pub struct SettlementQueueClearingMsg {
-    /// FNV-1a hash over deliverer_id, receiver_id, symbol_hash, and net_quantity bytes.
+    /// FNV-1a hash over `deliverer_id`, `receiver_id`, `symbol_hash`, and `net_quantity` bytes.
     pub content_hash: u64,
     /// Account that owes delivery (net seller).
     pub deliverer_id: u64,
@@ -164,6 +165,7 @@ pub struct SettlementQueueClearingMsg {
 /// `deliverer_id`, `receiver_id`, `symbol_hash`, and `net_quantity` in
 /// little-endian byte order.  Priority is always 2 (high).
 #[inline]
+#[must_use]
 pub fn settlement_obligation_to_queue(oblig: &NetObligation) -> SettlementQueueClearingMsg {
     let data: Vec<u8> = [
         oblig.deliverer_id.to_le_bytes().as_slice(),
@@ -193,7 +195,7 @@ pub fn settlement_obligation_to_queue(oblig: &NetObligation) -> SettlementQueueC
 /// layer can surface failures immediately while treating normal progression
 /// as informational events.
 pub struct SettlementSemanticEvent {
-    /// FNV-1a hash over trade_id, status, and severity bytes.
+    /// FNV-1a hash over `trade_id`, status, and severity bytes.
     pub content_hash: u64,
     /// Unique trade identifier.
     pub trade_id: u64,
@@ -212,7 +214,7 @@ pub struct SettlementSemanticEvent {
 fn status_to_severity(status: SettlementStatus) -> u8 {
     match status {
         SettlementStatus::Failed => 3,
-        _                        => 1,
+        _ => 1,
     }
 }
 
@@ -221,6 +223,7 @@ fn status_to_severity(status: SettlementStatus) -> u8 {
 /// The `content_hash` is computed as FNV-1a over the concatenation of
 /// `trade_id` bytes (little-endian u64), the status byte, and the severity byte.
 #[inline]
+#[must_use]
 pub fn settlement_trade_to_semantic(trade: &Trade) -> SettlementSemanticEvent {
     let status = status_to_u8(trade.status);
     let severity = status_to_severity(trade.status);
@@ -322,16 +325,16 @@ mod tests {
     fn test_trade_to_db_status_coverage() {
         // Verify all status codes are distinct and correct.
         let pending = settlement_trade_to_db(&make_trade(10, SettlementStatus::Pending));
-        let netted  = settlement_trade_to_db(&make_trade(11, SettlementStatus::Netted));
+        let netted = settlement_trade_to_db(&make_trade(11, SettlementStatus::Netted));
         let cleared = settlement_trade_to_db(&make_trade(12, SettlementStatus::Cleared));
         let settled = settlement_trade_to_db(&make_trade(13, SettlementStatus::Settled));
-        let failed  = settlement_trade_to_db(&make_trade(14, SettlementStatus::Failed));
+        let failed = settlement_trade_to_db(&make_trade(14, SettlementStatus::Failed));
 
         assert_eq!(pending.status, 0);
-        assert_eq!(netted.status,  1);
+        assert_eq!(netted.status, 1);
         assert_eq!(cleared.status, 2);
         assert_eq!(settled.status, 3);
-        assert_eq!(failed.status,  4);
+        assert_eq!(failed.status, 4);
     }
 
     #[test]
@@ -359,12 +362,17 @@ mod tests {
     fn test_journal_entry_to_analytics_netting_completed() {
         let entry = make_journal_entry(
             2,
-            JournalEvent::NettingCompleted { obligation_count: 3 },
+            JournalEvent::NettingCompleted {
+                obligation_count: 3,
+            },
         );
         let ev = settlement_journal_entry_to_analytics(&entry);
 
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.event_type, 2, "NettingCompleted must map to event_type 2");
+        assert_eq!(
+            ev.event_type, 2,
+            "NettingCompleted must map to event_type 2"
+        );
         assert_eq!(ev.sequence, 2);
     }
 
@@ -381,20 +389,23 @@ mod tests {
         let ev = settlement_journal_entry_to_analytics(&entry);
 
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.event_type, 3, "ClearingAttempted must map to event_type 3");
+        assert_eq!(
+            ev.event_type, 3,
+            "ClearingAttempted must map to event_type 3"
+        );
         assert_eq!(ev.sequence, 3);
     }
 
     #[test]
     fn test_journal_entry_to_analytics_settlement_completed() {
-        let entry = make_journal_entry(
-            4,
-            JournalEvent::SettlementCompleted { trade_count: 10 },
-        );
+        let entry = make_journal_entry(4, JournalEvent::SettlementCompleted { trade_count: 10 });
         let ev = settlement_journal_entry_to_analytics(&entry);
 
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.event_type, 4, "SettlementCompleted must map to event_type 4");
+        assert_eq!(
+            ev.event_type, 4,
+            "SettlementCompleted must map to event_type 4"
+        );
         assert_eq!(ev.sequence, 4);
     }
 
@@ -410,7 +421,10 @@ mod tests {
         let ev = settlement_journal_entry_to_analytics(&entry);
 
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.event_type, 5, "SettlementFailed must map to event_type 5");
+        assert_eq!(
+            ev.event_type, 5,
+            "SettlementFailed must map to event_type 5"
+        );
         assert_eq!(ev.sequence, 5);
     }
 
@@ -431,7 +445,9 @@ mod tests {
         ));
         let e2 = settlement_journal_entry_to_analytics(&make_journal_entry(
             1,
-            JournalEvent::NettingCompleted { obligation_count: 0 },
+            JournalEvent::NettingCompleted {
+                obligation_count: 0,
+            },
         ));
         assert_ne!(e1.content_hash, e2.content_hash);
     }
@@ -449,7 +465,10 @@ mod tests {
         assert_eq!(msg.symbol_hash, 0xABCD_1234);
         assert_eq!(msg.net_quantity, 50);
         assert_eq!(msg.net_payment, 2_500_000);
-        assert_eq!(msg.priority, 2, "settlement clearing is always high priority (2)");
+        assert_eq!(
+            msg.priority, 2,
+            "settlement clearing is always high priority (2)"
+        );
     }
 
     #[test]
@@ -500,9 +519,9 @@ mod tests {
         // All non-Failed statuses must produce severity 1.
         for (id, status) in [
             (20u64, SettlementStatus::Pending),
-            (21,    SettlementStatus::Netted),
-            (22,    SettlementStatus::Cleared),
-            (23,    SettlementStatus::Settled),
+            (21, SettlementStatus::Netted),
+            (22, SettlementStatus::Cleared),
+            (23, SettlementStatus::Settled),
         ] {
             let ev = settlement_trade_to_semantic(&make_trade(id, status));
             assert_eq!(
@@ -524,7 +543,7 @@ mod tests {
     #[test]
     fn test_trade_to_semantic_failed_vs_settled_hash_differ() {
         // Same trade_id but different status must produce different content_hash.
-        let failed  = settlement_trade_to_semantic(&make_trade(7, SettlementStatus::Failed));
+        let failed = settlement_trade_to_semantic(&make_trade(7, SettlementStatus::Failed));
         let settled = settlement_trade_to_semantic(&make_trade(7, SettlementStatus::Settled));
         assert_ne!(failed.content_hash, settled.content_hash);
     }

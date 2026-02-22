@@ -2,12 +2,15 @@
 //!
 //! 5 bridges connecting order book and position data to the ALICE ecosystem.
 
-use alice_ledger::{Order, OrderType, Side, Fill, Position};
+use alice_ledger::{Fill, Order, OrderType, Position, Side};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -19,7 +22,7 @@ pub struct LedgerAnalyticsOrderEvent {
     pub content_hash: u64,
     /// Side of the order: 0 = Bid, 1 = Ask.
     pub side: u8,
-    /// Order type: 0 = Limit, 1 = Market, 2 = StopLimit.
+    /// Order type: 0 = Limit, 1 = Market, 2 = `StopLimit`.
     pub order_type: u8,
     /// Limit price in ticks.
     pub price_ticks: i64,
@@ -31,14 +34,15 @@ pub struct LedgerAnalyticsOrderEvent {
 
 /// Convert a ledger order into an analytics order submission event.
 #[inline]
+#[must_use]
 pub fn ledger_order_to_analytics(order: &Order) -> LedgerAnalyticsOrderEvent {
     let side_byte: u8 = match order.side {
         Side::Bid => 0,
         Side::Ask => 1,
     };
     let order_type_byte: u8 = match order.order_type {
-        OrderType::Limit         => 0,
-        OrderType::Market        => 1,
+        OrderType::Limit => 0,
+        OrderType::Market => 1,
         OrderType::StopLimit { .. } => 2,
     };
 
@@ -78,6 +82,7 @@ pub struct LedgerAnalyticsFillEvent {
 
 /// Convert a ledger fill into an analytics execution event.
 #[inline]
+#[must_use]
 pub fn ledger_fill_to_analytics(fill: &Fill) -> LedgerAnalyticsFillEvent {
     // Hash: maker_id + taker_id + price + quantity bytes.
     let mut key = [0u8; 32];
@@ -118,6 +123,7 @@ pub struct LedgerDbFillRecord {
 
 /// Convert a ledger fill and symbol hash into a DB trade audit record.
 #[inline]
+#[must_use]
 pub fn ledger_fill_to_db_record(fill: &Fill, symbol_hash: u64) -> LedgerDbFillRecord {
     // Hash: maker_id + taker_id + price + quantity bytes (same as analytics).
     let mut key = [0u8; 32];
@@ -159,6 +165,7 @@ pub struct LedgerAnalyticsPnlEvent {
 
 /// Convert a ledger position into an analytics P&L event.
 #[inline]
+#[must_use]
 pub fn ledger_position_to_analytics(pos: &Position) -> LedgerAnalyticsPnlEvent {
     // Hash: symbol_hash + net_quantity + realized_pnl bytes.
     let mut key = [0u8; 24];
@@ -189,15 +196,16 @@ pub struct LedgerCachePosition {
     pub net_quantity: i64,
     /// Unrealized P&L at the last mark-to-market price, in ticks.
     pub unrealized_pnl: i64,
-    /// Cache TTL in seconds: 5 when |unrealized_pnl| > 100_000, else 30.
+    /// Cache TTL in seconds: 5 when |`unrealized_pnl`| > `100_000`, else 30.
     pub ttl_secs: u32,
 }
 
 /// Convert a ledger position into a real-time cache entry.
 ///
-/// TTL is computed branchlessly: volatile positions (|unrealized_pnl| > 100_000)
+/// TTL is computed branchlessly: volatile positions (|`unrealized_pnl`| > `100_000`)
 /// receive a 5-second TTL; stable positions receive a 30-second TTL.
 #[inline]
+#[must_use]
 pub fn ledger_position_to_cache(pos: &Position) -> LedgerCachePosition {
     // Branchless TTL: volatile=1 → 30-25=5, stable=0 → 30-0=30.
     let volatile = (pos.unrealized_pnl.unsigned_abs() > 100_000) as u32;
@@ -224,7 +232,7 @@ pub fn ledger_position_to_cache(pos: &Position) -> LedgerCachePosition {
 /// Carries the minimum fields required by the settlement engine to register
 /// an executed trade for T+2 standard delivery settlement.
 pub struct LedgerSettlementTrade {
-    /// Content hash over fill_price, fill_qty, maker_id, and taker_id bytes.
+    /// Content hash over `fill_price`, `fill_qty`, `maker_id`, and `taker_id` bytes.
     pub content_hash: u64,
     /// Execution price in ticks (from the fill's maker limit price).
     pub fill_price: f64,
@@ -248,11 +256,12 @@ pub struct LedgerSettlementTrade {
 /// `fill_qty` (8 bytes), `maker_id` (8 bytes), and `taker_id` (8 bytes),
 /// all in little-endian byte order.
 #[inline]
+#[must_use]
 pub fn ledger_fill_to_settlement_trade(fill: &Fill) -> LedgerSettlementTrade {
     let fill_price = fill.price as f64;
-    let fill_qty   = fill.quantity;
-    let maker_id   = fill.maker_id.0;
-    let taker_id   = fill.taker_id.0;
+    let fill_qty = fill.quantity;
+    let maker_id = fill.maker_id.0;
+    let taker_id = fill.taker_id.0;
 
     // Hash input: fill_price bits (8) || fill_qty (8) || maker_id (8) || taker_id (8)
     let mut hash_data = [0u8; 32];
@@ -276,7 +285,7 @@ pub fn ledger_fill_to_settlement_trade(fill: &Fill) -> LedgerSettlementTrade {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_ledger::{OrderId, TimeInForce, Fill, Position};
+    use alice_ledger::{Fill, OrderId, Position, TimeInForce};
 
     // ── helpers ──────────────────────────────────────────────────────────
 
@@ -342,8 +351,8 @@ mod tests {
         let ev = ledger_order_to_analytics(&order);
 
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.side, 0);          // Bid → 0
-        assert_eq!(ev.order_type, 0);    // Limit → 0
+        assert_eq!(ev.side, 0); // Bid → 0
+        assert_eq!(ev.order_type, 0); // Limit → 0
         assert_eq!(ev.price_ticks, 1000);
         assert_eq!(ev.quantity, 50);
         assert_eq!(ev.timestamp_ns, 1_000_000_000);
@@ -355,8 +364,8 @@ mod tests {
         let ev = ledger_order_to_analytics(&order);
 
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.side, 1);          // Ask → 1
-        assert_eq!(ev.order_type, 0);    // Limit → 0
+        assert_eq!(ev.side, 1); // Ask → 1
+        assert_eq!(ev.order_type, 0); // Limit → 0
         assert_eq!(ev.price_ticks, 1005);
         assert_eq!(ev.quantity, 25);
     }
@@ -367,8 +376,8 @@ mod tests {
         let ev = ledger_order_to_analytics(&order);
 
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.side, 0);          // Bid → 0
-        assert_eq!(ev.order_type, 1);    // Market → 1
+        assert_eq!(ev.side, 0); // Bid → 0
+        assert_eq!(ev.order_type, 1); // Market → 1
         assert_eq!(ev.quantity, 100);
     }
 
@@ -387,8 +396,8 @@ mod tests {
         let ev = ledger_order_to_analytics(&order);
 
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.side, 1);          // Ask → 1
-        assert_eq!(ev.order_type, 2);    // StopLimit → 2
+        assert_eq!(ev.side, 1); // Ask → 1
+        assert_eq!(ev.order_type, 2); // StopLimit → 2
         assert_eq!(ev.price_ticks, 985);
     }
 
@@ -533,8 +542,8 @@ mod tests {
         let st1 = ledger_fill_to_settlement_trade(&fill);
         let st2 = ledger_fill_to_settlement_trade(&fill);
         assert_eq!(st1.content_hash, st2.content_hash);
-        assert_eq!(st1.fill_price,   st2.fill_price);
-        assert_eq!(st1.maker_id,     st2.maker_id);
+        assert_eq!(st1.fill_price, st2.fill_price);
+        assert_eq!(st1.maker_id, st2.maker_id);
     }
 
     #[test]

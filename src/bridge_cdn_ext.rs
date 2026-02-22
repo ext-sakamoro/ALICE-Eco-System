@@ -2,8 +2,8 @@
 //!
 //! 4 bridges connecting content delivery network to the ALICE ecosystem.
 
-use alice_cdn::{ContentLocator, MaglevHash, NodeId, VivaldiCoord};
 use crate::hash::fnv1a;
+use alice_cdn::{ContentLocator, MaglevHash, NodeId, VivaldiCoord};
 
 // ── Bridge 1: CDN ↔ Cache (content delivery caching) ────────────────────
 
@@ -36,6 +36,7 @@ pub struct CdnCacheEntry {
 /// clamped to `[min_ttl, base_ttl]`.  No integer division in the hot path —
 /// only one multiply and one right-shift.
 #[inline]
+#[must_use]
 pub fn cdn_to_cache_entry(
     content_id: u64,
     maglev: &MaglevHash,
@@ -53,9 +54,9 @@ pub fn cdn_to_cache_entry(
     // Reciprocal multiply: ttl = base * 1000 / rtt  (avoid division on hot path)
     // Branchless clamp: shift then bitwise-select is handled by the compiler's
     // cmov emission from min/max chains on integer paths.
-    let rtt_clamped = rtt_ms.max(1);                        // avoid /0
-    // Multiply first to preserve precision, then shift.
-    // base_ttl_secs * 1000 fits in u64 for any sane TTL (< 2^32 s).
+    let rtt_clamped = rtt_ms.max(1); // avoid /0
+                                     // Multiply first to preserve precision, then shift.
+                                     // base_ttl_secs * 1000 fits in u64 for any sane TTL (< 2^32 s).
     let raw_ttl = (base_ttl_secs as u64).wrapping_mul(1_000) / rtt_clamped;
     let min_ttl: u64 = 1;
     let ttl_secs = raw_ttl.min(base_ttl_secs as u64).max(min_ttl) as u32;
@@ -95,6 +96,7 @@ pub struct CdnPhysicsRoute {
 /// Content-hash disambiguation (`fnv1a`) breaks ties deterministically when
 /// two servers have equal predicted RTT.
 #[inline]
+#[must_use]
 pub fn cdn_to_physics_route(
     content_id: u64,
     local: &VivaldiCoord,
@@ -148,6 +150,7 @@ pub struct CdnAspRoute {
 /// `local` is the edge-node coordinate; `node_coord` is the candidate CDN
 /// node.  Maglev selects the primary node; Vivaldi gives the RTT estimate.
 #[inline]
+#[must_use]
 pub fn cdn_to_asp_route(
     content_id: u64,
     packet: &libasp::AspPacket,
@@ -211,6 +214,7 @@ pub struct CdnAnalyticsMetrics {
 /// batch of raw RTT measurements.  `maglev` supplies `distribution_stats()`
 /// for even-distribution diagnostics.
 #[inline]
+#[must_use]
 pub fn cdn_to_analytics_metrics(
     content_id: u64,
     hits: u64,
@@ -228,10 +232,11 @@ pub fn cdn_to_analytics_metrics(
 
     // RTT statistics — single linear pass, no heap allocation.
     let sample_count = rtt_samples_ms.len();
-    let (min_rtt_ms, max_rtt_ms, sum_rtt) = rtt_samples_ms.iter().fold(
-        (u64::MAX, 0u64, 0u64),
-        |(mn, mx, sum), &r| (mn.min(r), mx.max(r), sum.wrapping_add(r)),
-    );
+    let (min_rtt_ms, max_rtt_ms, sum_rtt) = rtt_samples_ms
+        .iter()
+        .fold((u64::MAX, 0u64, 0u64), |(mn, mx, sum), &r| {
+            (mn.min(r), mx.max(r), sum.wrapping_add(r))
+        });
     // Guard empty slice: reciprocal of sample_count with max(1).
     let count_safe = (sample_count as u64).max(1);
     let mean_rtt_ms = sum_rtt / count_safe;
@@ -279,19 +284,27 @@ mod tests {
         );
 
         // Node must be one of the registered nodes (1..=8).
-        assert!(entry.node_id >= 1 && entry.node_id <= 8,
-            "node_id {} out of range", entry.node_id);
+        assert!(
+            entry.node_id >= 1 && entry.node_id <= 8,
+            "node_id {} out of range",
+            entry.node_id
+        );
 
         // With rtt=20ms and base=300s: raw_ttl = 300*1000/20 = 15000, clamped to 300.
-        assert_eq!(entry.ttl_secs, 300, "ttl should be clamped to base_ttl_secs");
+        assert_eq!(
+            entry.ttl_secs, 300,
+            "ttl should be clamped to base_ttl_secs"
+        );
         assert_eq!(entry.rtt_ms, 20);
 
         // High RTT should produce a shorter TTL.
         let slow_entry = cdn_to_cache_entry(0xDEAD_BEEF_CAFE_1234, &maglev, 5_000, 300);
         // raw_ttl = 300*1000/5000 = 60, which is < 300, so ttl_secs = 60.
         assert_eq!(slow_entry.ttl_secs, 60);
-        assert!(slow_entry.ttl_secs < entry.ttl_secs,
-            "slow node should get shorter TTL");
+        assert!(
+            slow_entry.ttl_secs < entry.ttl_secs,
+            "slow node should get shorter TTL"
+        );
     }
 
     // ── Bridge 2: CDN → Physics ──────────────────────────────────────────
@@ -300,9 +313,9 @@ mod tests {
     fn test_cdn_to_physics_route() {
         // Physics servers at known positions.
         let servers: Vec<(NodeId, VivaldiCoord)> = vec![
-            (10, VivaldiCoord::at(100.0, 0.0, 0.0, 5.0)),  // far
-            (20, VivaldiCoord::at(0.0,   0.0, 0.0, 5.0)),  // far (origin)
-            (30, VivaldiCoord::at(2.0,   2.0, 0.0, 1.0)),  // near
+            (10, VivaldiCoord::at(100.0, 0.0, 0.0, 5.0)), // far
+            (20, VivaldiCoord::at(0.0, 0.0, 0.0, 5.0)),   // far (origin)
+            (30, VivaldiCoord::at(2.0, 2.0, 0.0, 1.0)),   // near
         ];
 
         // Local CDN edge node near server 30.
@@ -311,12 +324,14 @@ mod tests {
         let route = cdn_to_physics_route(0xABCD_1234, &local, &servers);
 
         // Should select the nearest server (30) by Vivaldi RTT.
-        assert_eq!(route.server_node_id, 30,
-            "expected nearest server 30, got {}", route.server_node_id);
+        assert_eq!(
+            route.server_node_id, 30,
+            "expected nearest server 30, got {}",
+            route.server_node_id
+        );
 
         // RTT to server 30 from (1,1) ≈ sqrt(2) + height(1) + height(1) ≈ 3.4 ms.
-        assert!(route.predicted_rtt_ms >= 0,
-            "RTT must be non-negative");
+        assert!(route.predicted_rtt_ms >= 0, "RTT must be non-negative");
 
         assert_eq!(route.candidates_evaluated, 3);
         assert_ne!(route.content_hash, 0);
@@ -339,10 +354,10 @@ mod tests {
         // Build a minimal D-Packet (delta frame with one motion vector).
         let mut d_payload = DPacketPayload::new(1);
         d_payload.add_motion_vector(MotionVector::new(0, 0, 4, 2, 100));
-        let packet = AspPacket::create_d_packet(7, d_payload)
-            .expect("D-Packet creation must succeed");
+        let packet =
+            AspPacket::create_d_packet(7, d_payload).expect("D-Packet creation must succeed");
 
-        let local  = VivaldiCoord::at(0.0,  0.0, 0.0, 2.0);
+        let local = VivaldiCoord::at(0.0, 0.0, 0.0, 2.0);
         let remote = VivaldiCoord::at(10.0, 0.0, 0.0, 2.0);
 
         let route = cdn_to_asp_route(0x1234_5678, &packet, &local, &remote, &maglev);
@@ -351,12 +366,14 @@ mod tests {
         assert_ne!(route.content_hash, 0);
 
         // Maglev must assign one of the registered nodes (1..=4).
-        assert!(route.nearest_node_id >= 1 && route.nearest_node_id <= 4,
-            "node {} out of Maglev range", route.nearest_node_id);
+        assert!(
+            route.nearest_node_id >= 1 && route.nearest_node_id <= 4,
+            "node {} out of Maglev range",
+            route.nearest_node_id
+        );
 
         // RTT local(0,0,h=2) → remote(10,0,h=2) ≈ 10 + 2 + 2 = 14 ms.
-        assert!(route.rtt_estimate_ms >= 0,
-            "RTT must be non-negative");
+        assert!(route.rtt_estimate_ms >= 0, "RTT must be non-negative");
 
         // D-Packet maps to tag 1.
         assert_eq!(route.packet_type_tag, 1, "D-Packet should map to tag 1");
@@ -380,8 +397,11 @@ mod tests {
         assert_ne!(metrics.content_hash, 0);
 
         // Hit rate: 80*1000/100 = 800 permille.
-        assert_eq!(metrics.hit_rate_permille, 800,
-            "expected 800‰ hit rate, got {}", metrics.hit_rate_permille);
+        assert_eq!(
+            metrics.hit_rate_permille, 800,
+            "expected 800‰ hit rate, got {}",
+            metrics.hit_rate_permille
+        );
 
         // Sample stats for range [10, 30].
         assert_eq!(metrics.min_rtt_ms, 10);
@@ -391,8 +411,11 @@ mod tests {
         assert_eq!(metrics.sample_count, 21);
 
         // Maglev std_dev must be a finite non-negative float.
-        assert!(metrics.maglev_std_dev >= 0.0 && metrics.maglev_std_dev.is_finite(),
-            "maglev_std_dev {} is not valid", metrics.maglev_std_dev);
+        assert!(
+            metrics.maglev_std_dev >= 0.0 && metrics.maglev_std_dev.is_finite(),
+            "maglev_std_dev {} is not valid",
+            metrics.maglev_std_dev
+        );
 
         // Edge case: zero total — must not panic, hit_rate_permille = 0.
         let zero_metrics = cdn_to_analytics_metrics(1, 0, 0, &[], &maglev);

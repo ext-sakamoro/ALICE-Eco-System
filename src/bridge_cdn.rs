@@ -4,8 +4,8 @@
 //! Covers routing-decision metrics, node health persistence, and content
 //! access control metadata.
 
-use alice_cdn::{MaglevHash, NodeId, VivaldiCoord};
 use crate::hash::fnv1a;
+use alice_cdn::{MaglevHash, NodeId, VivaldiCoord};
 
 // ── Bridge 1: CDN → Analytics (routing decision metrics) ─────────────────
 
@@ -33,6 +33,7 @@ pub struct CdnRoutingMetrics {
 /// is the slice of per-node Vivaldi RTT predictions; average is computed
 /// with a single linear fold, no heap allocation.
 #[inline]
+#[must_use]
 pub fn cdn_to_routing_metrics(
     content_id: u64,
     rtt_samples_ms: &[u64],
@@ -48,7 +49,9 @@ pub fn cdn_to_routing_metrics(
     // Average RTT: single linear fold, no heap allocation.
     // Guard against empty slice using saturating denominator.
     let count_safe = (rtt_samples_ms.len() as u64).max(1);
-    let sum_rtt: u64 = rtt_samples_ms.iter().fold(0u64, |acc, &r| acc.wrapping_add(r));
+    let sum_rtt: u64 = rtt_samples_ms
+        .iter()
+        .fold(0u64, |acc, &r| acc.wrapping_add(r));
     let avg_latency_ms = sum_rtt / count_safe;
 
     // Cache hit rate permille: hits * 1000 / total.
@@ -94,6 +97,7 @@ pub struct CdnDbNodeHealth {
 /// in the critical path).  `slot_count` is extracted from `MaglevHash`
 /// distribution stats so the DB can monitor load imbalance over time.
 #[inline]
+#[must_use]
 pub fn cdn_to_db_node_health(
     node_id: NodeId,
     rtt_ms: u64,
@@ -150,10 +154,11 @@ pub struct CdnAuthAccessMeta {
 ///
 /// `local` is the CDN edge-node coordinate.  `nodes` is the slice of
 /// candidate `(NodeId, VivaldiCoord)` pairs.  The function selects the
-/// nearest node by Vivaldi RTT (pure distance, hash_weight = 0.0) and
+/// nearest node by Vivaldi RTT (pure distance, `hash_weight` = 0.0) and
 /// compares the result against `budget_ms`.  No float in the hot path —
 /// only the Fixed → ms conversion is i64 arithmetic.
 #[inline]
+#[must_use]
 pub fn cdn_to_auth_access_meta(
     content_id: u64,
     local: &VivaldiCoord,
@@ -175,8 +180,7 @@ pub fn cdn_to_auth_access_meta(
 
     // Branchless budget check: compare integer ms value.
     // Compiler emits cmp + setle — no branch.
-    let within_latency_budget = predicted_rtt_ms >= 0
-        && (predicted_rtt_ms as u64) <= budget_ms;
+    let within_latency_budget = predicted_rtt_ms >= 0 && (predicted_rtt_ms as u64) <= budget_ms;
 
     CdnAuthAccessMeta {
         content_hash,
@@ -225,7 +229,8 @@ mod tests {
         // Selected node must be from the registered range (1..=6).
         assert!(
             metrics.selected_node_id >= 1 && metrics.selected_node_id <= 6,
-            "selected_node_id {} out of range", metrics.selected_node_id
+            "selected_node_id {} out of range",
+            metrics.selected_node_id
         );
 
         // Edge case: empty RTT samples must not panic.
@@ -269,7 +274,7 @@ mod tests {
         // Two candidate nodes; the closer one is at (2, 0).
         let nodes: Vec<(NodeId, VivaldiCoord)> = vec![
             (10, VivaldiCoord::at(100.0, 0.0, 0.0, 5.0)), // far
-            (20, VivaldiCoord::at(2.0,   0.0, 0.0, 1.0)), // near
+            (20, VivaldiCoord::at(2.0, 0.0, 0.0, 1.0)),   // near
         ];
         let local = VivaldiCoord::at(0.0, 0.0, 0.0, 1.0);
 
@@ -280,15 +285,21 @@ mod tests {
         assert_eq!(meta.candidates_evaluated, 2);
 
         // Nearest node (20) selected by Vivaldi pure-distance.
-        assert_eq!(meta.assigned_node_id, 20,
-            "expected node 20, got {}", meta.assigned_node_id);
+        assert_eq!(
+            meta.assigned_node_id, 20,
+            "expected node 20, got {}",
+            meta.assigned_node_id
+        );
 
         // Predicted RTT must be non-negative.
         assert!(meta.predicted_rtt_ms >= 0);
 
         // Within budget: near node RTT << 50 ms.
-        assert!(meta.within_latency_budget,
-            "expected within budget, rtt_ms={}", meta.predicted_rtt_ms);
+        assert!(
+            meta.within_latency_budget,
+            "expected within budget, rtt_ms={}",
+            meta.predicted_rtt_ms
+        );
 
         // Edge case: empty node list must not panic, falls back to node 0.
         let empty = cdn_to_auth_access_meta(1, &local, &[], 50);
@@ -297,7 +308,10 @@ mod tests {
 
         // Tight budget of 0 ms — any positive RTT exceeds it.
         let over = cdn_to_auth_access_meta(0xFEED_F00D, &local, &nodes, 0);
-        assert!(!over.within_latency_budget,
-            "expected over budget, rtt_ms={}", over.predicted_rtt_ms);
+        assert!(
+            !over.within_latency_budget,
+            "expected over budget, rtt_ms={}",
+            over.predicted_rtt_ms
+        );
     }
 }

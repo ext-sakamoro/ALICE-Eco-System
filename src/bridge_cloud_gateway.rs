@@ -5,7 +5,10 @@
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -41,11 +44,8 @@ pub struct GatewayCdnRoute {
 /// No divisions — `ttl_seconds` is derived from a branchless integer
 /// multiply driven by `region`.
 #[inline]
-pub fn gateway_to_cdn_route(
-    origin: &str,
-    region: u8,
-    edge_count: u8,
-) -> GatewayCdnRoute {
+#[must_use]
+pub fn gateway_to_cdn_route(origin: &str, region: u8, edge_count: u8) -> GatewayCdnRoute {
     let origin_hash = fnv1a(origin.as_bytes());
 
     // Content type: scan for well-known substrings (branchless suffix table).
@@ -106,18 +106,27 @@ pub struct GatewayCacheEntry {
 /// `vary_hash` is computed via FNV-1a over the Vary string; pass `""` when
 /// the response carries no Vary header (result is the FNV-1a of empty bytes).
 #[inline]
+#[must_use]
 pub fn gateway_to_cache_entry(
     method: &str,
     path: &str,
     status: u16,
     body_size: usize,
 ) -> GatewayCacheEntry {
+    const TTL_TABLE: [u32; 4] = [0, 300, 86_400, 60];
     // Combine method + path into a single hash without heap allocation.
     let request_hash = {
         let mut h: u64 = 0xcbf29ce484222325;
-        for &b in method.as_bytes() { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
-        h ^= b':' as u64; h = h.wrapping_mul(0x100000001b3);
-        for &b in path.as_bytes()   { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+        for &b in method.as_bytes() {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h ^= b':' as u64;
+        h = h.wrapping_mul(0x100000001b3);
+        for &b in path.as_bytes() {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
         h
     };
 
@@ -130,10 +139,7 @@ pub fn gateway_to_cache_entry(
     let is_200 = (status == 200) as usize;
     let is_301 = (status == 301) as usize;
     let is_404 = (status == 404) as usize;
-    // Table: [other=0, 200→300, 301→86400, 404→60]
-    // index 0 → 0, 1 → 300, 2 → 86400, 3 → 60
-    const TTL_TABLE: [u32; 4] = [0, 300, 86_400, 60];
-    let idx = (is_200 * 1) | (is_301 * 2) | (is_404 * 3);
+    let idx = is_200 | (is_301 * 2) | (is_404 * 3);
     // Saturate overlapping bits (impossible in practice for valid status codes).
     let idx = idx.min(3);
     let ttl_seconds = TTL_TABLE[idx];
@@ -176,6 +182,7 @@ pub struct GatewayAuthRequest {
 /// (or 0 if the header is absent / empty).  `has_token` is derived
 /// branchlessly as `token_len > 0`.
 #[inline]
+#[must_use]
 pub fn gateway_to_auth_request(
     client_id: &str,
     method: u8,
@@ -183,9 +190,9 @@ pub fn gateway_to_auth_request(
     token_len: usize,
 ) -> GatewayAuthRequest {
     let client_hash = fnv1a(client_id.as_bytes());
-    let path_hash   = fnv1a(path.as_bytes());
+    let path_hash = fnv1a(path.as_bytes());
     // Branchless: (token_len > 0) as bool, no branch emitted.
-    let has_token   = token_len > 0;
+    let has_token = token_len > 0;
 
     GatewayAuthRequest {
         client_hash,
@@ -222,6 +229,7 @@ pub struct GatewayAnalyticsEvent {
 
 /// Build an analytics event from gateway request / response metadata.
 #[inline]
+#[must_use]
 pub fn gateway_to_analytics_event(
     client: &str,
     method: u8,
@@ -267,6 +275,7 @@ pub struct GatewayDbRouteConfig {
 /// `config_hash` is derived via FNV-1a over the four scalar fields packed
 /// into a 20-byte little-endian buffer — no heap allocation.
 #[inline]
+#[must_use]
 pub fn gateway_to_db_route_config(
     routes: usize,
     backends: usize,
@@ -275,14 +284,17 @@ pub fn gateway_to_db_route_config(
 ) -> GatewayDbRouteConfig {
     // Pack all four fields into a 20-byte buffer for deterministic hashing.
     let mut buf = [0u8; 20];
-    buf[0..8].copy_from_slice(&(routes    as u64).to_le_bytes());
+    buf[0..8].copy_from_slice(&(routes as u64).to_le_bytes());
     buf[8..16].copy_from_slice(&(backends as u64).to_le_bytes());
     buf[16..20].copy_from_slice(&rate_limit.to_le_bytes());
     // max_body folds into the hash via a separate FNV-1a chain to keep buf fixed-size.
     let base_hash = fnv1a(&buf);
     let config_hash = {
         let mut h = base_hash;
-        for &b in &(max_body as u64).to_le_bytes() { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+        for &b in &(max_body as u64).to_le_bytes() {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
         h
     };
 
@@ -321,16 +333,13 @@ pub struct GatewayDnsQuery {
 /// - A / AAAA → 60 s
 /// - other → 30 s
 #[inline]
-pub fn gateway_to_dns_query(
-    service_name: &str,
-    query_type: u8,
-) -> GatewayDnsQuery {
-    let service_hash  = fnv1a(service_name.as_bytes());
-    let hostname_bytes = service_name.len();
-
+#[must_use]
+pub fn gateway_to_dns_query(service_name: &str, query_type: u8) -> GatewayDnsQuery {
     // Branchless TTL via a 4-entry table indexed by query_type (clamped to 3).
     // 0=A→60, 1=AAAA→60, 2=SRV→10, 3=CNAME→300.
     const TTL_HINT_TABLE: [u32; 4] = [60, 60, 10, 300];
+    let service_hash = fnv1a(service_name.as_bytes());
+    let hostname_bytes = service_name.len();
     let idx = (query_type as usize).min(3);
     let ttl_hint = TTL_HINT_TABLE[idx];
 
@@ -373,8 +382,9 @@ pub struct GatewayQueueRequest {
 /// - GET (0) or other    → 0
 ///
 /// Implemented via two branchless boolean multiplies added together,
-/// emitting `cmov` on x86 / `csel` on AArch64.
+/// emitting `cmov` on x86 / `csel` on `AArch64`.
 #[inline]
+#[must_use]
 pub fn gateway_to_queue_request(
     client: &str,
     method: u8,
@@ -383,15 +393,15 @@ pub fn gateway_to_queue_request(
     timestamp_ms: u64,
 ) -> GatewayQueueRequest {
     let request_hash = fnv1a(path.as_bytes());
-    let client_hash  = fnv1a(client.as_bytes());
+    let client_hash = fnv1a(client.as_bytes());
 
     // Branchless priority:
     //   is_write  = (method == 1 || method == 2) → contributes 2
     //   is_delete = (method == 3)                 → contributes 1
     // These are mutually exclusive for valid method bytes.
-    let is_write  = ((method == 1) | (method == 2)) as u8;
+    let is_write = ((method == 1) | (method == 2)) as u8;
     let is_delete = (method == 3) as u8;
-    let priority  = is_write.wrapping_mul(2) | is_delete;
+    let priority = is_write.wrapping_mul(2) | is_delete;
 
     GatewayQueueRequest {
         request_hash,
@@ -436,7 +446,11 @@ mod tests {
     fn test_gateway_to_cdn_route_ttl_floor() {
         // Region 7 → 3600 >> 6 = 56, clamped to 60.
         let route = gateway_to_cdn_route("far.example.com", 7, 1);
-        assert!(route.ttl_seconds >= 60, "ttl {} below floor", route.ttl_seconds);
+        assert!(
+            route.ttl_seconds >= 60,
+            "ttl {} below floor",
+            route.ttl_seconds
+        );
     }
 
     // ── Bridge 2: Gateway → Cache ─────────────────────────────────────────
@@ -472,7 +486,10 @@ mod tests {
     fn test_gateway_to_cache_entry_hash_varies_by_path() {
         let a = gateway_to_cache_entry("GET", "/a", 200, 10);
         let b = gateway_to_cache_entry("GET", "/b", 200, 10);
-        assert_ne!(a.request_hash, b.request_hash, "distinct paths must hash differently");
+        assert_ne!(
+            a.request_hash, b.request_hash,
+            "distinct paths must hash differently"
+        );
     }
 
     // ── Bridge 3: Gateway → Auth ──────────────────────────────────────────
@@ -481,7 +498,7 @@ mod tests {
     fn test_gateway_to_auth_request_with_token() {
         let req = gateway_to_auth_request("client-42", 0, "/api/data", 128);
         assert_eq!(req.client_hash, fnv1a(b"client-42"));
-        assert_eq!(req.path_hash,   fnv1a(b"/api/data"));
+        assert_eq!(req.path_hash, fnv1a(b"/api/data"));
         assert_eq!(req.method, 0);
         assert!(req.has_token);
         assert_eq!(req.token_bytes, 128);
@@ -506,9 +523,10 @@ mod tests {
 
     #[test]
     fn test_gateway_to_analytics_event_cache_hit() {
-        let evt = gateway_to_analytics_event("client-7", 0, "/static/logo.png", 200, 1.5, 4096, true);
+        let evt =
+            gateway_to_analytics_event("client-7", 0, "/static/logo.png", 200, 1.5, 4096, true);
         assert_eq!(evt.request_hash, fnv1a(b"/static/logo.png"));
-        assert_eq!(evt.client_hash,  fnv1a(b"client-7"));
+        assert_eq!(evt.client_hash, fnv1a(b"client-7"));
         assert_eq!(evt.method, 0);
         assert_eq!(evt.status_code, 200);
         assert!((evt.latency_ms - 1.5).abs() < f64::EPSILON);
@@ -528,7 +546,7 @@ mod tests {
         let a = gateway_to_analytics_event("u1", 0, "/a", 200, 1.0, 0, false);
         let b = gateway_to_analytics_event("u2", 0, "/b", 200, 1.0, 0, false);
         assert_ne!(a.request_hash, b.request_hash);
-        assert_ne!(a.client_hash,  b.client_hash);
+        assert_ne!(a.client_hash, b.client_hash);
     }
 
     // ── Bridge 5: Gateway → DB ────────────────────────────────────────────
@@ -537,9 +555,9 @@ mod tests {
     fn test_gateway_to_db_route_config_basic() {
         let cfg = gateway_to_db_route_config(12, 3, 1_048_576, 1000);
         assert_ne!(cfg.config_hash, 0);
-        assert_eq!(cfg.route_count,    12);
-        assert_eq!(cfg.backend_count,  3);
-        assert_eq!(cfg.max_body_size,  1_048_576);
+        assert_eq!(cfg.route_count, 12);
+        assert_eq!(cfg.backend_count, 3);
+        assert_eq!(cfg.max_body_size, 1_048_576);
         assert_eq!(cfg.rate_limit_rps, 1000);
     }
 
@@ -547,14 +565,20 @@ mod tests {
     fn test_gateway_to_db_route_config_hash_changes_with_fields() {
         let a = gateway_to_db_route_config(10, 2, 512, 500);
         let b = gateway_to_db_route_config(10, 2, 512, 501); // only rate_limit differs
-        assert_ne!(a.config_hash, b.config_hash, "hash must change when any field changes");
+        assert_ne!(
+            a.config_hash, b.config_hash,
+            "hash must change when any field changes"
+        );
     }
 
     #[test]
     fn test_gateway_to_db_route_config_deterministic() {
         let a = gateway_to_db_route_config(5, 1, 65536, 100);
         let b = gateway_to_db_route_config(5, 1, 65536, 100);
-        assert_eq!(a.config_hash, b.config_hash, "same inputs must produce same hash");
+        assert_eq!(
+            a.config_hash, b.config_hash,
+            "same inputs must produce same hash"
+        );
     }
 
     // ── Bridge 6: Gateway → DNS ───────────────────────────────────────────
@@ -562,10 +586,10 @@ mod tests {
     #[test]
     fn test_gateway_to_dns_query_a_record() {
         let q = gateway_to_dns_query("backend.internal", 0);
-        assert_eq!(q.service_hash,  fnv1a(b"backend.internal"));
+        assert_eq!(q.service_hash, fnv1a(b"backend.internal"));
         assert_eq!(q.hostname_bytes, "backend.internal".len());
         assert_eq!(q.query_type, 0);
-        assert_eq!(q.ttl_hint,  60);
+        assert_eq!(q.ttl_hint, 60);
     }
 
     #[test]
@@ -601,9 +625,9 @@ mod tests {
     fn test_gateway_to_queue_request_get() {
         let req = gateway_to_queue_request("client-1", 0, "/feed", 0, 1_000);
         assert_eq!(req.request_hash, fnv1a(b"/feed"));
-        assert_eq!(req.client_hash,  fnv1a(b"client-1"));
-        assert_eq!(req.method,    0);
-        assert_eq!(req.priority,  0, "GET must have priority 0");
+        assert_eq!(req.client_hash, fnv1a(b"client-1"));
+        assert_eq!(req.method, 0);
+        assert_eq!(req.priority, 0, "GET must have priority 0");
         assert_eq!(req.body_bytes, 0);
         assert_eq!(req.enqueue_ms, 1_000);
     }
@@ -632,6 +656,6 @@ mod tests {
         let a = gateway_to_queue_request("u1", 0, "/x", 0, 0);
         let b = gateway_to_queue_request("u2", 0, "/y", 0, 0);
         assert_ne!(a.request_hash, b.request_hash);
-        assert_ne!(a.client_hash,  b.client_hash);
+        assert_ne!(a.client_hash, b.client_hash);
     }
 }

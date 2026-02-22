@@ -7,7 +7,10 @@ use alice_presence::{CrossingRecord, CrossingStatus, PresenceEvent, ProximityPro
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -33,6 +36,7 @@ pub struct PresenceDbCrossingRecord {
 
 /// Convert a crossing record into a DB record.
 #[inline]
+#[must_use]
 pub fn presence_crossing_to_db(record: &CrossingRecord) -> PresenceDbCrossingRecord {
     let status_byte = match record.status() {
         CrossingStatus::Initiated => 0u8,
@@ -83,6 +87,7 @@ pub struct PresenceAnalyticsCrossingEvent {
 
 /// Convert a crossing record into an analytics event.
 #[inline]
+#[must_use]
 pub fn presence_crossing_to_analytics(record: &CrossingRecord) -> PresenceAnalyticsCrossingEvent {
     let mut key = [0u8; 19];
     key[0..4].copy_from_slice(&record.event.party_a_id.to_le_bytes());
@@ -123,6 +128,7 @@ pub struct PresenceEdgeEvent {
 
 /// Convert a presence event into an edge telemetry event.
 #[inline]
+#[must_use]
 pub fn presence_event_to_edge(event: &PresenceEvent) -> PresenceEdgeEvent {
     let bytes = event.to_bytes();
 
@@ -154,6 +160,7 @@ pub struct PresenceCacheEvent {
 
 /// Convert a presence event into a cache entry with adaptive TTL.
 #[inline]
+#[must_use]
 pub fn presence_event_to_cache(event: &PresenceEvent) -> PresenceCacheEvent {
     let mut key = [0u8; 9];
     key[0..4].copy_from_slice(&event.party_a_id.to_le_bytes());
@@ -177,7 +184,7 @@ pub fn presence_event_to_cache(event: &PresenceEvent) -> PresenceCacheEvent {
 
 /// Proximity distance metrics for ALICE-Analytics ingestion.
 pub struct PresenceAnalyticsProximityEvent {
-    /// Content hash over distance, threshold, is_proximate bytes.
+    /// Content hash over distance, threshold, `is_proximate` bytes.
     pub content_hash: u64,
     /// Vivaldi distance.
     pub distance: f64,
@@ -191,8 +198,13 @@ pub struct PresenceAnalyticsProximityEvent {
 
 /// Convert a proximity proof into an analytics event.
 #[inline]
+#[must_use]
 pub fn presence_proximity_to_analytics(proof: &ProximityProof) -> PresenceAnalyticsProximityEvent {
-    let norm = if proof.threshold > 0.0 { proof.distance / proof.threshold } else { 0.0 };
+    let norm = if proof.threshold > 0.0 {
+        proof.distance / proof.threshold
+    } else {
+        0.0
+    };
 
     let mut key = [0u8; 17];
     key[0..8].copy_from_slice(&proof.distance.to_bits().to_le_bytes());
@@ -213,7 +225,10 @@ pub fn presence_proximity_to_analytics(proof: &ProximityProof) -> PresenceAnalyt
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_presence::{VivaldiCoord, IdentityCommitment, ZkProof, ProximityProof, PresenceEvent, CrossingRecord, PresenceConfig, PartyInfo, execute_presence_protocol};
+    use alice_presence::{
+        execute_presence_protocol, CrossingRecord, IdentityCommitment, PartyInfo, PresenceConfig,
+        PresenceEvent, ProximityProof, VivaldiCoord, ZkProof,
+    };
 
     fn make_crossing() -> CrossingRecord {
         let a = PartyInfo::new(VivaldiCoord::new(0.0, 0.0), 42, 1);

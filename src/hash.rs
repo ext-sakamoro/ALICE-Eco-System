@@ -8,6 +8,7 @@
 /// Single implementation shared across all bridge files.
 /// Marked `#[inline(always)]` for zero-overhead inlining into callers.
 #[inline(always)]
+#[must_use]
 pub fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
     for &b in data {

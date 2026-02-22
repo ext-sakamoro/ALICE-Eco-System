@@ -2,12 +2,15 @@
 //!
 //! 6 bridges connecting message queue to the ALICE ecosystem.
 
-use alice_queue::{Message, IdempotencyBarrier, GapResult};
+use alice_queue::{GapResult, IdempotencyBarrier, Message};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -29,6 +32,7 @@ pub struct QueueDbRecord {
 
 /// Serialize message for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn queue_to_db_record(msg: &Message) -> QueueDbRecord {
     QueueDbRecord {
         message_id: msg.header.id,
@@ -55,6 +59,7 @@ pub struct QueueEdgePayload {
 
 /// Prepare message for ALICE-Edge lightweight delivery.
 #[inline]
+#[must_use]
 pub fn queue_to_edge_payload(msg: &Message) -> QueueEdgePayload {
     QueueEdgePayload {
         sender_hash: fnv1a(&msg.header.sender),
@@ -80,6 +85,7 @@ pub struct QueueCryptoPayload {
 
 /// Prepare message for ALICE-Crypto authentication.
 #[inline]
+#[must_use]
 pub fn queue_to_crypto_payload(msg: &Message) -> QueueCryptoPayload {
     QueueCryptoPayload {
         content_hash: fnv1a(&msg.payload),
@@ -107,6 +113,7 @@ pub struct QueueAnalyticsMetrics {
 
 /// Extract throughput metrics for ALICE-Analytics.
 #[inline]
+#[must_use]
 pub fn queue_to_analytics_metrics(msg: &Message) -> QueueAnalyticsMetrics {
     let data = [msg.header.sender.as_slice(), &msg.header.seq.to_le_bytes()].concat();
     QueueAnalyticsMetrics {
@@ -139,7 +146,12 @@ pub struct QueueSyncDelivery {
 /// Note: `sender_id` is the u64 sender ID used in the barrier (not the
 /// raw 32-byte sender key). Callers should map sender keys to sender IDs.
 #[inline]
-pub fn queue_to_sync_delivery(msg: &Message, barrier: &IdempotencyBarrier, sender_id: u64) -> QueueSyncDelivery {
+#[must_use]
+pub fn queue_to_sync_delivery(
+    msg: &Message,
+    barrier: &IdempotencyBarrier,
+    sender_id: u64,
+) -> QueueSyncDelivery {
     let gap_result = barrier.check(sender_id, msg.header.seq);
     let has_gap = matches!(gap_result, GapResult::Gap { .. });
     QueueSyncDelivery {
@@ -167,6 +179,7 @@ pub struct QueueCacheEntry {
 
 /// Prepare message deduplication entry for ALICE-Cache.
 #[inline]
+#[must_use]
 pub fn queue_to_cache_entry(msg: &Message) -> QueueCacheEntry {
     QueueCacheEntry {
         message_id_hash: fnv1a(&msg.header.id),

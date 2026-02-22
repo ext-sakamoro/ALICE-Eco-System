@@ -2,7 +2,7 @@
 //!
 //! 6 bridges connecting 1.58-bit ternary inference to the ALICE ecosystem.
 
-use alice_ml::{TernaryWeight, ternary_matvec};
+use alice_ml::{ternary_matvec, TernaryWeight};
 
 // ── Bridge 1: ML → Physics (ternary → neural ragdoll controller) ────────
 
@@ -18,6 +18,7 @@ pub struct MlPhysicsControl {
 
 /// Run ternary inference for ALICE-Physics ragdoll controller.
 #[inline]
+#[must_use]
 pub fn ml_physics_ragdoll(weights: &TernaryWeight, state: &[f32]) -> MlPhysicsControl {
     let rows = weights.out_features();
     let cols = weights.in_features();
@@ -46,6 +47,7 @@ pub struct MlSdfField {
 
 /// Evaluate neural SDF field via ternary inference for ALICE-SDF.
 #[inline]
+#[must_use]
 pub fn ml_sdf_evaluate(weights: &TernaryWeight, points: &[f32]) -> MlSdfField {
     let rows = weights.out_features();
     let point_count = points.len() / 3;
@@ -57,7 +59,7 @@ pub fn ml_sdf_evaluate(weights: &TernaryWeight, points: &[f32]) -> MlSdfField {
         output.fill(0.0); // reset without realloc
         ternary_matvec(xyz, weights, &mut output);
         // Take first output as distance (branchless via get)
-        distances.push(*output.get(0).unwrap_or(&0.0));
+        distances.push(*output.first().unwrap_or(&0.0));
     }
 
     MlSdfField {
@@ -83,17 +85,20 @@ pub struct MlAnimDirection {
 
 /// Run ternary inference for AI-driven anime direction in ALICE-Animation.
 #[inline]
+#[must_use]
 pub fn ml_animation_direction(weights: &TernaryWeight, scene_features: &[f32]) -> MlAnimDirection {
     let rows = weights.out_features();
     let mut output = vec![0.0f32; rows];
     ternary_matvec(scene_features, weights, &mut output);
 
     // Map outputs to animation parameters (branchless via get+map_or)
-    let dx = output.get(0).map_or(0.0, |x| x.tanh());
+    let dx = output.first().map_or(0.0, |x| x.tanh());
     let dy = output.get(1).map_or(0.0, |x| x.tanh());
     let dz = output.get(2).map_or(0.0, |x| x.tanh());
     let mood = output.get(3).map_or(0.0, |x| x.tanh());
-    let cut_prob = output.get(4).map_or(0.0, |x| (x * 0.5 + 0.5).clamp(0.0, 1.0));
+    let cut_prob = output
+        .get(4)
+        .map_or(0.0, |x| (x * 0.5 + 0.5).clamp(0.0, 1.0));
     let expr = output.get(5).map_or(0u8, |x| (x.abs() * 8.0) as u8);
 
     MlAnimDirection {
@@ -122,6 +127,7 @@ pub struct MlDbRecord {
 
 /// Serialize ML model metadata for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn ml_to_db_record(weights: &TernaryWeight) -> MlDbRecord {
     let rows = weights.out_features();
     let cols = weights.in_features();
@@ -162,6 +168,7 @@ pub struct MlCacheEntry {
 
 /// Prepare ML model metadata for ALICE-Cache keying.
 #[inline]
+#[must_use]
 pub fn ml_to_cache_entry(weights: &TernaryWeight) -> MlCacheEntry {
     let rows = weights.out_features();
     let cols = weights.in_features();
@@ -198,11 +205,12 @@ pub struct MlAnalyticsMetrics {
 
 /// Extract inference metrics for ALICE-Analytics monitoring.
 #[inline]
+#[must_use]
 pub fn ml_to_analytics_metrics(weights: &TernaryWeight) -> MlAnalyticsMetrics {
     let rows = weights.out_features();
     let cols = weights.in_features();
     let total = rows * cols;
-    let memory_bytes = (total + 3) / 4; // 2 bits per ternary weight
+    let memory_bytes = total.div_ceil(4); // 2 bits per ternary weight
     MlAnalyticsMetrics {
         mac_ops: total,
         param_count: total,
@@ -234,6 +242,7 @@ pub struct MlTrtDescriptor {
 /// `requires_fp16` is always `true` because TRT fp16 mode reduces bandwidth
 /// regardless of model size.
 #[inline]
+#[must_use]
 pub fn ml_to_trt_descriptor(weights: &TernaryWeight) -> MlTrtDescriptor {
     let rows = weights.out_features();
     let cols = weights.in_features();
@@ -264,7 +273,13 @@ mod tests {
     use super::*;
 
     fn test_weights(rows: usize, cols: usize) -> TernaryWeight {
-        let data: Vec<i8> = (0..rows * cols).map(|i| match i % 3 { 0 => 1, 1 => -1, _ => 0 }).collect();
+        let data: Vec<i8> = (0..rows * cols)
+            .map(|i| match i % 3 {
+                0 => 1,
+                1 => -1,
+                _ => 0,
+            })
+            .collect();
         TernaryWeight::from_ternary(&data, rows, cols)
     }
 

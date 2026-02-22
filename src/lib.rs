@@ -1,3 +1,25 @@
+// Justified pedantic suppression for bridge/pipeline code:
+// - inline_always: FNV-1a hash hot paths in every bridge file
+// - cast_*: intentional narrowing in bridge serialization (u8→u64, usize→u32, f32→i32)
+// - similar_names: bridge variable pairs mirror source/target crate naming
+// - module_name_repetitions: bridge_xxx types intentionally repeat module prefix
+// - too_many_lines: pipeline orchestration functions span multiple crate calls
+// - missing_docs: bridge conversion functions are self-documenting by signature
+// - unreadable_literal: FNV-1a constants are standard hex values
+#![allow(
+    clippy::inline_always,
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::cast_possible_wrap,
+    clippy::similar_names,
+    clippy::module_name_repetitions,
+    clippy::too_many_lines,
+    clippy::unreadable_literal,
+    clippy::missing_docs_in_private_items
+)]
+
 //! ALICE Eco-System — Unified Pipeline Library
 //!
 //! Connects 51 ALICE crates into unified pipelines with 411 cross-crate bridges.
@@ -67,88 +89,88 @@
 //!   [ALICE-Presence] → [ALICE-Edge] (event telemetry) → [ALICE-Analytics] (crossing/proximity) → [ALICE-DB] / [ALICE-Cache]
 //! ```
 
-pub mod hash;
-pub mod pipeline;
-pub mod bridge_font;
-pub mod bridge_synth;
-pub mod bridge_kinematics;
-pub mod bridge_motion;
-pub mod bridge_rtos;
-pub mod bridge_vcs;
-pub mod bridge_cross;
-pub mod bridge_voice;
-pub mod bridge_codec;
-pub mod bridge_text;
-pub mod bridge_search;
-pub mod bridge_ml;
-pub mod bridge_physics;
-pub mod bridge_trt;
-pub mod bridge_dns;
-pub mod bridge_api;
-pub mod bridge_zip;
-pub mod bridge_auth;
-pub mod bridge_crypto_ext;
+pub mod bridge_analytics;
 #[cfg(feature = "animation")]
 pub mod bridge_animation;
-#[cfg(feature = "manga")]
-pub mod bridge_manga;
-#[cfg(feature = "print")]
-pub mod bridge_print_ext;
-pub mod bridge_analytics;
-pub mod bridge_queue;
+pub mod bridge_api;
 pub mod bridge_asp;
-pub mod bridge_edge_ext;
-pub mod bridge_cdn_ext;
-pub mod bridge_cdn;
-pub mod bridge_edge;
-pub mod bridge_container;
-#[cfg(feature = "firewall")]
-pub mod bridge_firewall;
-pub mod bridge_browser;
-pub mod bridge_cloud_gateway;
-pub mod bridge_view;
-pub mod bridge_db;
-pub mod bridge_sync;
-pub mod bridge_cache;
-pub mod bridge_sdf;
-pub mod bridge_semantic_telemetry;
-pub mod bridge_ledger;
-pub mod bridge_risk_ext;
-pub mod bridge_fix_ext;
-pub mod bridge_settlement_ext;
-#[cfg(feature = "edge-commercial")]
-pub mod bridge_edge_commercial;
 #[cfg(feature = "streaming-protocol-commercial")]
 pub mod bridge_asp_commercial;
-pub mod bridge_bio;
-pub mod bridge_legal;
-pub mod bridge_energy;
-pub mod bridge_space;
-pub mod bridge_space_cross;
-pub mod bridge_bio_cross;
-pub mod bridge_legal_cross;
-pub mod bridge_energy_cross;
-#[cfg(feature = "neural")]
-pub mod bridge_neural;
-#[cfg(feature = "neural")]
-pub mod bridge_neural_cross;
-pub mod bridge_climate;
-pub mod bridge_climate_cross;
-pub mod bridge_history;
-pub mod bridge_history_cross;
 #[cfg(feature = "atoms")]
 pub mod bridge_atoms;
 #[cfg(feature = "atoms")]
 pub mod bridge_atoms_cross;
+pub mod bridge_auth;
+pub mod bridge_bio;
+pub mod bridge_bio_cross;
+pub mod bridge_browser;
+pub mod bridge_cache;
+pub mod bridge_cdn;
+pub mod bridge_cdn_ext;
+pub mod bridge_climate;
+pub mod bridge_climate_cross;
+pub mod bridge_cloud_gateway;
+pub mod bridge_codec;
+pub mod bridge_container;
+pub mod bridge_cross;
+pub mod bridge_crypto_ext;
+pub mod bridge_db;
+pub mod bridge_dns;
+pub mod bridge_edge;
+#[cfg(feature = "edge-commercial")]
+pub mod bridge_edge_commercial;
+pub mod bridge_edge_ext;
+pub mod bridge_energy;
+pub mod bridge_energy_cross;
+#[cfg(feature = "firewall")]
+pub mod bridge_firewall;
+pub mod bridge_fix_ext;
+pub mod bridge_font;
+pub mod bridge_history;
+pub mod bridge_history_cross;
+pub mod bridge_kinematics;
+pub mod bridge_ledger;
+pub mod bridge_legal;
+pub mod bridge_legal_cross;
+#[cfg(feature = "manga")]
+pub mod bridge_manga;
+pub mod bridge_ml;
+pub mod bridge_motion;
+#[cfg(feature = "neural")]
+pub mod bridge_neural;
+#[cfg(feature = "neural")]
+pub mod bridge_neural_cross;
+pub mod bridge_physics;
 pub mod bridge_presence;
 pub mod bridge_presence_cross;
+#[cfg(feature = "print")]
+pub mod bridge_print_ext;
+pub mod bridge_queue;
+pub mod bridge_risk_ext;
+pub mod bridge_rtos;
+pub mod bridge_sdf;
+pub mod bridge_search;
+pub mod bridge_semantic_telemetry;
+pub mod bridge_settlement_ext;
+pub mod bridge_space;
+pub mod bridge_space_cross;
+pub mod bridge_sync;
+pub mod bridge_synth;
+pub mod bridge_text;
+pub mod bridge_trt;
+pub mod bridge_vcs;
+pub mod bridge_view;
+pub mod bridge_voice;
+pub mod bridge_zip;
+pub mod hash;
+pub mod pipeline;
 
 // Re-export pipeline API
 pub use pipeline::{
-    AlicePipeline, AssetDeliveryResult, CdnNodeConfig, GameTickResult, PipelineConfig,
-    SensorIngestResult, MocapResult, AnimeProductionResult, EmbeddedResult, PrintOptResult,
-    AiInferenceResult, VoiceDeliveryResult, FullTextSearchResult, DnsApiGatewayResult,
     path_g_ai_inference, path_h_voice_delivery, path_i_fulltext_search, path_j_dns_api_gateway,
+    AiInferenceResult, AlicePipeline, AnimeProductionResult, AssetDeliveryResult, CdnNodeConfig,
+    DnsApiGatewayResult, EmbeddedResult, FullTextSearchResult, GameTickResult, MocapResult,
+    PipelineConfig, PrintOptResult, SensorIngestResult, VoiceDeliveryResult,
 };
 
 // Re-export key types from constituent crates
@@ -159,25 +181,27 @@ pub use alice_sync::InputFrame;
 
 // Re-export new crate key types
 pub use alice_font::MetaFontParams;
-pub use alice_synth::{Score, Synthesizer};
 pub use alice_kinematics::{ArmChain, Intent, Vec3k};
 pub use alice_motion::{CubicBezier, MotionPlan, Vec3 as MotionVec3};
 pub use alice_rtos::{Kernel, Task};
-pub use alice_vcs::{Repository, AstNodeKind};
+pub use alice_synth::{Score, Synthesizer};
+pub use alice_vcs::{AstNodeKind, Repository};
 
 // Re-export financial domain types
-pub use alice_ledger::{OrderBook, Order, OrderId, Side, Fill, Position, PositionTracker};
-pub use alice_risk::{PreTradeChecker, RiskLimits, RiskReject, MarginCalculator, CircuitBreaker};
-pub use alice_fix::{FixMessage, FixBuilder, FixSession};
-pub use alice_settlement::{Trade, SettlementStatus, NettingEngine, ClearingHouse, SettlementJournal};
+pub use alice_fix::{FixBuilder, FixMessage, FixSession};
+pub use alice_ledger::{Fill, Order, OrderBook, OrderId, Position, PositionTracker, Side};
+pub use alice_risk::{CircuitBreaker, MarginCalculator, PreTradeChecker, RiskLimits, RiskReject};
+pub use alice_settlement::{
+    ClearingHouse, NettingEngine, SettlementJournal, SettlementStatus, Trade,
+};
 
 // Re-export science & domain-specific types (Path L-Q)
-pub use alice_bio::{AminoAcid, Residue, ProteinSdf, TotalEnergy};
-pub use alice_legal::{StatuteTree, Contract, AuditLog, AuditEntry};
-pub use alice_energy::{PowerGrid, PowerNode, BatteryState, PhaseCorrection};
-pub use alice_space::{CommLink, ModelDifferential, MissionEvent, ControlDecision};
-pub use alice_climate::{WeatherStation, Observation, ClimateResponse, AnomalyKind};
+pub use alice_bio::{AminoAcid, ProteinSdf, Residue, TotalEnergy};
+pub use alice_climate::{AnomalyKind, ClimateResponse, Observation, WeatherStation};
+pub use alice_energy::{BatteryState, PhaseCorrection, PowerGrid, PowerNode};
+pub use alice_legal::{AuditEntry, AuditLog, Contract, StatuteTree};
+pub use alice_space::{CommLink, ControlDecision, MissionEvent, ModelDifferential};
 
 // Re-export advanced domain types (Path R-U)
-pub use alice_history::{Fragment, FragmentKind, RestorationResult, InversionConfig};
-pub use alice_presence::{VivaldiCoord, PresenceEvent, CrossingRecord, CrossingStatus};
+pub use alice_history::{Fragment, FragmentKind, InversionConfig, RestorationResult};
+pub use alice_presence::{CrossingRecord, CrossingStatus, PresenceEvent, VivaldiCoord};

@@ -4,9 +4,9 @@
 //! Gated behind the `streaming-protocol-commercial` feature flag.
 
 #[cfg(feature = "streaming-protocol-commercial")]
-use libasp_enterprise::audit::{AuditEvent, AuditLog, EventType, EventSeverity};
-#[cfg(feature = "streaming-protocol-commercial")]
 use libasp_enterprise::audit::metrics::{MetricsSnapshot, PacketMetricsSnapshot};
+#[cfg(feature = "streaming-protocol-commercial")]
+use libasp_enterprise::audit::{AuditEvent, AuditLog, EventSeverity, EventType};
 #[cfg(feature = "streaming-protocol-commercial")]
 use libasp_enterprise::gpu::{GpuBackend, GpuConfig};
 
@@ -155,9 +155,9 @@ pub fn asp_commercial_to_analytics_record(
     // GPU backend: map enum to u8 via branchless const table.
     // GpuBackend has no guaranteed discriminant; use explicit mapping.
     let gpu_backend_id: u8 = match gpu_config.backend {
-        GpuBackend::Cpu    => 0,
-        GpuBackend::Cuda   => 1,
-        GpuBackend::Metal  => 2,
+        GpuBackend::Cpu => 0,
+        GpuBackend::Cuda => 1,
+        GpuBackend::Metal => 2,
         GpuBackend::Vulkan => 3,
     };
     let gpu_device_index = gpu_config.device_index.min(255) as u8;
@@ -249,9 +249,9 @@ pub fn asp_commercial_auth_descriptor(
     let access_token = identity_hash ^ session_hash.rotate_left(19);
 
     let gpu_backend_id: u8 = match gpu_config.backend {
-        GpuBackend::Cpu    => 0,
-        GpuBackend::Cuda   => 1,
-        GpuBackend::Metal  => 2,
+        GpuBackend::Cpu => 0,
+        GpuBackend::Cuda => 1,
+        GpuBackend::Metal => 2,
         GpuBackend::Vulkan => 3,
     };
 
@@ -276,9 +276,9 @@ pub fn asp_commercial_auth_descriptor(
 #[cfg(all(test, feature = "streaming-protocol-commercial"))]
 mod tests {
     use super::*;
-    use libasp_enterprise::audit::{AuditLog, AuditEvent, EventType, EventSeverity};
     use libasp_enterprise::audit::metrics::{Metrics, MetricsSnapshot, PacketMetrics};
-    use libasp_enterprise::gpu::{GpuConfig, GpuBackend};
+    use libasp_enterprise::audit::{AuditEvent, AuditLog, EventSeverity, EventType};
+    use libasp_enterprise::gpu::{GpuBackend, GpuConfig};
 
     // Helper: build a minimal MetricsSnapshot for testing.
     fn make_snapshot(
@@ -287,8 +287,8 @@ mod tests {
         pkts_sent: u64,
         pkts_recv: u64,
     ) -> MetricsSnapshot {
-        use libasp_enterprise::audit::metrics::{PacketMetricsSnapshot, ChannelMetrics};
         use chrono::Utc;
+        use libasp_enterprise::audit::metrics::{ChannelMetrics, PacketMetricsSnapshot};
 
         MetricsSnapshot {
             timestamp: Utc::now(),
@@ -331,7 +331,10 @@ mod tests {
         assert_eq!(rec.severity_level, EventSeverity::Info.level());
         assert!(!rec.is_security_event, "Connect is not a security event");
         assert!(rec.has_device_id);
-        assert_eq!(rec.device_id, [0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02, 0x03, 0x04]);
+        assert_eq!(
+            rec.device_id,
+            [0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02, 0x03, 0x04]
+        );
         assert_eq!(rec.packet_size, 0);
         assert_ne!(rec.content_hash, 0);
         assert_ne!(rec.content_hash, 0xcbf29ce484222325);
@@ -339,8 +342,7 @@ mod tests {
 
     #[test]
     fn test_asp_commercial_to_db_audit_record_auth_failure() {
-        let event = AuditEvent::new(EventType::AuthFailure)
-            .with_packet_size(256);
+        let event = AuditEvent::new(EventType::AuthFailure).with_packet_size(256);
 
         let rec = asp_commercial_to_db_audit_record(&event);
 
@@ -425,7 +427,10 @@ mod tests {
     #[test]
     fn test_asp_commercial_to_analytics_record_cuda_backend() {
         let snap = make_snapshot(50, 0, 500, 500);
-        let gpu = GpuConfig { backend: GpuBackend::Cuda, ..GpuConfig::default() };
+        let gpu = GpuConfig {
+            backend: GpuBackend::Cuda,
+            ..GpuConfig::default()
+        };
 
         let rec = asp_commercial_to_analytics_record(&snap, &gpu);
         assert_eq!(rec.gpu_backend_id, 1, "CUDA = 1");
@@ -468,7 +473,10 @@ mod tests {
     #[test]
     fn test_asp_commercial_auth_descriptor_different_identities() {
         let snap = make_snapshot(100, 0, 1000, 900);
-        let gpu = GpuConfig { backend: GpuBackend::Vulkan, ..GpuConfig::default() };
+        let gpu = GpuConfig {
+            backend: GpuBackend::Vulkan,
+            ..GpuConfig::default()
+        };
 
         let identity_a: [u8; 32] = [0xAA; 32];
         let identity_b: [u8; 32] = [0xBB; 32];
@@ -487,7 +495,10 @@ mod tests {
     fn test_asp_commercial_auth_descriptor_vulkan_authorized() {
         let identity: [u8; 32] = [0x01; 32];
         let snap = make_snapshot(1, 0, 10, 10);
-        let gpu = GpuConfig { backend: GpuBackend::Vulkan, ..GpuConfig::default() };
+        let gpu = GpuConfig {
+            backend: GpuBackend::Vulkan,
+            ..GpuConfig::default()
+        };
 
         let desc = asp_commercial_auth_descriptor(&identity, &snap, &gpu);
         assert!(desc.gpu_authorized);

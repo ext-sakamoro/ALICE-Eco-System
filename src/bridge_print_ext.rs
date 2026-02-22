@@ -7,7 +7,10 @@ use alice_print::SliceResult;
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -285,7 +288,8 @@ pub fn print_to_physics_body(
 
     // Volume estimate: filament_meters × π × (1.75mm/2)² cross section
     let filament_radius_m = 0.000875; // 1.75mm / 2
-    let volume_m3 = result.filament_meters * std::f32::consts::PI * filament_radius_m * filament_radius_m;
+    let volume_m3 =
+        result.filament_meters * std::f32::consts::PI * filament_radius_m * filament_radius_m;
     let mass_kg = volume_m3 * material_density;
 
     let hx = width_m * 0.5;
@@ -314,8 +318,8 @@ mod tests {
     use super::*;
 
     fn test_result() -> SliceResult {
+        use alice_print::{GcodeFlavor, SlicerConfig};
         use alice_sdf::SdfNode;
-        use alice_print::{SlicerConfig, GcodeFlavor};
         let sdf = SdfNode::sphere(10.0);
         let config = SlicerConfig::default();
         alice_print::slice_sdf(&sdf, &config, GcodeFlavor::Marlin)

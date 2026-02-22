@@ -8,7 +8,10 @@ use alice_history::{Fragment, RestorationResult};
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -20,7 +23,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// Text layer can estimate storage and prioritise text-specific encoding
 /// without accessing raw fragment data.
 pub struct HistoryTextRecord {
-    /// FNV-1a hash over fragment_id, kind, data_length, known_fraction bytes.
+    /// FNV-1a hash over `fragment_id`, kind, `data_length`, `known_fraction` bytes.
     pub content_hash: u64,
     /// Fragment identifier.
     pub fragment_id: u64,
@@ -30,7 +33,7 @@ pub struct HistoryTextRecord {
     pub data_length: usize,
     /// Fraction of data that is known (0.0 to 1.0).
     pub known_fraction: f64,
-    /// Estimated text byte count (data.len() * 4, assuming f64 to UTF-8 expansion).
+    /// Estimated text byte count (`data.len()` * 4, assuming f64 to UTF-8 expansion).
     pub estimated_text_bytes: usize,
     /// True when the fragment kind is Text (kind == 0).
     pub is_text_fragment: bool,
@@ -38,6 +41,7 @@ pub struct HistoryTextRecord {
 
 /// Convert a history fragment into a text compression record.
 #[inline]
+#[must_use]
 pub fn history_fragment_to_text_record(fragment: &Fragment) -> HistoryTextRecord {
     let kind_byte = fragment.kind as u8;
     let known_frac = fragment.known_fraction();
@@ -70,7 +74,7 @@ pub fn history_fragment_to_text_record(fragment: &Fragment) -> HistoryTextRecord
 /// Search layer can rank and filter results by confidence without
 /// accessing the full restoration field.
 pub struct HistorySearchIndex {
-    /// FNV-1a hash over fragment_id, value_count, mean_confidence, iterations bytes.
+    /// FNV-1a hash over `fragment_id`, `value_count`, `mean_confidence`, iterations bytes.
     pub content_hash: u64,
     /// Fragment identifier.
     pub fragment_id: u64,
@@ -80,20 +84,27 @@ pub struct HistorySearchIndex {
     pub mean_confidence: f64,
     /// Number of solver iterations performed.
     pub iterations: u32,
-    /// True when mean_confidence exceeds 0.7.
+    /// True when `mean_confidence` exceeds 0.7.
     pub is_searchable: bool,
-    /// Priority: 1=high_quality(>0.9), 2=medium(>0.7), 3=low.
+    /// Priority: `1=high_quality(>0.9)`, 2=medium(>0.7), 3=low.
     pub index_priority: u8,
 }
 
 /// Convert a restoration result into a search FM-index record.
 #[inline]
+#[must_use]
 pub fn history_restoration_to_search_index(result: &RestorationResult) -> HistorySearchIndex {
     let mean_conf = result.field.confidence.mean_confidence;
     let value_count = result.field.values.len();
     let iterations = result.field.iterations;
     let is_searchable = mean_conf > 0.7;
-    let index_priority = if mean_conf > 0.9 { 1u8 } else if mean_conf > 0.7 { 2 } else { 3 };
+    let index_priority = if mean_conf > 0.9 {
+        1u8
+    } else if mean_conf > 0.7 {
+        2
+    } else {
+        3
+    };
 
     let mut key = [0u8; 28];
     key[0..8].copy_from_slice(&result.fragment_id.to_le_bytes());
@@ -120,7 +131,7 @@ pub fn history_restoration_to_search_index(result: &RestorationResult) -> Histor
 /// metadata so the Codec layer can estimate bitrate and choose an
 /// appropriate encoder without touching raw fragment data.
 pub struct HistoryCodecFrame {
-    /// FNV-1a hash over fragment_id, kind, data_length, missing_count, known_fraction bytes.
+    /// FNV-1a hash over `fragment_id`, kind, `data_length`, `missing_count`, `known_fraction` bytes.
     pub content_hash: u64,
     /// Fragment identifier.
     pub fragment_id: u64,
@@ -134,12 +145,13 @@ pub struct HistoryCodecFrame {
     pub known_fraction: f64,
     /// True when the fragment kind is Image (1) or Audio (4).
     pub is_media_fragment: bool,
-    /// Estimated frame bytes: data.len() * 8 for raw, scaled by known_fraction for compressed.
+    /// Estimated frame bytes: `data.len()` * 8 for raw, scaled by `known_fraction` for compressed.
     pub estimated_frame_bytes: usize,
 }
 
 /// Convert a history fragment into codec frame metadata.
 #[inline]
+#[must_use]
 pub fn history_fragment_to_codec_frame(fragment: &Fragment) -> HistoryCodecFrame {
     let kind_byte = fragment.kind as u8;
     let data_length = fragment.data.len();
@@ -176,7 +188,7 @@ pub fn history_fragment_to_codec_frame(fragment: &Fragment) -> HistoryCodecFrame
 /// Crypto layer can verify that a restoration originated from a
 /// specific fragment and solver configuration.
 pub struct HistoryCryptoProof {
-    /// FNV-1a hash over fragment_id, field_hash, iterations, elapsed_ns, mean_confidence bytes.
+    /// FNV-1a hash over `fragment_id`, `field_hash`, iterations, `elapsed_ns`, `mean_confidence` bytes.
     pub content_hash: u64,
     /// Fragment identifier.
     pub fragment_id: u64,
@@ -188,12 +200,13 @@ pub struct HistoryCryptoProof {
     pub elapsed_ns: u64,
     /// Mean confidence across all restored elements.
     pub mean_confidence: f64,
-    /// Provenance hash: fnv1a of fragment_id + field_hash + iterations.
+    /// Provenance hash: fnv1a of `fragment_id` + `field_hash` + iterations.
     pub provenance_hash: u64,
 }
 
 /// Convert a restoration result into a cryptographic provenance proof.
 #[inline]
+#[must_use]
 pub fn history_restoration_to_crypto_proof(result: &RestorationResult) -> HistoryCryptoProof {
     let field_hash = result.field.content_hash;
     let iterations = result.field.iterations;
@@ -230,10 +243,16 @@ pub fn history_restoration_to_crypto_proof(result: &RestorationResult) -> Histor
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_history::{Fragment, FragmentKind, InversionConfig, restore};
+    use alice_history::{restore, Fragment, FragmentKind, InversionConfig};
 
     fn make_fragment() -> Fragment {
-        Fragment::new(42, FragmentKind::Text, vec![10.0, 0.0, 30.0], vec![1.0, 0.0, 1.0], 1000)
+        Fragment::new(
+            42,
+            FragmentKind::Text,
+            vec![10.0, 0.0, 30.0],
+            vec![1.0, 0.0, 1.0],
+            1000,
+        )
     }
 
     fn make_restoration() -> RestorationResult {
@@ -310,7 +329,13 @@ mod tests {
 
     #[test]
     fn test_history_fragment_to_codec_frame_image() {
-        let f = Fragment::new(10, FragmentKind::Image, vec![1.0, 2.0, 3.0, 4.0], vec![1.0, 1.0, 0.0, 1.0], 2000);
+        let f = Fragment::new(
+            10,
+            FragmentKind::Image,
+            vec![1.0, 2.0, 3.0, 4.0],
+            vec![1.0, 1.0, 0.0, 1.0],
+            2000,
+        );
         let frame = history_fragment_to_codec_frame(&f);
         assert_ne!(frame.content_hash, 0);
         assert_eq!(frame.fragment_id, 10);
@@ -325,7 +350,13 @@ mod tests {
 
     #[test]
     fn test_history_fragment_to_codec_frame_audio() {
-        let f = Fragment::new(11, FragmentKind::Audio, vec![5.0, 6.0], vec![1.0, 1.0], 3000);
+        let f = Fragment::new(
+            11,
+            FragmentKind::Audio,
+            vec![5.0, 6.0],
+            vec![1.0, 1.0],
+            3000,
+        );
         let frame = history_fragment_to_codec_frame(&f);
         assert_eq!(frame.kind, 4); // Audio
         assert!(frame.is_media_fragment);
@@ -377,8 +408,20 @@ mod tests {
 
     #[test]
     fn test_history_restoration_to_crypto_proof_provenance_depends_on_fragment() {
-        let f1 = Fragment::new(42, FragmentKind::Text, vec![10.0, 0.0, 30.0], vec![1.0, 0.0, 1.0], 1000);
-        let f2 = Fragment::new(99, FragmentKind::Text, vec![10.0, 0.0, 30.0], vec![1.0, 0.0, 1.0], 1000);
+        let f1 = Fragment::new(
+            42,
+            FragmentKind::Text,
+            vec![10.0, 0.0, 30.0],
+            vec![1.0, 0.0, 1.0],
+            1000,
+        );
+        let f2 = Fragment::new(
+            99,
+            FragmentKind::Text,
+            vec![10.0, 0.0, 30.0],
+            vec![1.0, 0.0, 1.0],
+            1000,
+        );
         let config = InversionConfig::default();
         let r1 = restore(&f1, &config);
         let r2 = restore(&f2, &config);

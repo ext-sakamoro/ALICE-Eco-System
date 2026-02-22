@@ -22,8 +22,9 @@ pub struct SdfSceneSnapshot {
     pub node_types: Vec<String>,
 }
 
-/// Convert SdfTree to VCS AstTree for version tracking.
+/// Convert `SdfTree` to VCS `AstTree` for version tracking.
 #[inline]
+#[must_use]
 pub fn sdf_to_vcs_tree(sdf: &SdfTree) -> AstTree {
     let mut tree = AstTree::new();
     let root = tree.add_node(AstNodeKind::Root, "scene", 0);
@@ -35,13 +36,37 @@ fn sdf_node_to_ast(node: &SdfNode, tree: &mut AstTree, parent: NodeId) {
     match node {
         // Named primitives (common shapes get descriptive labels)
         SdfNode::Sphere { radius } => {
-            tree.add_node(AstNodeKind::Primitive, &format!("sphere_{}", (*radius * 100.0) as i32), parent);
+            tree.add_node(
+                AstNodeKind::Primitive,
+                &format!("sphere_{}", (*radius * 100.0) as i32),
+                parent,
+            );
         }
         SdfNode::Box3d { half_extents } => {
-            tree.add_node(AstNodeKind::Primitive, &format!("box_{}x{}x{}", (half_extents.x * 100.0) as i32, (half_extents.y * 100.0) as i32, (half_extents.z * 100.0) as i32), parent);
+            tree.add_node(
+                AstNodeKind::Primitive,
+                &format!(
+                    "box_{}x{}x{}",
+                    (half_extents.x * 100.0) as i32,
+                    (half_extents.y * 100.0) as i32,
+                    (half_extents.z * 100.0) as i32
+                ),
+                parent,
+            );
         }
-        SdfNode::Cylinder { radius, half_height } => {
-            tree.add_node(AstNodeKind::Primitive, &format!("cyl_{}_{}", (*radius * 100.0) as i32, (*half_height * 100.0) as i32), parent);
+        SdfNode::Cylinder {
+            radius,
+            half_height,
+        } => {
+            tree.add_node(
+                AstNodeKind::Primitive,
+                &format!(
+                    "cyl_{}_{}",
+                    (*radius * 100.0) as i32,
+                    (*half_height * 100.0) as i32
+                ),
+                parent,
+            );
         }
 
         // CSG operations (24 variants — all have { a, b } children to recurse)
@@ -68,8 +93,7 @@ fn sdf_node_to_ast(node: &SdfNode, tree: &mut AstTree, parent: NodeId) {
         | SdfNode::Tongue { a, b, .. }
         | SdfNode::ExpSmoothUnion { a, b, .. }
         | SdfNode::ExpSmoothIntersection { a, b, .. }
-        | SdfNode::ExpSmoothSubtraction { a, b, .. }
-        => {
+        | SdfNode::ExpSmoothSubtraction { a, b, .. } => {
             let op = tree.add_node(AstNodeKind::CsgOp, "csg_op", parent);
             sdf_node_to_ast(a, tree, op);
             sdf_node_to_ast(b, tree, op);
@@ -82,8 +106,7 @@ fn sdf_node_to_ast(node: &SdfNode, tree: &mut AstTree, parent: NodeId) {
         | SdfNode::ScaleNonUniform { child, .. }
         | SdfNode::ProjectiveTransform { child, .. }
         | SdfNode::LatticeDeform { child, .. }
-        | SdfNode::SdfSkinning { child, .. }
-        => {
+        | SdfNode::SdfSkinning { child, .. } => {
             let t = tree.add_node(AstNodeKind::Transform, "transform", parent);
             sdf_node_to_ast(child, tree, t);
         }
@@ -111,8 +134,7 @@ fn sdf_node_to_ast(node: &SdfNode, tree: &mut AstTree, parent: NodeId) {
         | SdfNode::IcosahedralSymmetry { child, .. }
         | SdfNode::IFS { child, .. }
         | SdfNode::HeightmapDisplacement { child, .. }
-        | SdfNode::SurfaceRoughness { child, .. }
-        => {
+        | SdfNode::SurfaceRoughness { child, .. } => {
             let m = tree.add_node(AstNodeKind::Custom, "modifier", parent);
             sdf_node_to_ast(child, tree, m);
         }
@@ -134,7 +156,11 @@ pub fn vcs_commit_sdf(repo: &mut Repository, sdf: &SdfTree, message: &str) -> Sd
     // Calculate diff vs parent
     let diff_bytes = if let Some(parent_hash) = repo.head_tree().and_then(|_| {
         let commits: Vec<_> = vec![hash]; // Current head
-        if commits.is_empty() { None } else { Some(hash) }
+        if commits.is_empty() {
+            None
+        } else {
+            Some(hash)
+        }
     }) {
         if let Some(ops) = repo.diff(parent_hash, hash) {
             patch_size_bytes(&ops)
@@ -179,6 +205,7 @@ pub struct AnimSceneChange {
 
 /// Track animation scene changes via VCS diff.
 #[inline]
+#[must_use]
 pub fn vcs_animation_diff(old_tree: &AstTree, new_tree: &AstTree) -> AnimSceneChange {
     let ops = diff_trees(old_tree, new_tree);
     let bytes = patch_size_bytes(&ops);
@@ -207,16 +234,21 @@ pub struct MangaPageRevision {
 
 /// Create a VCS-tracked manga page AST.
 #[inline]
+#[must_use]
 pub fn vcs_manga_page(page_number: u32, panels: &[(f32, f32, f32, f32)]) -> AstTree {
     let mut tree = AstTree::new();
-    let root = tree.add_node(AstNodeKind::Root, &format!("page_{}", page_number), 0);
+    let root = tree.add_node(AstNodeKind::Root, &format!("page_{page_number}"), 0);
     for (i, (x, y, w, h)) in panels.iter().enumerate() {
-        let panel = tree.add_node(AstNodeKind::Group, &format!("panel_{}", i), root);
+        let panel = tree.add_node(AstNodeKind::Group, &format!("panel_{i}"), root);
         tree.add_node(
             AstNodeKind::Primitive,
-            &format!("rect_{}_{}_{}_{}",
-                (*x * 10.0) as i32, (*y * 10.0) as i32,
-                (*w * 10.0) as i32, (*h * 10.0) as i32),
+            &format!(
+                "rect_{}_{}_{}_{}",
+                (*x * 10.0) as i32,
+                (*y * 10.0) as i32,
+                (*w * 10.0) as i32,
+                (*h * 10.0) as i32
+            ),
             panel,
         );
     }
@@ -239,7 +271,13 @@ pub struct VcsSyncPacket {
 
 /// Package VCS diff for ALICE-Sync P2P exchange.
 #[inline]
-pub fn vcs_to_sync_packet(old: &AstTree, new: &AstTree, from_hash: Hash, to_hash: Hash) -> VcsSyncPacket {
+#[must_use]
+pub fn vcs_to_sync_packet(
+    old: &AstTree,
+    new: &AstTree,
+    from_hash: Hash,
+    to_hash: Hash,
+) -> VcsSyncPacket {
     let ops = diff_trees(old, new);
     VcsSyncPacket {
         diff_ops_count: ops.len(),
@@ -265,6 +303,7 @@ pub struct VcsDbRecord {
 
 /// Prepare VCS commit for ALICE-DB persistence.
 #[inline]
+#[must_use]
 pub fn vcs_to_db_record(hash: Hash, message: &str, tree: &AstTree, timestamp: i64) -> VcsDbRecord {
     VcsDbRecord {
         hash,
@@ -297,7 +336,12 @@ pub enum VcsOperation {
 
 /// Create an auth request for VCS repository access.
 #[inline]
-pub fn vcs_auth_request(repo_name: &str, operation: VcsOperation, commit_hash: Option<Hash>) -> VcsAuthRequest {
+#[must_use]
+pub fn vcs_auth_request(
+    repo_name: &str,
+    operation: VcsOperation,
+    commit_hash: Option<Hash>,
+) -> VcsAuthRequest {
     VcsAuthRequest {
         repo_name: repo_name.to_string(),
         operation,
@@ -321,6 +365,7 @@ pub struct VcsCdnPackage {
 
 /// Package VCS tree snapshot for ALICE-CDN distribution.
 #[inline]
+#[must_use]
 pub fn vcs_to_cdn_package(tree: &AstTree, hash: Hash) -> VcsCdnPackage {
     let node_count = count_ast_nodes(tree);
     let mut data = Vec::new();
@@ -353,6 +398,7 @@ pub struct VcsCacheEntry {
 
 /// Prepare VCS tree snapshot for ALICE-Cache storage.
 #[inline]
+#[must_use]
 pub fn vcs_to_cache_entry(tree: &AstTree, hash: Hash) -> VcsCacheEntry {
     let node_count = count_ast_nodes(tree);
     let mut data = Vec::new();
@@ -386,6 +432,7 @@ pub struct VcsCryptoPayload {
 
 /// Prepare VCS commit for ALICE-Crypto signing.
 #[inline]
+#[must_use]
 pub fn vcs_to_crypto_payload(hash: Hash, message: &str, tree: &AstTree) -> VcsCryptoPayload {
     let mut data = Vec::new();
     data.extend_from_slice(&hash.to_le_bytes());
@@ -421,6 +468,7 @@ pub struct VcsPrintRevision {
 
 /// Create print revision metadata from VCS tree.
 #[inline]
+#[must_use]
 pub fn vcs_to_print_revision(hash: Hash, message: &str, tree: &AstTree) -> VcsPrintRevision {
     VcsPrintRevision {
         commit_hash: hash,
@@ -448,13 +496,23 @@ pub struct VcsViewDiff {
 
 /// Generate diff visualization data for ALICE-View.
 #[inline]
+#[must_use]
 pub fn vcs_to_view_diff(old: &AstTree, new: &AstTree) -> VcsViewDiff {
     let ops = diff_trees(old, new);
     let bytes = patch_size_bytes(&ops);
     VcsViewDiff {
-        added: ops.iter().filter(|o| matches!(o, DiffOp::Insert { .. })).count(),
-        removed: ops.iter().filter(|o| matches!(o, DiffOp::Delete { .. })).count(),
-        modified: ops.iter().filter(|o| matches!(o, DiffOp::Update { .. })).count(),
+        added: ops
+            .iter()
+            .filter(|o| matches!(o, DiffOp::Insert { .. }))
+            .count(),
+        removed: ops
+            .iter()
+            .filter(|o| matches!(o, DiffOp::Delete { .. }))
+            .count(),
+        modified: ops
+            .iter()
+            .filter(|o| matches!(o, DiffOp::Update { .. }))
+            .count(),
         total_ops: ops.len(),
         diff_bytes: bytes,
     }
@@ -468,9 +526,7 @@ mod tests {
 
     #[test]
     fn test_sdf_to_vcs_tree() {
-        let sdf = SdfTree::new(
-            SdfNode::sphere(1.0).union(SdfNode::box3d(0.5, 0.5, 0.5)),
-        );
+        let sdf = SdfTree::new(SdfNode::sphere(1.0).union(SdfNode::box3d(0.5, 0.5, 0.5)));
         let tree = sdf_to_vcs_tree(&sdf);
         let count = count_ast_nodes(&tree);
         assert!(count >= 3); // root + union + 2 primitives

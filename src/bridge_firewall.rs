@@ -5,7 +5,10 @@
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
-    for &b in data { h ^= b as u64; h = h.wrapping_mul(0x100000001b3); }
+    for &b in data {
+        h ^= b as u64;
+        h = h.wrapping_mul(0x100000001b3);
+    }
     h
 }
 
@@ -55,19 +58,19 @@ pub fn firewall_to_ml_features(
     timing_var: f32,
 ) -> FirewallMlFeatures {
     let packets_f32 = packets as f32;
-    let bytes_f32   = bytes.min(u32::MAX as u64) as f32; // saturate to f32 range
+    let bytes_f32 = bytes.min(u32::MAX as u64) as f32; // saturate to f32 range
 
     // bytes_per_packet_ratio: bytes / packets — reciprocal multiply, no division.
     // Guard packets = 0 by clamping denominator to 1 (branchless max).
     let packets_safe = packets_f32.max(1.0);
-    let rcp_packets  = packets_safe.recip();             // single RCPSS instruction
+    let rcp_packets = packets_safe.recip(); // single RCPSS instruction
     let bytes_per_packet_ratio = bytes_f32 * rcp_packets;
 
     // log2_packets: fast floor(log2(x)) via IEEE-754 exponent extraction.
     // bits[30:23] = biased exponent; subtract 127 to get true exponent.
     let log2_packets = {
         let bits = packets_safe.to_bits();
-        let exp  = ((bits >> 23) & 0xFF) as i32 - 127;
+        let exp = ((bits >> 23) & 0xFF) as i32 - 127;
         exp as f32
     };
 
@@ -159,18 +162,15 @@ pub struct FirewallEdgeDecision {
 /// - 3 (malicious) → drop (1),    rate=0,           priority=0
 /// - _             → drop (1),    rate=0,           priority=0
 #[inline(always)]
-pub fn firewall_to_edge_decision(
-    flow_hash: u64,
-    verdict: u8,
-) -> FirewallEdgeDecision {
+pub fn firewall_to_edge_decision(flow_hash: u64, verdict: u8) -> FirewallEdgeDecision {
     // Branchless table: (action, rate_limit_bps, priority)
     // Index clamped to [0, 3] via min to avoid out-of-bounds.
     const TABLE: [(u8, u64, u8); 5] = [
-        (0, 0,          128), // 0: normal   → pass
-        (2, 512_000,     32), // 1: ad       → rate_limit 512 kbps
-        (2, 128_000,     16), // 2: tracker  → rate_limit 128 kbps
-        (1, 0,            0), // 3: malicious → drop
-        (1, 0,            0), // 4: unknown  → drop (fallback)
+        (0, 0, 128),      // 0: normal   → pass
+        (2, 512_000, 32), // 1: ad       → rate_limit 512 kbps
+        (2, 128_000, 16), // 2: tracker  → rate_limit 128 kbps
+        (1, 0, 0),        // 3: malicious → drop
+        (1, 0, 0),        // 4: unknown  → drop (fallback)
     ];
     let idx = (verdict as usize).min(4);
     let (action, rate_limit_bps, priority) = TABLE[idx];
@@ -214,14 +214,10 @@ pub struct FirewallCacheEntry {
 /// - confidence = 0.5 → ttl = 150 s
 /// - confidence < 0.1 → ttl clamped to 10 s minimum
 #[inline(always)]
-pub fn firewall_to_cache_entry(
-    flow_hash: u64,
-    verdict: u8,
-    confidence: f32,
-) -> FirewallCacheEntry {
+pub fn firewall_to_cache_entry(flow_hash: u64, verdict: u8, confidence: f32) -> FirewallCacheEntry {
     const BASE_TTL_SECS: f32 = 300.0;
-    const MIN_TTL: u32       = 10;
-    const MAX_TTL: u32       = 300;
+    const MIN_TTL: u32 = 10;
+    const MAX_TTL: u32 = 300;
 
     // Branchless clamp: confidence in [0,1] guarded by min/max.
     let conf_clamped = confidence.max(0.0).min(1.0);
@@ -362,18 +358,27 @@ mod tests {
         assert!((feat.features[2] - 1500.0).abs() < f32::EPSILON);
         // features[5] = bytes_per_packet_ratio = 150_000 / 100 = 1500.0
         // (saturated bytes_f32 = 150_000 as f32)
-        assert!((feat.features[5] - 1500.0).abs() < 1.0,
-            "bytes_per_packet_ratio = {}", feat.features[5]);
+        assert!(
+            (feat.features[5] - 1500.0).abs() < 1.0,
+            "bytes_per_packet_ratio = {}",
+            feat.features[5]
+        );
         // features[6] = log2(100) ≈ 6.0 (floor)
-        assert!((feat.features[6] - 6.0).abs() < f32::EPSILON,
-            "log2_packets = {}", feat.features[6]);
+        assert!(
+            (feat.features[6] - 6.0).abs() < f32::EPSILON,
+            "log2_packets = {}",
+            feat.features[6]
+        );
     }
 
     #[test]
     fn test_firewall_to_ml_features_zero_packets() {
         // packets = 0 must not panic or produce NaN/Inf
         let feat = firewall_to_ml_features(0, 0, 0, 0.0, 0.0, 0.0);
-        assert!(feat.features[5].is_finite(), "bytes_per_packet_ratio must be finite");
+        assert!(
+            feat.features[5].is_finite(),
+            "bytes_per_packet_ratio must be finite"
+        );
         assert!(feat.features[6].is_finite(), "log2_packets must be finite");
     }
 
@@ -389,9 +394,8 @@ mod tests {
 
     #[test]
     fn test_firewall_to_analytics_event() {
-        let ev = firewall_to_analytics_event(
-            0xCAFE_BABE, 3, 0.97, 1_700_000_000_000, 54321, 443, 6,
-        );
+        let ev =
+            firewall_to_analytics_event(0xCAFE_BABE, 3, 0.97, 1_700_000_000_000, 54321, 443, 6);
         assert_eq!(ev.flow_hash, 0xCAFE_BABE);
         assert_eq!(ev.verdict, 3);
         assert!((ev.confidence - 0.97).abs() < 1e-5);
@@ -477,9 +481,7 @@ mod tests {
 
     #[test]
     fn test_firewall_to_db_audit_log() {
-        let log = firewall_to_db_audit_log(
-            0xFEED_C0DE, 3, 0.99, 1_700_000_000_000, 42, 100_000,
-        );
+        let log = firewall_to_db_audit_log(0xFEED_C0DE, 3, 0.99, 1_700_000_000_000, 42, 100_000);
         assert_eq!(log.flow_hash, 0xFEED_C0DE);
         assert_eq!(log.verdict, 3);
         assert!((log.confidence - 0.99).abs() < 1e-5);
@@ -498,8 +500,8 @@ mod tests {
 
     #[test]
     fn test_firewall_to_queue_alert_ad() {
-        let alert = firewall_to_queue_alert(0x1111, 1, 0.8)
-            .expect("ad verdict must produce an alert");
+        let alert =
+            firewall_to_queue_alert(0x1111, 1, 0.8).expect("ad verdict must produce an alert");
         assert_eq!(alert.severity, 1);
         assert_eq!(alert.verdict, 1);
         assert_eq!(alert.payload_bytes, 40); // 32 + 1 * 8

@@ -402,12 +402,18 @@ mod tests {
     fn test_edge_commercial_to_cache_entry_unique_keys_per_timestamp() {
         let emb = test_embedding();
         let t1 = StateTransition {
-            from: SemanticState::Full, to: SemanticState::Empty,
-            timestamp_ms: 1_000, confidence: 0.9, debounce_count: 3,
+            from: SemanticState::Full,
+            to: SemanticState::Empty,
+            timestamp_ms: 1_000,
+            confidence: 0.9,
+            debounce_count: 3,
         };
         let t2 = StateTransition {
-            from: SemanticState::Full, to: SemanticState::Empty,
-            timestamp_ms: 2_000, confidence: 0.9, debounce_count: 3,
+            from: SemanticState::Full,
+            to: SemanticState::Empty,
+            timestamp_ms: 2_000,
+            confidence: 0.9,
+            debounce_count: 3,
         };
 
         let e1 = edge_commercial_to_cache_entry(&emb, &t1);
