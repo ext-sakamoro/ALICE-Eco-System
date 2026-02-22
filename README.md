@@ -265,7 +265,7 @@ Cross-crate bridges demonstrated:
 - **Physics → DB** — `replay.rs` (trajectory compression)
 - **Sync → DB** — `telemetry.rs` (metric time-series)
 - **CDN ← SDF** — `content_types` (ASDF detection)
-- **Sync → Physics** — `physics_bridge` (`PhysicsRollbackSession`)
+- **Sync → Physics** — `sync_to_physics_event()` (InputFrame → directional force)
 
 ```bash
 cargo run --example game_pipeline
@@ -369,10 +369,10 @@ ALICE-Sync + ALICE-Physics combine for deterministic multiplayer game networking
 | Determinism | Approximate | **Bit-exact** |
 | Rollback | Full state transfer | **24-byte input replay** |
 
-The `physics_bridge` module (feature `physics`) provides:
-- `sync_input_to_physics()` / `physics_input_to_sync()` — InputFrame (i16) ↔ FrameInput (Fix128)
-- `physics_checksum_to_world_hash()` — Desync verification
-- `PhysicsRollbackSession` — Combined rollback sync + deterministic physics
+The `sync` bridge (feature `sync`) and `physics` bridge (feature `physics`) provide:
+- `sync_to_physics_event()` — InputFrame → SyncPhysicsEvent (movement to directional force)
+- `physics_to_view_snapshot()` / `physics_to_db_record()` / `physics_to_cache_entry()` — Physics state export
+- `physics_to_analytics_metrics()` — Physics performance telemetry
 
 ## Demo: Data Pipeline
 
