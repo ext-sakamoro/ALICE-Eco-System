@@ -4,7 +4,7 @@
 //! protein sequence search indexing, text annotation generation, and
 //! physics force field decomposition.
 
-use alice_bio::{AminoAcid, Residue, ProteinSdf, TotalEnergy, radius_of_gyration};
+use alice_bio::{AminoAcid, ProteinSdf, TotalEnergy, radius_of_gyration};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {

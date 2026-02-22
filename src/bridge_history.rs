@@ -2,7 +2,7 @@
 //!
 //! 5 bridges connecting inverse entropy restoration to the ALICE ecosystem.
 
-use alice_history::{Fragment, FragmentKind, RestorationResult, EntropyMeasurement};
+use alice_history::{Fragment, RestorationResult, EntropyMeasurement};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {

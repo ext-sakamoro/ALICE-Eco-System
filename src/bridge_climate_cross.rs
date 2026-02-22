@@ -3,7 +3,7 @@
 //! 3 bridges connecting planetary climate data to SDF iso-surface fields,
 //! ML feature vectors, and View render data for weather visualisation.
 
-use alice_climate::{ClimateResponse, Observation, WeatherStation, ClimateQuery, evaluate_climate};
+use alice_climate::{ClimateResponse, Observation};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {

@@ -10,9 +10,6 @@ use alice_edge::{
 /// Reciprocal of Q16.16 scale factor (1 / 65536.0) — replaces division in Q16 → f32.
 const RCP_Q16: f32 = 1.0 / 65536.0;
 
-/// Reciprocal of 100 — replaces division when computing percentages.
-const RCP_100: f32 = 1.0 / 100.0;
-
 /// Reciprocal of i64::MAX approximation used for error normalisation.
 /// We cap error display at 2^40 raw units; reciprocal avoids runtime division.
 const RCP_ERR_SCALE: f64 = 1.0 / (1u64 << 40) as f64;

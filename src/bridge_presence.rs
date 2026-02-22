@@ -213,13 +213,13 @@ pub fn presence_proximity_to_analytics(proof: &ProximityProof) -> PresenceAnalyt
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_presence::{VivaldiCoord, IdentityCommitment, ZkProof, ProximityProof, PresenceEvent, CrossingRecord, PresenceConfig, execute_presence_protocol};
+    use alice_presence::{VivaldiCoord, IdentityCommitment, ZkProof, ProximityProof, PresenceEvent, CrossingRecord, PresenceConfig, PartyInfo, execute_presence_protocol};
 
     fn make_crossing() -> CrossingRecord {
-        let a = VivaldiCoord::new(0.0, 0.0);
-        let b = VivaldiCoord::new(1.0, 0.0);
+        let a = PartyInfo::new(VivaldiCoord::new(0.0, 0.0), 42, 1);
+        let b = PartyInfo::new(VivaldiCoord::new(1.0, 0.0), 99, 2);
         let cfg = PresenceConfig::default();
-        execute_presence_protocol(&a, 42, 1, &b, 99, 2, 1_000_000, &cfg).unwrap()
+        execute_presence_protocol(&a, &b, 1_000_000, &cfg).unwrap()
     }
 
     #[test]

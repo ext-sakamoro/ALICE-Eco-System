@@ -19,7 +19,6 @@ use alice_rtos::kernel::KernelStats;
 use alice_search::AliceIndex;
 use alice_synth::{NoteEventKind, Score};
 use alice_text::{compress_tuned, CompressionMode};
-use alice_voice::ParametricParams;
 use alice_vcs::ast::{AstNodeKind, AstTree};
 use alice_vcs::diff::{diff_trees, patch_size_bytes};
 use alice_sync::input_sync::InputFrame;

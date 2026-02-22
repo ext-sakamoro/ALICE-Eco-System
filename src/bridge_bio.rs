@@ -2,7 +2,7 @@
 //!
 //! 5 bridges connecting molecular structure data to the ALICE ecosystem.
 
-use alice_bio::{AminoAcid, Residue, ProteinSdf, TotalEnergy};
+use alice_bio::{Residue, ProteinSdf, TotalEnergy};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {

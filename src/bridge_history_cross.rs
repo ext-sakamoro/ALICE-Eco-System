@@ -3,7 +3,7 @@
 //! 4 bridges connecting inverse entropy restoration data to text compression,
 //! search indexing, codec frame metadata, and cryptographic provenance proofs.
 
-use alice_history::{Fragment, FragmentKind, RestorationResult};
+use alice_history::{Fragment, RestorationResult};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {

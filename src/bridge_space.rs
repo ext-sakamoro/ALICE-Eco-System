@@ -2,7 +2,7 @@
 //!
 //! 5 bridges connecting deep-space communication data to the ALICE ecosystem.
 
-use alice_space::{CelestialBody, CommLink, ModelDifferential, MissionEvent, MissionPhase, ControlDecision};
+use alice_space::{CommLink, ModelDifferential, MissionEvent, MissionPhase, ControlDecision};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
