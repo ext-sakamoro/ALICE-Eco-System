@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (51 Components)                     │
+│                          ALICE Ecosystem (52 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -47,6 +47,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | v1.0.0 | Procedural Generation Compression | 10-1000x for patterns, LZMA fallback | Open Core (MIT core) |
 | [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | v0.1.0 | 3D Wavelet Video/Audio Codec | CDF 9/7 Wavelet, rANS entropy coding | AGPL-3.0 |
 | [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | v0.1.0 | Voice Procedural Codec | LPC parametric 100-600x, privacy-preserving | MIT |
+| [ALICE-Voice-Commercial](https://github.com/ext-sakamoro/ALICE-Voice-Commercial) | v0.1.0 | Voice Semantic Layer (L3) | Commercial TTS/STT semantic analysis extensions | Proprietary |
 | [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | v1.0.0 | Exception-Based Text Compression | Pattern recognition, columnar encoding | BSL 1.1 (→MIT 2028) |
 | [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | v0.1.0 | 3D Signed Distance Functions | 10-1000x, infinite resolution, CSG ops | MIT |
 | [ALICE-Synth](https://github.com/ext-sakamoro/ALICE-Synth) | v0.1.0 | Procedural Audio Synthesis | FM/Additive/Subtractive/Wavetable, 64-voice polyphony, no_std | MIT |
@@ -57,6 +58,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
 | [ALICE-DB](https://github.com/ext-sakamoro/ALICE-DB) | v0.1.0 | Model-Based LSM-Tree Database | O(1) point queries, 50-1000x compression | Open Core (MIT core + BSL server) |
+| [ALICE-DB-Enterprise](https://github.com/ext-sakamoro/ALICE-DB-Enterprise) | v1.0.0 | DB Enterprise Security & Audit | Row-level encryption, RBAC authentication, append-only audit log | Proprietary |
 | [ALICE-Cache](https://github.com/ext-sakamoro/ALICE-Cache) | v0.2.0 | Predictive Distributed Cache | Slab alloc, TinyLFU, Markov prediction | AGPL-3.0 |
 | [ALICE-Queue](https://github.com/ext-sakamoro/ALICE-Queue) | v0.1.0 | Deterministic Zero-Copy Message Log | Lock-free SPSC, mmap WAL, Vector Clock | AGPL-3.0 |
 | [ALICE-Search](https://github.com/ext-sakamoro/ALICE-Search) | v0.1.0 | FM-Index Full-Text Search | Wavelet Matrix, backward search, ~1.0x size | AGPL-3.0 |
@@ -88,8 +90,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Container](https://github.com/ext-sakamoro/ALICE-Container) | v0.2.0 | Minimal Container Runtime | Direct cgroup v2, io_uring, clone3, PSI | AGPL-3.0 |
 | [ALICE-ML](https://github.com/ext-sakamoro/ALICE-ML) | v0.1.0 | 1.58-bit Ternary Inference Engine | {-1,0,+1} only, 16x compression, no multiply | AGPL-3.0 |
 | [ALICE-TRT](https://github.com/ext-sakamoro/ALICE-TRT) | v0.1.0 | GPU Ternary Inference Engine | wgpu/CUDA, BitNet, GPU-accelerated matmul | AGPL-3.0 |
-| [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | v0.4.0 | Deterministic 128-bit Physics Engine | I64F64, CORDIC, XPBD, GJK/EPA, BVH, Netcode, Analytics, PyO3 | AGPL-3.0 |
+| [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | v0.6.0 | Deterministic 128-bit Physics Engine | I64F64, CORDIC, XPBD, GJK/EPA, BVH, 2D physics, cloth/fluid/rope, CCD, Netcode, PyO3 | AGPL-3.0 |
 | [ALICE-RTOS](https://github.com/ext-sakamoro/ALICE-RTOS) | v0.1.0 | Math-First Real-Time OS | RMS scheduler, Liu-Layland analysis, SPSC ring, < 2KB kernel | AGPL-3.0 |
+| [ALICE-SIMD](https://github.com/ext-sakamoro/ALICE-SIMD) | v1.0.0 | Shared SIMD & Fast-Math Primitives | AlignedVec, BitMask64, branchless ops, fast reciprocal/rsqrt, FNV-1a, Bloom filter, no_std | MIT |
 
 ### Motion & Version Control
 
@@ -148,9 +151,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.0 | Ecosystem Integration Hub | 411 bridges, 20 pipeline paths (A-U), 51 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.1 | Ecosystem Integration Hub | 411 bridges, 20 pipeline paths (A-U), 52 crates connected | MIT |
 
-**Total: 55 components** | AGPL-3.0: 28 | MIT: 12 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 6
+**Total: 58 components** | AGPL-3.0: 28 | MIT: 13 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
 ## Quick Start
 

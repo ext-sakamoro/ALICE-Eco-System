@@ -2,6 +2,16 @@
 
 All notable changes to ALICE-Eco-System will be documented in this file.
 
+## [0.3.1] - 2026-02-23
+
+### Changed
+- README: ALICE-Physics v0.4.0 → v0.6.0 (quality sweep: Debug/PartialEq/Display, CCD, 2D physics, cloth/fluid/rope)
+- README: Added ALICE-SIMD v1.0.0 (shared SIMD & fast-math primitives, MIT)
+- README: Added ALICE-DB-Enterprise v1.0.0 (security/audit, Proprietary)
+- README: Added ALICE-Voice-Commercial v0.1.0 (semantic layer, Proprietary)
+- README: Component count 55 → 58, ecosystem diagram updated
+- Cargo.toml: description updated (51 → 52 crates)
+
 ## [0.3.0] - 2026-02-23
 
 ### Added

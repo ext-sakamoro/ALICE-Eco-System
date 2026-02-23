@@ -1,9 +1,9 @@
 [package]
 name = "alice-eco-system"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration Hub - 411 bridges, 20 pipeline paths (A-U), 63 bridge modules, 51 crates"
+description = "ALICE Ecosystem Integration Hub - 411 bridges, 20 pipeline paths (A-U), 63 bridge modules, 52 crates"
 license = "MIT"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
