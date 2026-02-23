@@ -1218,7 +1218,7 @@ Creating (Proprietary) ── PAID ─────── Studios/publishers pay 
 
 The free reader tier ensures content reaches maximum audience. The AGPL layer ensures infrastructure providers contribute back. The proprietary layer captures value from professional content creators.
 
-## SaaS Platform (38 Products)
+## SaaS Platform (40 Products)
 
 All SaaS products follow the **MIT Core + AGPL-3.0 SaaS Shell** pattern: the core crate remains MIT-licensed for library use, while the SaaS delivery layer (API gateway, frontend, billing) is AGPL-3.0.
 
@@ -1262,6 +1262,8 @@ All SaaS products follow the **MIT Core + AGPL-3.0 SaaS Shell** pattern: the cor
 | 35 | **ALICE Energy Platform** | ALICE-Energy | Grid simulation API, battery degradation prediction | [ALICE-Energy-Platform](https://github.com/ext-sakamoro/ALICE-Energy-Platform) |
 | 36 | **ALICE Space Comm** | ALICE-Space | Deep-space communication API, model-differential transfer | [ALICE-Space-Comm](https://github.com/ext-sakamoro/ALICE-Space-Comm) |
 | 37 | **ALICE Bio Platform** | ALICE-Bio | Molecular simulation API, protein SDF, drug screening | [ALICE-Bio-Platform](https://github.com/ext-sakamoro/ALICE-Bio-Platform) |
+| 38 | **ALICE Physics Cloud** | ALICE-Physics | Physics simulation API, collision detection, constraint solver, digital twin | [ALICE-Physics-Cloud](https://github.com/ext-sakamoro/ALICE-Physics-Cloud) |
+| 39 | **ALICE Registry** | ALICE-VCS + ALICE-SDF + ALICE-Zip | SDF/3D model registry, versioning, semantic diff, search | [ALICE-Registry](https://github.com/ext-sakamoro/ALICE-Registry) |
 
 ## License
 
