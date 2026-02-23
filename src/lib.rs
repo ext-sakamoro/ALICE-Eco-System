@@ -113,6 +113,7 @@ pub mod bridge_cloud_gateway;
 pub mod bridge_codec;
 pub mod bridge_container;
 pub mod bridge_cross;
+pub mod bridge_crypto;
 pub mod bridge_crypto_ext;
 pub mod bridge_db;
 pub mod bridge_dns;
@@ -124,6 +125,7 @@ pub mod bridge_energy;
 pub mod bridge_energy_cross;
 #[cfg(feature = "firewall")]
 pub mod bridge_firewall;
+pub mod bridge_fix;
 pub mod bridge_fix_ext;
 pub mod bridge_font;
 pub mod bridge_history;
@@ -141,14 +143,20 @@ pub mod bridge_neural;
 #[cfg(feature = "neural")]
 pub mod bridge_neural_cross;
 pub mod bridge_physics;
+pub mod bridge_physics_2d;
+pub mod bridge_physics_scene_io;
+pub mod bridge_physics_softbody;
 pub mod bridge_presence;
 pub mod bridge_presence_cross;
 #[cfg(feature = "print")]
 pub mod bridge_print_ext;
 pub mod bridge_queue;
+pub mod bridge_risk;
 pub mod bridge_risk_ext;
 pub mod bridge_rtos;
 pub mod bridge_sdf;
+pub mod bridge_sdf_destruction;
+pub mod bridge_sdf_material;
 pub mod bridge_search;
 pub mod bridge_semantic_telemetry;
 pub mod bridge_settlement_ext;

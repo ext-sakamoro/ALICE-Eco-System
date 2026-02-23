@@ -1,13 +1,16 @@
-//! SDF bridges — ALICE-SDF as geometry hub ↔ View, DB, ML, Print, Physics
+//! SDF bridges — ALICE-SDF as geometry hub ↔ View, DB, ML, Print, Physics, Analytics
 //!
-//! 7 bridges connecting the Signed Distance Field geometry layer to the
+//! 14 bridges connecting the Signed Distance Field geometry layer to the
 //! ALICE ecosystem.  Covers SDF visualization, SDF storage, ML-based
-//! shape classification, 3D print slicing metadata, and collision geometry.
+//! shape classification, 3D print slicing metadata, collision geometry,
+//! volume/measure analytics, and 2D primitive view descriptors.
 //!
 //! All bridges operate on `SdfNode` (the tree root) and its `node_count()` /
 //! `category()` introspection API, which is the public surface exposed by
 //! ALICE-SDF without requiring internal field access.
 
+use alice_sdf::measure::VolumeEstimate;
+use alice_sdf::sdf2d::Sdf2dNode;
 use alice_sdf::types::SdfCategory;
 use alice_sdf::{SdfNode, SdfTree};
 
@@ -627,6 +630,158 @@ pub fn sdf_to_synth_source(tree: &SdfTree) -> SdfSynthSource {
     }
 }
 
+// ── Bridge 13: VolumeEstimate → Analytics (geometry measurement event) ──
+
+/// Analytics event for SDF volume/measure estimation results.
+///
+/// Tracks Monte Carlo volume estimates for geometry analysis pipelines.
+/// Fill ratio and sample count help downstream analytics assess the
+/// reliability of the estimate.
+pub struct SdfVolumeAnalyticsEvent {
+    /// FNV-1a hash of the volume estimate content.
+    pub content_hash: u64,
+    /// Estimated volume in cubic units.
+    pub volume: f64,
+    /// Standard error of the estimate.
+    pub std_error: f64,
+    /// Number of Monte Carlo samples used.
+    pub sample_count: u64,
+    /// Fraction of samples inside the surface (0.0..1.0).
+    pub fill_ratio: f64,
+    /// True when std_error / volume > 0.1 (low confidence estimate).
+    pub is_low_confidence: bool,
+}
+
+/// Build an analytics event from a `VolumeEstimate` for ALICE-Analytics.
+///
+/// `is_low_confidence` is set when the relative error exceeds 10%,
+/// signalling that more samples may be needed.
+#[inline]
+#[must_use]
+pub fn sdf_volume_to_analytics_event(est: &VolumeEstimate) -> SdfVolumeAnalyticsEvent {
+    // Hash: volume bits (8) + sample_count (8) = 16 bytes
+    let mut data = [0u8; 16];
+    data[0..8].copy_from_slice(&est.volume.to_le_bytes());
+    data[8..16].copy_from_slice(&est.sample_count.to_le_bytes());
+    let content_hash = fnv1a(&data);
+
+    let relative_error = if est.volume.abs() > 1e-10 {
+        est.std_error / est.volume.abs()
+    } else {
+        1.0
+    };
+    let is_low_confidence = relative_error > 0.1;
+
+    SdfVolumeAnalyticsEvent {
+        content_hash,
+        volume: est.volume,
+        std_error: est.std_error,
+        sample_count: est.sample_count,
+        fill_ratio: est.fill_ratio,
+        is_low_confidence,
+    }
+}
+
+// ── Bridge 14: Sdf2dNode → View (2D primitive visualization) ──────────
+
+/// View descriptor for a 2D SDF primitive.
+///
+/// Provides ALICE-View with the parameters needed to render a 2D SDF
+/// node as a flat overlay, UI element, or text glyph. Encodes the
+/// primitive type and bounding dimensions for viewport layout.
+pub struct Sdf2dViewDescriptor {
+    /// FNV-1a hash of the 2D primitive content.
+    pub content_hash: u64,
+    /// Primitive type: 0=circle, 1=rect, 2=rounded_rect, 3=line,
+    ///   4=bezier, 5=font_glyph, 6=boolean, 7=transform.
+    pub primitive_type: u8,
+    /// Estimated bounding width.
+    pub bound_width: f32,
+    /// Estimated bounding height.
+    pub bound_height: f32,
+    /// True when the node is a leaf (no children).
+    pub is_leaf: bool,
+    /// Recommended render resolution multiplier (1.0 for simple, 2.0+ for complex).
+    pub resolution_multiplier: f32,
+}
+
+/// Classify a `Sdf2dNode` into a primitive type code and bounding dimensions.
+fn classify_sdf2d(node: &Sdf2dNode) -> (u8, f32, f32, bool) {
+    match node {
+        Sdf2dNode::Circle { radius, .. } => (0, radius * 2.0, radius * 2.0, true),
+        Sdf2dNode::Rect { half_extents, .. } => {
+            (1, half_extents[0] * 2.0, half_extents[1] * 2.0, true)
+        }
+        Sdf2dNode::RoundedRect { half_extents, .. } => {
+            (2, half_extents[0] * 2.0, half_extents[1] * 2.0, true)
+        }
+        Sdf2dNode::Line { a, b, thickness } => {
+            let dx = (b[0] - a[0]).abs() + thickness * 2.0;
+            let dy = (b[1] - a[1]).abs() + thickness * 2.0;
+            (3, dx, dy, true)
+        }
+        Sdf2dNode::Bezier {
+            p0, p1, p2, p3, thickness, ..
+        } => {
+            let min_x = p0[0].min(p1[0]).min(p2[0]).min(p3[0]) - thickness;
+            let max_x = p0[0].max(p1[0]).max(p2[0]).max(p3[0]) + thickness;
+            let min_y = p0[1].min(p1[1]).min(p2[1]).min(p3[1]) - thickness;
+            let max_y = p0[1].max(p1[1]).max(p2[1]).max(p3[1]) + thickness;
+            (4, max_x - min_x, max_y - min_y, true)
+        }
+        Sdf2dNode::FontGlyph {
+            bbox_min, bbox_max, ..
+        } => {
+            let w = bbox_max[0] - bbox_min[0];
+            let h = bbox_max[1] - bbox_min[1];
+            (5, w, h, true)
+        }
+        Sdf2dNode::Union(..)
+        | Sdf2dNode::Subtract(..)
+        | Sdf2dNode::Intersect(..)
+        | Sdf2dNode::SmoothUnion { .. } => (6, 4.0, 4.0, false),
+        Sdf2dNode::Translate { child, offset } => {
+            let (_, cw, ch, _) = classify_sdf2d(child);
+            (7, cw + offset[0].abs() * 2.0, ch + offset[1].abs() * 2.0, false)
+        }
+        Sdf2dNode::Rotate { child, .. } => {
+            let (_, cw, ch, _) = classify_sdf2d(child);
+            let diag = (cw * cw + ch * ch).sqrt();
+            (7, diag, diag, false)
+        }
+        Sdf2dNode::Scale { child, factor } => {
+            let (_, cw, ch, _) = classify_sdf2d(child);
+            (7, cw * factor, ch * factor, false)
+        }
+    }
+}
+
+/// Build a 2D view descriptor from a `Sdf2dNode` for ALICE-View.
+#[inline]
+#[must_use]
+pub fn sdf_2d_to_view_descriptor(node: &Sdf2dNode) -> Sdf2dViewDescriptor {
+    let (primitive_type, bound_width, bound_height, is_leaf) = classify_sdf2d(node);
+
+    // Hash: primitive_type (1) + bound_width (4) + bound_height (4) = 9 bytes
+    let mut data = [0u8; 9];
+    data[0] = primitive_type;
+    data[1..5].copy_from_slice(&bound_width.to_le_bytes());
+    data[5..9].copy_from_slice(&bound_height.to_le_bytes());
+    let content_hash = fnv1a(&data);
+
+    // Resolution multiplier: complex nodes (booleans, transforms) get higher resolution
+    let resolution_multiplier = if is_leaf { 1.0 } else { 2.0 };
+
+    Sdf2dViewDescriptor {
+        content_hash,
+        primitive_type,
+        bound_width,
+        bound_height,
+        is_leaf,
+        resolution_multiplier,
+    }
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -900,5 +1055,92 @@ mod tests {
             "harmonic_count must not exceed 16"
         );
         assert!((src.base_frequency_hz - 440.0).abs() < f32::EPSILON);
+    }
+
+    // -- Bridge 13: VolumeEstimate → Analytics --
+
+    #[test]
+    fn test_sdf_volume_to_analytics_event_normal() {
+        let est = VolumeEstimate {
+            volume: 4.189,
+            std_error: 0.05,
+            sample_count: 100_000,
+            fill_ratio: 0.52,
+        };
+        let event = sdf_volume_to_analytics_event(&est);
+        assert_ne!(event.content_hash, 0);
+        assert!((event.volume - 4.189).abs() < 1e-6);
+        assert_eq!(event.sample_count, 100_000);
+        assert!(!event.is_low_confidence, "relative error < 10%");
+    }
+
+    #[test]
+    fn test_sdf_volume_to_analytics_event_low_confidence() {
+        let est = VolumeEstimate {
+            volume: 1.0,
+            std_error: 0.5,
+            sample_count: 100,
+            fill_ratio: 0.1,
+        };
+        let event = sdf_volume_to_analytics_event(&est);
+        assert!(event.is_low_confidence, "relative error > 10%");
+    }
+
+    #[test]
+    fn test_sdf_volume_to_analytics_hash_determinism() {
+        let est = VolumeEstimate {
+            volume: 3.14,
+            std_error: 0.01,
+            sample_count: 50_000,
+            fill_ratio: 0.4,
+        };
+        let h1 = sdf_volume_to_analytics_event(&est).content_hash;
+        let h2 = sdf_volume_to_analytics_event(&est).content_hash;
+        assert_eq!(h1, h2);
+    }
+
+    // -- Bridge 14: Sdf2dNode → View --
+
+    #[test]
+    fn test_sdf_2d_circle_to_view_descriptor() {
+        let circle = Sdf2dNode::circle(1.5);
+        let desc = sdf_2d_to_view_descriptor(&circle);
+        assert_ne!(desc.content_hash, 0);
+        assert_eq!(desc.primitive_type, 0);
+        assert!((desc.bound_width - 3.0).abs() < f32::EPSILON);
+        assert!((desc.bound_height - 3.0).abs() < f32::EPSILON);
+        assert!(desc.is_leaf);
+        assert!((desc.resolution_multiplier - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_sdf_2d_rect_to_view_descriptor() {
+        let rect = Sdf2dNode::rect(2.0, 1.0);
+        let desc = sdf_2d_to_view_descriptor(&rect);
+        assert_eq!(desc.primitive_type, 1);
+        assert!((desc.bound_width - 4.0).abs() < f32::EPSILON);
+        assert!((desc.bound_height - 2.0).abs() < f32::EPSILON);
+        assert!(desc.is_leaf);
+    }
+
+    #[test]
+    fn test_sdf_2d_union_to_view_descriptor() {
+        let a = Sdf2dNode::circle(1.0);
+        let b = Sdf2dNode::circle(1.0).translate(2.0, 0.0);
+        let u = a.union(b);
+        let desc = sdf_2d_to_view_descriptor(&u);
+        assert_eq!(desc.primitive_type, 6, "boolean operation");
+        assert!(!desc.is_leaf);
+        assert!((desc.resolution_multiplier - 2.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_sdf_2d_line_to_view_descriptor() {
+        let line = Sdf2dNode::line([0.0, 0.0], [3.0, 4.0], 0.1);
+        let desc = sdf_2d_to_view_descriptor(&line);
+        assert_eq!(desc.primitive_type, 3);
+        assert!(desc.is_leaf);
+        assert!(desc.bound_width > 3.0);
+        assert!(desc.bound_height > 4.0);
     }
 }

@@ -2,6 +2,16 @@
 
 All notable changes to ALICE-Eco-System will be documented in this file.
 
+## [0.3.2] - 2026-02-23
+
+### Added
+- 8 new bridge modules: physics_2d, physics_softbody, physics_scene_io, sdf_material, sdf_destruction, crypto, fix, risk
+- 45 new bridges (411 → 456 total), 116 new tests (613 → 727 total)
+- Physics v0.6.0 coverage: 2D physics, cloth/fluid/rope/deformable, scene I/O, multi-world, particle system
+- SDF coverage: PBR material, destruction tracking, volume estimation, 2D primitives
+- Financial domain: crypto key lifecycle, FIX order/execution, risk limits/margin/circuit breaker
+- Cargo.toml: alice-sdf destruction feature enabled
+
 ## [0.3.1] - 2026-02-23
 
 ### Changed
