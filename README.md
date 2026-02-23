@@ -151,7 +151,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.1 | Ecosystem Integration Hub | 411 bridges, 20 pipeline paths (A-U), 52 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 456 bridges, 71 bridge modules, 20 pipeline paths (A-U), 52 crates connected | MIT |
 
 **Total: 58 components** | AGPL-3.0: 28 | MIT: 13 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
@@ -276,7 +276,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **411 cross-crate bridges** across 63 bridge files and 20 pipeline paths (A-U), connecting 51 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **456 cross-crate bridges** across 71 bridge files and 20 pipeline paths (A-U), connecting 52 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -305,18 +305,26 @@ The ALICE ecosystem contains **411 cross-crate bridges** across 63 bridge files 
 | **Zip Bridges** | Zip→Edge, Zip→DB, Zip→Crypto, Zip→ML, Zip→Cache | Procedural compression + storage |
 | **Auth Bridges** | Auth→DB, Auth→Cache, Auth→Crypto, Auth→API, Auth→CDN, Auth→Edge, Auth→DNS, Auth→Sync | Ed25519 ZKP identity to ecosystem |
 | **Crypto Bridges** | Crypto→DB, Crypto→Cache, Crypto→CDN, Crypto→VCS, Crypto→Edge, Crypto→Sync, Crypto→Zip | BLAKE3 + XChaCha20 + SSS to ecosystem |
+| **Crypto Ext Bridges** | Crypto→Analytics (Key lifecycle), Crypto→DB (Shard), Crypto→Cache (Hash), Crypto→Edge (Key+Nonce), Crypto→Analytics (Seal) (5 total) | Extended crypto key management to ecosystem |
 | **Animation Bridges** | Animation→SDF, Animation→CDN, Animation→Cache, Animation→DB, Animation→Sync, Animation→View, Animation→Codec, Animation→ML | Anime SDF direction to ecosystem |
 | **Manga Bridges** | Manga→SDF, Manga→CDN, Manga→Cache, Manga→DB, Manga→Text, Manga→Search, Manga→Print, Manga→Codec | SDF manga creation to ecosystem |
 | **Print Ext Bridges** | Print→DB, Print→CDN, Print→Cache, Print→View, Print→Analytics, Print→Motion | SDF-to-G-code slicer to ecosystem |
 | **Analytics Bridges** | Analytics→DB, Analytics→Cache, Analytics→CDN, Analytics→ML, Analytics→Search, Analytics→View, Analytics→Edge | Streaming sketches to ecosystem |
 | **Queue Bridges** | Queue→DB, Queue→Edge, Queue→Crypto, Queue→Analytics, Queue→Sync, Queue→Cache | Message queue to ecosystem |
-| **Physics Bridges** | Physics→SDF, Physics→View, Physics→DB, Physics→Cache, Physics→Analytics, Physics→ForceField | Deterministic 128-bit physics to ecosystem |
+| **Physics Bridges** | Physics→SDF, Physics→View, Physics→DB, Physics→Cache, Physics→Analytics, Physics→ForceField, MultiWorld→Analytics, ParticleSystem→Cache (8 total) | Deterministic 128-bit physics to ecosystem |
+| **Physics 2D Bridges** | Physics2D→View, Physics2D→DB, Physics2D→Cache, Physics2D→Analytics, Physics2D→Edge (5 total) | 2D physics subsystem to ecosystem |
+| **Physics Softbody Bridges** | Cloth→Analytics, Fluid→Analytics, Rope→DB, Cloth→Cache, Fluid→Edge, Deformable→View (6 total) | Cloth/fluid/rope/deformable to ecosystem |
+| **Physics Scene I/O Bridges** | PhysicsScene→DB, PhysicsScene→CDN, PhysicsScene→Cache, PhysicsScene→Analytics, PhysicsScene→Edge (5 total) | Physics scene serialization to ecosystem |
+| **SDF Material Bridges** | SdfMaterial→View (PBR descriptor), SdfMaterial→CDN (delivery), SdfMaterial→Cache (snapshot), SdfMaterial→Analytics (metrics), SdfMaterial→Edge (LOD) (5 total) | PBR material pipeline to ecosystem |
+| **SDF Destruction Bridges** | Destruction→DB (event record), Destruction→View (visual feedback), Destruction→Cache (invalidation), Destruction→Analytics (metrics), FracturePiece→Physics (collision) (5 total) | Destructible environments to ecosystem |
 | **ASP Bridges** | ASP→Cache, ASP→Codec, ASP→SDF, ASP→View, ASP→CDN, ASP→Analytics + 6 more (12 total) | Streaming protocol to ecosystem |
 | **Edge Ext Bridges** | Edge→DB, Edge→View, Edge→ASP, Edge→Analytics | Extended sensor model integration |
 | **CDN Ext Bridges** | CDN→Cache, CDN→Physics, CDN→ASP, CDN→Analytics | Extended content delivery integration |
 | **Ledger Bridges** | Ledger→Analytics (Order, Fill, PnL), Ledger→DB (Fill), Ledger→Cache (Position) | Order book event integration |
 | **Risk Bridges** | Risk→Analytics (Reject), Risk→Cache (Limits), Risk→Semantic (Reject severity) | Pre-trade risk telemetry |
+| **Risk Ext Bridges** | Risk→Analytics (Limits), Risk→DB (Position), Risk→Cache (Margin), Risk→Edge (CircuitBreaker), Risk→Analytics (PreTrade) (5 total) | Extended risk management to ecosystem |
 | **FIX Bridges** | FIX→Analytics (Message), Ledger→FIX (ExecReport), FIX→Semantic (Session) | FIX protocol integration |
+| **FIX Ext Bridges** | FIX→Analytics (NewOrder), FIX→DB (ExecReport), FIX→Cache (Order), FIX→Edge (MarketData), FIX→Analytics (Session) (5 total) | Extended FIX protocol to ecosystem |
 | **Settlement Bridges** | Settlement→DB (Trade), Settlement→Analytics (Journal), Settlement→Queue (Obligation), Settlement→Semantic (Trade) | Post-trade settlement integration |
 | **Bio Bridges** | Bio→Analytics (Residue, Energy), Bio→DB (Residue), Bio→SDF (Protein), Bio→Cache (Energy) | Molecular biology to ecosystem |
 | **Legal Bridges** | Legal→Analytics (Statute, Contract), Legal→DB (AuditEntry), Legal→Cache (Contract), Legal→Edge (Alert) | Legal compliance to ecosystem |
@@ -335,7 +343,7 @@ The ALICE ecosystem contains **411 cross-crate bridges** across 63 bridge files 
 
 ### Hardware-Native Optimization
 
-All 411 bridge functions are optimized following the ALICE hardware-native methodology:
+All 456 bridge functions are optimized following the ALICE hardware-native methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|
@@ -1210,11 +1218,50 @@ Creating (Proprietary) ── PAID ─────── Studios/publishers pay 
 
 The free reader tier ensures content reaches maximum audience. The AGPL layer ensures infrastructure providers contribute back. The proprietary layer captures value from professional content creators.
 
-## SaaS Platform
+## SaaS Platform (38 Products)
 
-| Product | Description | Link |
-|---------|-------------|------|
-| **AI Modeler SaaS** | Cloud-native 3D modeling platform powered by ALICE-SDF. Browser-based editor, text-to-3D via LLM, 15-format export, real-time collaboration. | [ext-sakamoro/AI-Modeler-SaaS](https://github.com/ext-sakamoro/AI-Modeler-SaaS) |
+All SaaS products follow the **MIT Core + AGPL-3.0 SaaS Shell** pattern: the core crate remains MIT-licensed for library use, while the SaaS delivery layer (API gateway, frontend, billing) is AGPL-3.0.
+
+| # | Product | Core Crate | Description | Repository |
+|---|---------|------------|-------------|------------|
+| — | **AI Modeler SaaS** | ALICE-SDF | Cloud-native 3D modeling, text-to-3D, 15-format export | [AI-Modeler-SaaS](https://github.com/ext-sakamoro/AI-Modeler-SaaS) |
+| 1 | **ALICE Voice Cloud** | ALICE-Voice | Real-time voice compression API (100-600x) | [ALICE-Voice-Cloud](https://github.com/ext-sakamoro/ALICE-Voice-Cloud) |
+| 2 | **ALICE Stream** | ALICE-Streaming-Protocol | Video streaming with 80-95% bandwidth reduction | [ALICE-Stream-SaaS](https://github.com/ext-sakamoro/ALICE-Stream-SaaS) |
+| 3 | **ALICE Edge IoT** | ALICE-Edge | IoT data compression (500x), edge gateway management | [ALICE-Edge-IoT-SaaS](https://github.com/ext-sakamoro/ALICE-Edge-IoT-SaaS) |
+| 4 | **ALICE Font CDN** | ALICE-Font | Ultra-compressed font delivery CDN (14,000x) | [ALICE-Font-CDN](https://github.com/ext-sakamoro/ALICE-Font-CDN) |
+| 5 | **ALICE View Studio** | ALICE-View | Browser-based 3D preview, scene sharing, embed widgets | [ALICE-View-Studio](https://github.com/ext-sakamoro/ALICE-View-Studio) |
+| 6 | **ALICE Browser Secure** | ALICE-Browser | Cloud browser isolation, SIMD ad-block API | [ALICE-Browser-Secure](https://github.com/ext-sakamoro/ALICE-Browser-Secure) |
+| 7 | **ALICE Synth Cloud** | ALICE-Synth | Audio synthesis API (1,500:1 compression), procedural SFX | [ALICE-Synth-Cloud](https://github.com/ext-sakamoro/ALICE-Synth-Cloud) |
+| 8 | **ALICE Motion Cloud** | ALICE-Motion | Motion capture compression (250x), retargeting, blend trees | [ALICE-Motion-Cloud](https://github.com/ext-sakamoro/ALICE-Motion-Cloud) |
+| 9 | **ALICE Legal AI** | ALICE-Legal | Contract review API, risk scoring, compliance checking | [ALICE-Legal-AI](https://github.com/ext-sakamoro/ALICE-Legal-AI) |
+| 10 | **ALICE FIX Gateway** | ALICE-FIX | Managed FIX protocol gateway, order routing, audit | [ALICE-FIX-Gateway](https://github.com/ext-sakamoro/ALICE-FIX-Gateway) |
+| 11 | **ALICE Text Compression** | ALICE-Text | Exception-based text compression API, multilingual | [ALICE-Text-Compression](https://github.com/ext-sakamoro/ALICE-Text-Compression) |
+| 12 | **ALICE Kinematics Cloud** | ALICE-Kinematics | IK/FK API, motion intent compression (1000Hz→8 bytes) | [ALICE-Kinematics-Cloud](https://github.com/ext-sakamoro/ALICE-Kinematics-Cloud) |
+| 13 | **ALICE Presence** | ALICE-Presence | Real-time presence API, ZKP privacy, Vivaldi coordinates | [ALICE-Presence-SaaS](https://github.com/ext-sakamoro/ALICE-Presence-SaaS) |
+| 14 | **ALICE Climate Platform** | ALICE-Climate | Planetary climate simulation, SDF atmosphere modeling | [ALICE-Climate-Platform](https://github.com/ext-sakamoro/ALICE-Climate-Platform) |
+| 15 | **ALICE SIMD Compute** | ALICE-SIMD | Vector computation API, batch numerical processing | [ALICE-SIMD-Compute](https://github.com/ext-sakamoro/ALICE-SIMD-Compute) |
+| 16 | **ALICE DB Cloud** | ALICE-DB | Managed database with model-based LSM-Tree compression | [ALICE-DB-Cloud](https://github.com/ext-sakamoro/ALICE-DB-Cloud) |
+| 17 | **ALICE Cache Cloud** | ALICE-Cache | Managed cache with Markov predictive prefetch | [ALICE-Cache-Cloud](https://github.com/ext-sakamoro/ALICE-Cache-Cloud) |
+| 18 | **ALICE CDN** | ALICE-CDN | Latency-optimized CDN, Vivaldi routing, edge compute | [ALICE-CDN-SaaS](https://github.com/ext-sakamoro/ALICE-CDN-SaaS) |
+| 19 | **ALICE Search** | ALICE-Search | Full-text search API, FM-Index, faceted search | [ALICE-Search-SaaS](https://github.com/ext-sakamoro/ALICE-Search-SaaS) |
+| 20 | **ALICE Codec Cloud** | ALICE-Codec | Transcoding API, 3D wavelet codec, adaptive bitrate | [ALICE-Codec-Cloud](https://github.com/ext-sakamoro/ALICE-Codec-Cloud) |
+| 21 | **ALICE ML Platform** | ALICE-ML | 1.58-bit ternary inference API, model quantization | [ALICE-ML-Platform](https://github.com/ext-sakamoro/ALICE-ML-Platform) |
+| 22 | **ALICE Auth** | ALICE-Auth | ZKP authentication API, Ed25519, MFA, SSO | [ALICE-Auth-SaaS](https://github.com/ext-sakamoro/ALICE-Auth-SaaS) |
+| 23 | **ALICE Crypto KMS** | ALICE-Crypto | Key management API, Shamir secret sharing, HSM | [ALICE-Crypto-KMS](https://github.com/ext-sakamoro/ALICE-Crypto-KMS) |
+| 24 | **ALICE Container Cloud** | ALICE-Container | Managed containers, cgroup v2 runtime, auto-scaling | [ALICE-Container-Cloud](https://github.com/ext-sakamoro/ALICE-Container-Cloud) |
+| 25 | **ALICE Queue** | ALICE-Queue | Managed message queue, zero-copy, Blake3 integrity | [ALICE-Queue-SaaS](https://github.com/ext-sakamoro/ALICE-Queue-SaaS) |
+| 26 | **ALICE Analytics** | ALICE-Analytics | Real-time analytics API, HyperLogLog, DDSketch | [ALICE-Analytics-SaaS](https://github.com/ext-sakamoro/ALICE-Analytics-SaaS) |
+| 27 | **ALICE DNS** | ALICE-DNS | Managed DNS, Bloom Filter O(1) ad-blocking | [ALICE-DNS-SaaS](https://github.com/ext-sakamoro/ALICE-DNS-SaaS) |
+| 28 | **ALICE Cloud Gateway** | ALICE-Cloud-Gateway | Edge-to-cloud SDF streaming, spatial sync | [ALICE-Cloud-Gateway-SaaS](https://github.com/ext-sakamoro/ALICE-Cloud-Gateway-SaaS) |
+| 29 | **ALICE Sync** | ALICE-Sync | Real-time P2P sync API, event-diff, offline-first | [ALICE-Sync-SaaS](https://github.com/ext-sakamoro/ALICE-Sync-SaaS) |
+| 30 | **ALICE History** | ALICE-History | Inverse entropy restoration API, audit trails | [ALICE-History-SaaS](https://github.com/ext-sakamoro/ALICE-History-SaaS) |
+| 31 | **ALICE Zip Cloud** | ALICE-Zip | Procedural compression API (10-1000x) | [ALICE-Zip-Cloud](https://github.com/ext-sakamoro/ALICE-Zip-Cloud) |
+| 32 | **ALICE Settlement** | ALICE-Settlement | Post-trade settlement API, netting, T+0 clearing | [ALICE-Settlement-SaaS](https://github.com/ext-sakamoro/ALICE-Settlement-SaaS) |
+| 33 | **ALICE Ledger** | ALICE-Ledger | Order book matching API, position management | [ALICE-Ledger-SaaS](https://github.com/ext-sakamoro/ALICE-Ledger-SaaS) |
+| 34 | **ALICE Risk** | ALICE-Risk | Pre-trade risk API, margin calculation, circuit breakers | [ALICE-Risk-SaaS](https://github.com/ext-sakamoro/ALICE-Risk-SaaS) |
+| 35 | **ALICE Energy Platform** | ALICE-Energy | Grid simulation API, battery degradation prediction | [ALICE-Energy-Platform](https://github.com/ext-sakamoro/ALICE-Energy-Platform) |
+| 36 | **ALICE Space Comm** | ALICE-Space | Deep-space communication API, model-differential transfer | [ALICE-Space-Comm](https://github.com/ext-sakamoro/ALICE-Space-Comm) |
+| 37 | **ALICE Bio Platform** | ALICE-Bio | Molecular simulation API, protein SDF, drug screening | [ALICE-Bio-Platform](https://github.com/ext-sakamoro/ALICE-Bio-Platform) |
 
 ## License
 
