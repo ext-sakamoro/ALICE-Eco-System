@@ -1210,6 +1210,12 @@ Creating (Proprietary) ── PAID ─────── Studios/publishers pay 
 
 The free reader tier ensures content reaches maximum audience. The AGPL layer ensures infrastructure providers contribute back. The proprietary layer captures value from professional content creators.
 
+## SaaS Platform
+
+| Product | Description | Link |
+|---------|-------------|------|
+| **AI Modeler SaaS** | Cloud-native 3D modeling platform powered by ALICE-SDF. Browser-based editor, text-to-3D via LLM, 15-format export, real-time collaboration. | [ext-sakamoro/AI-Modeler-SaaS](https://github.com/ext-sakamoro/AI-Modeler-SaaS) |
+
 ## License
 
 MIT License (this integration demo)
