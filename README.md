@@ -1220,6 +1220,8 @@ The free reader tier ensures content reaches maximum audience. The AGPL layer en
 
 ## SaaS Platform (40 Products)
 
+**Official Domain: [alicelaw.net](https://alicelaw.net)**
+
 All SaaS products follow the **MIT Core + AGPL-3.0 SaaS Shell** pattern: the core crate remains MIT-licensed for library use, while the SaaS delivery layer (API gateway, frontend, billing) is AGPL-3.0.
 
 | # | Product | Core Crate | Description | Repository |
