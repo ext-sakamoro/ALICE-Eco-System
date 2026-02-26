@@ -2,6 +2,13 @@
 
 All notable changes to ALICE-Eco-System will be documented in this file.
 
+## [0.3.3] - 2026-02-26
+
+### Changed
+- README: SaaS Platform section expanded from 40 to 52 products (#40-#52 added)
+- README: Added Observability, API Gateway, Backup, Digital Twin, VectorDB, Agent Platform, DataShield, Edge Runtime, Compliance, Workflow, Collab, FinCompliance, Experiment
+- lib.rs: doc comment updated to reflect 52 SaaS services
+
 ## [0.3.2] - 2026-02-23
 
 ### Added
