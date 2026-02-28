@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (52 Components)                     │
+│                          ALICE Ecosystem (53 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -1218,7 +1218,7 @@ Creating (Proprietary) ── PAID ─────── Studios/publishers pay 
 
 The free reader tier ensures content reaches maximum audience. The AGPL layer ensures infrastructure providers contribute back. The proprietary layer captures value from professional content creators.
 
-## SaaS Platform (52 Products)
+## SaaS Platform (53 Products)
 
 **Official Domain: [alicelaw.net](https://alicelaw.net)**
 
@@ -1279,6 +1279,7 @@ All SaaS products follow the **MIT Core + AGPL-3.0 SaaS Shell** pattern: the cor
 | 50 | **ALICE Collab** | ALICE-Sync + ALICE-Presence | CRDT real-time collaboration, conflict-free document editing | [ALICE-Collab](https://github.com/ext-sakamoro/ALICE-Collab) |
 | 51 | **ALICE FinCompliance** | ALICE-FIX + ALICE-Settlement + ALICE-Risk | Trade lifecycle compliance, FIX capture, regulatory risk assessment | [ALICE-FinCompliance](https://github.com/ext-sakamoro/ALICE-FinCompliance) |
 | 52 | **ALICE Experiment** | ALICE-Analytics + ALICE-Cache | Feature flags, A/B experimentation, statistical significance analysis | [ALICE-Experiment](https://github.com/ext-sakamoro/ALICE-Experiment) |
+| 53 | **ALICE VCS** | ALICE-VCS | AST-level version control API, Merkle DAG, 12-byte patches, 3-way merge | [ALICE-VCS-SaaS](https://github.com/ext-sakamoro/ALICE-VCS-SaaS) |
 
 ## License
 
