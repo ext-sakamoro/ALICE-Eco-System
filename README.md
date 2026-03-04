@@ -80,7 +80,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Auth](https://github.com/ext-sakamoro/ALICE-Auth) | v0.4.0 | Cryptographic Authentication | Ed25519, Zero-Knowledge Proofs | AGPL-3.0 |
+| [ALICE-Auth](https://github.com/ext-sakamoro/ALICE-Auth) | v0.5.0 | Cryptographic Authentication | Ed25519, Schnorr NIZK, Key Rotation, Endorsement, RBAC, FFI(28)/PyO3/Unity/UE5 | AGPL-3.0 |
 | [ALICE-Crypto](https://github.com/ext-sakamoro/ALICE-Crypto) | v0.1.0 | Information-Theoretic Security | Shamir SSS, BLAKE3, XChaCha20-Poly1305 | AGPL-3.0 |
 
 ### Compute & Runtime
@@ -135,7 +135,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
 | [ALICE-History](https://github.com/ext-sakamoro/ALICE-History) | v0.1.0 | Inverse Entropy Restoration | Fragment degradation modeling, iterative solver, Shannon entropy, confidence mapping | AGPL-3.0 |
-| [ALICE-Atoms](https://github.com/ext-sakamoro/ALICE-Atoms) | v0.1.0 | Molecular Compilation | Crystal lattice, Lennard-Jones, band structure, genetic algorithm material compiler | Proprietary |
+| [ALICE-Atoms](https://github.com/ext-sakamoro/ALICE-Atoms) | v0.2.0 | Molecular Compilation | Crystal lattice, Lennard-Jones, band structure, genetic algorithm material compiler, NSGA-II Pareto, ETB, EAM/Tersoff, UFF, CIF/POSCAR I/O | Proprietary |
 | [ALICE-Presence](https://github.com/ext-sakamoro/ALICE-Presence) | v0.1.0 | Cryptographic Presence Protocol | Vivaldi coordinates, ZKP identity, 18-byte events, proximity proofs | MIT |
 
 ### Application
@@ -318,7 +318,7 @@ The ALICE ecosystem contains **456 cross-crate bridges** across 71 bridge files 
 | **SDF Material Bridges** | SdfMaterial→View (PBR descriptor), SdfMaterial→CDN (delivery), SdfMaterial→Cache (snapshot), SdfMaterial→Analytics (metrics), SdfMaterial→Edge (LOD) (5 total) | PBR material pipeline to ecosystem |
 | **SDF Destruction Bridges** | Destruction→DB (event record), Destruction→View (visual feedback), Destruction→Cache (invalidation), Destruction→Analytics (metrics), FracturePiece→Physics (collision) (5 total) | Destructible environments to ecosystem |
 | **ASP Bridges** | ASP→Cache, ASP→Codec, ASP→SDF, ASP→View, ASP→CDN, ASP→Analytics + 6 more (12 total) | Streaming protocol to ecosystem |
-| **Edge Ext Bridges** | Edge→DB, Edge→View, Edge→ASP, Edge→Analytics | Extended sensor model integration |
+| **Edge Ext Bridges** | Edge→DB, Edge→View, Edge→ASP, Edge→Analytics, Edge→Kinematics, Edge→Synth (6 total) | Extended sensor model integration |
 | **CDN Ext Bridges** | CDN→Cache, CDN→Physics, CDN→ASP, CDN→Analytics | Extended content delivery integration |
 | **Ledger Bridges** | Ledger→Analytics (Order, Fill, PnL), Ledger→DB (Fill), Ledger→Cache (Position) | Order book event integration |
 | **Risk Bridges** | Risk→Analytics (Reject), Risk→Cache (Limits), Risk→Semantic (Reject severity) | Pre-trade risk telemetry |
