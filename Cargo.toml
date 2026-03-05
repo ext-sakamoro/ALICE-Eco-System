@@ -100,6 +100,9 @@ crc32fast = "1"
 # Utilities
 tempfile = "3"
 
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
 [lib]
 name = "alice_eco_system"
 path = "src/lib.rs"
@@ -128,6 +131,10 @@ streaming-protocol-commercial = ["dep:alice-streaming-protocol-commercial"]
 neural = ["dep:alice-neural"]
 atoms = ["dep:alice-atoms"]
 enterprise = ["edge-commercial", "streaming-protocol-commercial"]
+
+[[bench]]
+name = "bridge_bench"
+harness = false
 
 [profile.release]
 opt-level = 3

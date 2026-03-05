@@ -1,3 +1,12 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::inline_always,
+    clippy::too_many_lines
+)]
+
 //! ALICE Ecosystem Integration Demo
 //!
 //! Demonstrates the complete data pipeline with ZERO unnecessary allocations.
@@ -56,7 +65,7 @@ impl Iterator for SensorGenerator {
 #[inline(always)]
 fn serialize_coefficients(slope: i32, intercept: i32) -> [u8; 8] {
     // Pack two i32 → one u64: single 64-bit store instruction
-    let combined = (slope as u32 as u64) | ((intercept as u32 as u64) << 32);
+    let combined = u64::from(slope as u32) | (u64::from(intercept as u32) << 32);
     combined.to_le_bytes()
 }
 
@@ -69,6 +78,9 @@ fn deserialize_coefficients(buf: &[u8; 8]) -> (i32, i32) {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    const Q16_SCALE: f32 = 1.0 / 65536.0;
+    const CENTI_SCALE: f32 = 1.0 / 100.0;
+
     println!("╔══════════════════════════════════════════════════════════════╗");
     println!("║         ALICE ECOSYSTEM INTEGRATION DEMO                      ║");
     println!("╚══════════════════════════════════════════════════════════════╝");
@@ -103,7 +115,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "  Last value:      {:.2}°C",
         sensor_buffer[SAMPLE_COUNT - 1] as f32 / 100.0
     );
-    println!("  Raw data size:   {} bytes", raw_bytes);
+    println!("  Raw data size:   {raw_bytes} bytes");
     println!();
 
     // ========================================================================
@@ -122,12 +134,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "  Slope:     {} (Q16.16) = {:.6}",
         slope,
-        slope as f64 / 65536.0
+        f64::from(slope) / 65536.0
     );
     println!(
         "  Intercept: {} (Q16.16) = {:.2}",
         intercept,
-        intercept as f64 / 65536.0
+        f64::from(intercept) / 65536.0
     );
 
     // Serialize for transmission (8 bytes, stack only)
@@ -135,14 +147,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let compressed_bytes = packet.len();
 
     println!();
-    println!("  Packet (hex): {:02x?}", packet);
-    println!("  Packet size:  {} bytes", compressed_bytes);
+    println!("  Packet (hex): {packet:02x?}");
+    println!("  Packet size:  {compressed_bytes} bytes");
     println!();
     println!("  ┌─────────────────────────────────────────────────┐");
-    println!(
-        "  │ COMPRESSION: {} bytes → {} bytes               │",
-        raw_bytes, compressed_bytes
-    );
+    println!("  │ COMPRESSION: {raw_bytes} bytes → {compressed_bytes} bytes               │");
     println!(
         "  │ RATIO:       {}x                              │",
         raw_bytes / compressed_bytes
@@ -166,7 +175,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Simulate network receive (packet moves from edge to server memory)
     let received_packet = packet;
     let (rx_slope, rx_intercept) = deserialize_coefficients(&received_packet);
-    println!("  Received: slope={}, intercept={}", rx_slope, rx_intercept);
+    println!("  Received: slope={rx_slope}, intercept={rx_intercept}");
     println!();
 
     // ========================================================================
@@ -177,7 +186,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db_dir = tempdir()?;
     let db = AliceDB::open(db_dir.path())?;
 
-    println!("  Database opened at: {:?}", db_dir.path());
+    println!("  Database opened at: {}", db_dir.path().display());
 
     // Reconstruct data into a batch buffer for high-throughput insert
     // Instead of calling db.put() 1000 times (1000 lock acquisitions),
@@ -187,28 +196,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Zero malloc in user code!
     let mut batch_buffer = [(0i64, 0.0f32); SAMPLE_COUNT];
 
-    // Pre-calculate constants for fast loop
-    const Q16_SCALE: f32 = 1.0 / 65536.0;
-    const CENTI_SCALE: f32 = 1.0 / 100.0;
+    println!("  Reconstructing {SAMPLE_COUNT} points (stack mode, zero malloc)...");
 
-    println!(
-        "  Reconstructing {} points (stack mode, zero malloc)...",
-        SAMPLE_COUNT
-    );
-
-    for i in 0..SAMPLE_COUNT {
+    for (i, slot) in batch_buffer.iter_mut().enumerate().take(SAMPLE_COUNT) {
         // Hand-optimized evaluation loop
         // Manual inline of evaluate_linear_fixed logic:
         // y = slope * x + intercept (Q16.16 arithmetic)
         let x = i as i32;
-        let mx = (rx_slope as i64).wrapping_mul(x as i64);
+        let mx = i64::from(rx_slope).wrapping_mul(i64::from(x));
         let q16_val = (mx as i32).wrapping_add(rx_intercept);
 
         // Convert Q16.16 centidegrees to °C
         let value = q16_val as f32 * Q16_SCALE * CENTI_SCALE;
 
-        // Index access (compiler elides bounds check for const SAMPLE_COUNT)
-        batch_buffer[i] = (i as i64, value);
+        *slot = (i as i64, value);
     }
 
     // Single Batch Insert (Lock acquired only ONCE instead of 1000 times)
@@ -240,10 +241,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let original = sensor_buffer[t] as f32 / 100.0;
         let db_value = db.get(t as i64)?.unwrap_or(0.0);
         let error = (original - db_value).abs();
-        println!(
-            "  │ {:>8} │ {:>8.2}°C │ {:>8.2}°C │ {:>6.4}°C │",
-            t, original, db_value, error
-        );
+        println!("  │ {t:>8} │ {original:>8.2}°C │ {db_value:>8.2}°C │ {error:>6.4}°C │");
     }
     println!("  └──────────┴────────────┴────────────┴──────────┘");
     println!();
@@ -254,9 +252,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let min = db.aggregate(0, 999, Aggregation::Min)?;
     let max = db.aggregate(0, 999, Aggregation::Max)?;
 
-    println!("    AVG: {:.2}°C", avg);
-    println!("    MIN: {:.2}°C", min);
-    println!("    MAX: {:.2}°C", max);
+    println!("    AVG: {avg:.2}°C");
+    println!("    MIN: {min:.2}°C");
+    println!("    MAX: {max:.2}°C");
     println!();
 
     // ========================================================================
@@ -295,10 +293,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║                                                              ║");
     println!("║  [Sensor]                                                    ║");
-    println!(
-        "║     │ {} samples × 4 bytes = {} bytes (Stack)            │",
-        SAMPLE_COUNT, raw_bytes
-    );
+    println!("║     │ {SAMPLE_COUNT} samples × 4 bytes = {raw_bytes} bytes (Stack)            │");
     println!("║     ▼                                                        ║");
     println!("║  [ALICE-Edge] (Ultimate Optimized)                           ║");
     println!("║     │ fit_linear_fixed() → 8 bytes                           ║");

@@ -2,7 +2,7 @@
 //!
 //! 6 bridges connecting soft-body simulation subsystems to the ALICE ecosystem.
 
-use alice_physics::{Cloth, DeformableBody, Fix128, Fluid, Rope, Vec3Fix};
+use alice_physics::{Cloth, DeformableBody, Fluid, Rope};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -236,11 +236,7 @@ pub fn cloth_to_cache(cloth: &Cloth) -> ClothCacheEntry {
     let ttl_secs = 30 - has_self_coll * 25;
 
     // Hash: particle count + triangle count + first position XOR.
-    let first_hash = cloth
-        .positions
-        .first()
-        .map(|p| p.x.hi as u64)
-        .unwrap_or(0);
+    let first_hash = cloth.positions.first().map(|p| p.x.hi as u64).unwrap_or(0);
     let mut bytes = [0u8; 24];
     bytes[0..8].copy_from_slice(&(particle_count as u64).to_le_bytes());
     bytes[8..16].copy_from_slice(&(triangle_count as u64).to_le_bytes());
@@ -432,12 +428,7 @@ mod tests {
 
     #[test]
     fn test_rope_to_db() {
-        let rope = Rope::new(
-            Vec3Fix::ZERO,
-            Vec3Fix::from_int(10, 0, 0),
-            10,
-            Fix128::ONE,
-        );
+        let rope = Rope::new(Vec3Fix::ZERO, Vec3Fix::from_int(10, 0, 0), 10, Fix128::ONE);
         let rec = rope_to_db(&rope);
 
         assert_eq!(rec.particle_count, 11); // 10 segments + 1
@@ -453,12 +444,7 @@ mod tests {
 
     #[test]
     fn test_rope_db_hash_determinism() {
-        let rope = Rope::new(
-            Vec3Fix::ZERO,
-            Vec3Fix::from_int(5, 0, 0),
-            5,
-            Fix128::ONE,
-        );
+        let rope = Rope::new(Vec3Fix::ZERO, Vec3Fix::from_int(5, 0, 0), 5, Fix128::ONE);
         let r1 = rope_to_db(&rope);
         let r2 = rope_to_db(&rope);
         assert_eq!(r1.content_hash, r2.content_hash);

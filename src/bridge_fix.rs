@@ -201,10 +201,8 @@ pub fn fix_order_to_cache(msg: &FixMessage) -> FixOrderCacheEntry {
     let cum_qty: u64 = msg.get_u64(tag::CUM_QTY).unwrap_or(0);
 
     // Terminal statuses: '2' (Fill), '4' (Cancelled), '8' (Rejected), 'C' (Expired)
-    let is_terminal = (ord_status == b'2')
-        | (ord_status == b'4')
-        | (ord_status == b'8')
-        | (ord_status == b'C');
+    let is_terminal =
+        (ord_status == b'2') | (ord_status == b'4') | (ord_status == b'8') | (ord_status == b'C');
     // Branchless TTL: terminal → 3600, active → 5
     let is_active = (!is_terminal) as u32;
     let ttl_secs = 3600 - is_active * 3595;

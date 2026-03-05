@@ -3,8 +3,7 @@
 //! 8 bridges connecting deterministic physics simulation to the ALICE ecosystem.
 
 use alice_physics::{
-    Fix128, ManifoldConfig, MultiWorld, ParticleSystem, PhysicsConfig, RigidBody, SdfForceType,
-    Vec3Fix,
+    ManifoldConfig, MultiWorld, ParticleSystem, PhysicsConfig, RigidBody, SdfForceType,
 };
 
 // ── Bridge 1: Physics ↔ SDF (collision detection config) ────────────────
@@ -588,7 +587,7 @@ pub fn particle_system_to_cache(ps: &ParticleSystem) -> ParticleSystemCacheEntry
     let ttl_secs = 30 - is_large * 25;
 
     // Eviction priority: based on alive count (more particles = more work to recreate).
-    let eviction_priority = (alive_count as u32).min(u32::MAX);
+    let eviction_priority = alive_count as u32;
 
     // Hash: total + alive + emitter count + gravity X high-word.
     let gravity_x_hi = ps.gravity.x.hi as u64;

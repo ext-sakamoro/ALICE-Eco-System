@@ -118,7 +118,7 @@ pub struct CryptoHashCacheEntry {
     pub ttl_secs: u32,
 }
 
-/// Convert a [`Hash`] into a cache entry.
+/// Convert a [`alice_crypto::Hash`] into a cache entry.
 ///
 /// `pinned` indicates whether this hash corresponds to a well-known content
 /// address that should be retained longer in cache.
@@ -224,7 +224,10 @@ pub struct CryptoSealAnalyticsMetric {
 /// `Nonce::SIZE + TAG_SIZE` (24 + 16 = 40 bytes).
 #[inline]
 #[must_use]
-pub fn crypto_seal_to_analytics(plaintext_len: u64, timestamp_ns: u64) -> CryptoSealAnalyticsMetric {
+pub fn crypto_seal_to_analytics(
+    plaintext_len: u64,
+    timestamp_ns: u64,
+) -> CryptoSealAnalyticsMetric {
     let overhead = (Nonce::SIZE + TAG_SIZE) as u64;
     let overhead_ratio = if plaintext_len == 0 {
         0.0

@@ -7,7 +7,7 @@
 //! `alice_physics::scene_io::PhysicsConfig` (serialized format), NOT
 //! `alice_physics::solver::PhysicsConfig` (runtime format).
 
-use alice_physics::{PhysicsScene, SerializedBody, SerializedJoint};
+use alice_physics::PhysicsScene;
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -44,7 +44,7 @@ pub struct SceneDbAssetRecord {
 
 /// Build a `SceneDbAssetRecord` from a `PhysicsScene`.
 ///
-/// Determinism checksum XOR-folds position[0] (x.hi) of each body for
+/// Determinism checksum XOR-folds `position[0]` (x.hi) of each body for
 /// cross-platform verification.
 #[inline]
 #[must_use]
@@ -169,14 +169,10 @@ pub fn scene_to_cache(scene: &PhysicsScene) -> SceneCacheEntry {
     let ttl_secs = 120 - is_complex * 105;
 
     // Eviction priority: based on body count (larger scenes more costly to rebuild).
-    let eviction_priority = (body_count as u32).min(u32::MAX);
+    let eviction_priority = body_count as u32;
 
     // Hash: body_count + joint_count + version + first body position[0].
-    let first_body_pos = scene
-        .bodies
-        .first()
-        .map(|b| b.position[0])
-        .unwrap_or(0);
+    let first_body_pos = scene.bodies.first().map(|b| b.position[0]).unwrap_or(0);
     let mut bytes = [0u8; 24];
     bytes[0..8].copy_from_slice(&(body_count as u64).to_le_bytes());
     bytes[8..16].copy_from_slice(&(joint_count as u64).to_le_bytes());
@@ -316,6 +312,7 @@ pub fn scene_to_edge_summary(scene: &PhysicsScene) -> SceneEdgeSummary {
 mod tests {
     use super::*;
     use alice_physics::scene_io::PhysicsConfig as ScenePhysicsConfig;
+    use alice_physics::{SerializedBody, SerializedJoint};
 
     fn make_scene(n_bodies: usize, n_joints: usize) -> PhysicsScene {
         let bodies: Vec<SerializedBody> = (0..n_bodies)

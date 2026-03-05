@@ -260,7 +260,8 @@ pub fn sdf_material_to_analytics_event(mat: &Material) -> SdfMaterialAnalyticsEv
 
     let has_clearcoat = mat.clearcoat > 0.0;
     let has_subsurface = mat.subsurface > 0.0;
-    let has_sheen = mat.sheen_color[0] > 0.0 || mat.sheen_color[1] > 0.0 || mat.sheen_color[2] > 0.0;
+    let has_sheen =
+        mat.sheen_color[0] > 0.0 || mat.sheen_color[1] > 0.0 || mat.sheen_color[2] > 0.0;
     let has_anisotropy = mat.anisotropy.abs() > 0.0;
     let has_transmission = mat.transmission > 0.0;
     let is_metal = mat.metallic >= 0.5;

@@ -13,6 +13,7 @@
 //! - **Path H** (Voice Delivery): Voice → Synth → Codec → CDN → Cache
 //! - **Path I** (Full-Text Search): Text → Search → DB / Browser
 //! - **Path J** (DNS + API Gateway): DNS → API → Auth / CDN / Cache
+//! - **Path T** (Container Deployment): Container → Auth → API → CDN
 
 use std::path::PathBuf;
 
@@ -215,6 +216,22 @@ pub struct DnsApiGatewayResult {
     pub operation: &'static str,
     /// Content type hint.
     pub content_type_hint: &'static str,
+}
+
+/// Result of container deployment pipeline (Path T: Container → Auth → API → CDN).
+pub struct ContainerDeployResult {
+    /// FNV-1a hash of the deployed container image.
+    pub container_hash: u64,
+    /// FNV-1a hash of the issued auth token (registry pull token).
+    pub auth_token_hash: u64,
+    /// API route registered for this container endpoint.
+    pub api_route: String,
+    /// CDN edge node selected for content delivery.
+    pub cdn_node: String,
+    /// Predicted RTT to selected CDN node in milliseconds.
+    pub cdn_rtt_ms: f64,
+    /// Total deployment pipeline duration in milliseconds (synthetic).
+    pub deploy_time_ms: f64,
 }
 
 // ── Path G: AI Inference ─────────────────────────────────────────────
@@ -803,6 +820,81 @@ impl AlicePipeline {
         })
     }
 
+    // ── Path T: Container Deployment ─────────────────────────────────
+
+    /// Deploy a container through the full authentication and CDN pipeline.
+    ///
+    /// `[ALICE-Container] → [ALICE-Auth] → [ALICE-API] → [ALICE-CDN]`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no CDN node is available for routing.
+    pub fn deploy_container(
+        &mut self,
+        container_image_id: u64,
+        target_api_route: &str,
+    ) -> std::result::Result<ContainerDeployResult, std::io::Error> {
+        // 1. ALICE-Container: コンテナイメージのデプロイレコードを生成
+        //    state=1 (running), CPU制限 100ms/s, メモリ制限 512 MiB
+        let container_rec = crate::bridge_container::container_to_db_record(
+            container_image_id,
+            100_000,           // cpu_limit_us: 100ms/s
+            512 * 1024 * 1024, // memory_limit: 512 MiB
+            1,                 // state: running
+        );
+        let container_hash = container_rec.content_hash;
+
+        // 2. ALICE-Auth: レジストリ認証トークンを取得（pull スコープ）
+        //    target_api_route をレジストリ参照として使用し、イメージIDから参照文字列を生成
+        let image_ref = format!("alice/container:{container_image_id:016x}");
+        let auth_req = crate::bridge_container::container_to_auth_request(
+            "registry.alice.io",
+            &image_ref,
+            0, // scope: pull
+        );
+        let auth_token_hash = auth_req.registry_hash ^ auth_req.image_hash;
+
+        // 3. ALICE-API: APIルートの登録（レート制限チェック）
+        let limiter = alice_api::GcraCell::new(100.0, 10);
+        let auth_decision = crate::bridge_api::api_auth_check(
+            &limiter,
+            target_api_route,
+            alice_api::HttpMethod::Post,
+            1_000_000_000,
+        );
+        let cdn_route_info = crate::bridge_api::api_to_cdn_route(
+            target_api_route,
+            alice_api::HttpMethod::Post,
+            auth_decision.rate_allowed,
+        );
+        let api_route = cdn_route_info.asset_path.clone();
+
+        // 4. ALICE-CDN: Vivaldi RTT 予測で最適エッジノードを選択
+        let content_id = container_hash ^ (target_api_route.len() as u64);
+        let node_refs: Vec<(u64, &VivaldiCoord)> = self
+            .cdn_nodes
+            .iter()
+            .map(|(id, _, coord)| (*id, coord))
+            .collect();
+        let best = self.cdn.find_best(content_id, node_refs).ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::NotFound, "CDN node not found")
+        })?;
+        let cdn_node = self.node_name(best.id);
+        let cdn_rtt_ms = best.predicted_rtt.to_f64();
+
+        // デプロイ時間: CDN RTT + Auth レイテンシ（固定 2ms）+ API ルート登録（固定 1ms）
+        let deploy_time_ms = cdn_rtt_ms + 3.0;
+
+        Ok(ContainerDeployResult {
+            container_hash,
+            auth_token_hash,
+            api_route,
+            cdn_node,
+            cdn_rtt_ms,
+            deploy_time_ms,
+        })
+    }
+
     // ── Internal ─────────────────────────────────────────────────────────
 
     fn node_name(&self, id: u64) -> String {
@@ -1143,5 +1235,195 @@ mod tests {
         assert!(result.api_rate_allowed);
         assert_eq!(result.operation, "read");
         assert_eq!(result.content_type_hint, "application/x-alice-sdf");
+    }
+
+    // ── S3: E2E パイプライン統合テスト ──────────────────────────────────
+
+    /// センサー→DB→クエリの往復を検証
+    #[test]
+    fn test_e2e_sensor_to_db_roundtrip() {
+        let (_dir, config) = test_setup();
+        let mut pipeline = AlicePipeline::new(config).unwrap();
+
+        // 100ポイントの温度データを投入
+        let data: Vec<i32> = (0..100).map(|i| 2200 + i * 3).collect();
+        let result = pipeline.ingest_sensor(&data).unwrap();
+        assert_eq!(result.db_records, 100);
+        assert!(result.compression_ratio > 1.0);
+
+        // DB から中間点を読み返して存在を確認
+        let mid = pipeline.query(50).unwrap();
+        assert!(mid.is_some());
+
+        // 先頭・末尾も問題なし
+        let first = pipeline.query(0).unwrap();
+        assert!(first.is_some());
+        let last = pipeline.query(99).unwrap();
+        assert!(last.is_some());
+
+        pipeline.close().unwrap();
+    }
+
+    /// アセット配信のキャッシュヒットを検証
+    #[test]
+    fn test_e2e_asset_delivery_cache_hit() {
+        let (_dir, config) = test_setup();
+        let pipeline = AlicePipeline::new(config).unwrap();
+        let tree = SdfTree::new(SdfNode::sphere(2.0));
+
+        // 初回: キャッシュミス
+        let r1 = pipeline.deliver_asset(&tree, 5001).unwrap();
+        assert!(!r1.cache_hit);
+        assert!(r1.asdf_size > 0);
+
+        // 2回目: キャッシュヒット
+        let r2 = pipeline.deliver_asset(&tree, 5001).unwrap();
+        assert!(r2.cache_hit);
+
+        // 別のアセットID: キャッシュミス
+        let r3 = pipeline.deliver_asset(&tree, 5002).unwrap();
+        assert!(!r3.cache_hit);
+
+        pipeline.close().unwrap();
+    }
+
+    /// ゲームティックの決定性を検証（同一入力→同一位置）
+    #[test]
+    fn test_e2e_game_tick_determinism() {
+        let (_dir, config1) = test_setup();
+        let (_dir2, config2) = test_setup();
+        let mut p1 = AlicePipeline::new(config1).unwrap();
+        let mut p2 = AlicePipeline::new(config2).unwrap();
+
+        // 両パイプラインに同一ボディ構成
+        for p in [&mut p1, &mut p2] {
+            p.add_body(RigidBody::new_dynamic(
+                Vec3Fix::from_int(0, 10, 0),
+                Fix128::ONE,
+            ));
+            p.add_body(RigidBody::new_static(Vec3Fix::ZERO));
+        }
+
+        // 同一入力で5フレーム回す
+        let mut positions1 = Vec::new();
+        let mut positions2 = Vec::new();
+        for frame in 0..=5u64 {
+            let local = InputFrame::new(frame, 0).with_movement(100, 0, 0);
+            let remote = InputFrame::new(frame, 1).with_movement(-50, 0, 0);
+            let r1 = p1.game_tick(local, remote).unwrap();
+            let local2 = InputFrame::new(frame, 0).with_movement(100, 0, 0);
+            let remote2 = InputFrame::new(frame, 1).with_movement(-50, 0, 0);
+            let r2 = p2.game_tick(local2, remote2).unwrap();
+            if r1.stepped {
+                positions1.push(r1.positions.clone());
+            }
+            if r2.stepped {
+                positions2.push(r2.positions.clone());
+            }
+        }
+
+        // 決定性: 両パイプラインが同一結果
+        assert_eq!(positions1.len(), positions2.len());
+        for (p1_pos, p2_pos) in positions1.iter().zip(positions2.iter()) {
+            assert_eq!(p1_pos, p2_pos);
+        }
+
+        p1.close().unwrap();
+        p2.close().unwrap();
+    }
+
+    /// 複数パスを直列実行して相互干渉がないことを検証
+    #[test]
+    fn test_e2e_multi_path_sequential() {
+        let (_dir, config) = test_setup();
+        let mut pipeline = AlicePipeline::new(config).unwrap();
+
+        // Path A: センサー投入
+        let sensor: Vec<i32> = (0..30).map(|i| 1000 + i * 7).collect();
+        let a = pipeline.ingest_sensor(&sensor).unwrap();
+        assert_eq!(a.db_records, 30);
+
+        // Path B-1: アセット配信
+        let tree = SdfTree::new(SdfNode::box3d(5.0, 5.0, 5.0));
+        let b = pipeline.deliver_asset(&tree, 7001).unwrap();
+        assert!(b.asdf_size > 0);
+
+        // Path J: DNS API
+        let j = path_j_dns_api_gateway("test.alice.dev", "/api/health");
+        assert!(j.api_rate_allowed);
+
+        // Path G: AI推論
+        let g = path_g_ai_inference(8, 4, &[64, 32]);
+        assert!(g.trt_flops > 0);
+
+        // DB はまだ有効
+        let val = pipeline.query(15).unwrap();
+        assert!(val.is_some());
+
+        pipeline.close().unwrap();
+    }
+
+    /// パイプライン統計の蓄積を検証
+    #[test]
+    fn test_e2e_pipeline_stats_accumulate() {
+        let (_dir, config) = test_setup();
+        let mut pipeline = AlicePipeline::new(config).unwrap();
+
+        // 3回のセンサー投入でDB件数が蓄積
+        let mut total_records = 0u64;
+        for batch in 0..3 {
+            let data: Vec<i32> = (0..20).map(|i| 500 + batch * 100 + i * 2).collect();
+            let r = pipeline.ingest_sensor(&data).unwrap();
+            total_records += r.db_records as u64;
+        }
+        assert_eq!(total_records, 60);
+
+        // 全レコードが読み出し可能（最後のバッチの範囲）
+        for key in 0..20i64 {
+            let val = pipeline.query(key).unwrap();
+            assert!(val.is_some(), "key {key} missing");
+        }
+
+        pipeline.close().unwrap();
+    }
+
+    #[test]
+    fn test_path_t_deploy_container() {
+        let (_dir, config) = test_setup();
+        let mut pipeline = AlicePipeline::new(config).unwrap();
+
+        // コンテナイメージIDとAPIルートを指定してデプロイ
+        let image_id: u64 = 0xDEAD_BEEF_CAFE_BABE;
+        let result = pipeline
+            .deploy_container(image_id, "/api/v1/container/run")
+            .unwrap();
+
+        // コンテナハッシュが生成されていること
+        assert_ne!(result.container_hash, 0);
+        // 認証トークンハッシュが生成されていること
+        assert_ne!(result.auth_token_hash, 0);
+        // APIルートが空でないこと
+        assert!(!result.api_route.is_empty());
+        // CDNノードが選択されていること
+        assert!(!result.cdn_node.is_empty());
+        // CDN RTT が非負であること
+        assert!(result.cdn_rtt_ms >= 0.0);
+        // デプロイ時間が CDN RTT + 3ms であること
+        assert!((result.deploy_time_ms - (result.cdn_rtt_ms + 3.0)).abs() < f64::EPSILON);
+
+        // 同一入力で決定的なハッシュが生成されること
+        let result2 = pipeline
+            .deploy_container(image_id, "/api/v1/container/run")
+            .unwrap();
+        assert_eq!(result.container_hash, result2.container_hash);
+        assert_eq!(result.auth_token_hash, result2.auth_token_hash);
+
+        // 異なるイメージIDでは異なるコンテナハッシュが生成されること
+        let result3 = pipeline
+            .deploy_container(0x1234_5678_9ABC_DEF0, "/api/v1/container/run")
+            .unwrap();
+        assert_ne!(result.container_hash, result3.container_hash);
+
+        pipeline.close().unwrap();
     }
 }

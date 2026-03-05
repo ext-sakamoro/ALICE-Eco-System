@@ -1,6 +1,6 @@
-//! Edge extended bridges — ALICE-Edge ↔ DB, View, ASP, Analytics
+//! Edge extended bridges — ALICE-Edge ↔ DB, View, ASP, Analytics, Kinematics, Synth
 //!
-//! 4 bridges connecting edge/IoT sensor processing to the ALICE ecosystem.
+//! 6 bridges connecting edge/IoT sensor processing to the ALICE ecosystem.
 
 use alice_edge::{compute_residual_error, fit_linear_fixed, should_use_linear, Q16_SHIFT};
 

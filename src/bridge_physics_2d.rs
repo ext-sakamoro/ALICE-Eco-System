@@ -2,7 +2,7 @@
 //!
 //! 5 bridges connecting the deterministic 2D physics subsystem to the ALICE ecosystem.
 
-use alice_physics::{BodyType2D, Fix128, PhysicsConfig2D, PhysicsWorld2D, RigidBody2D, Vec2Fix};
+use alice_physics::{BodyType2D, PhysicsWorld2D, RigidBody2D};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {

@@ -204,8 +204,7 @@ pub fn sdf_destruction_to_analytics_event(
     data[8..12].copy_from_slice(&dirty_chunk_count.to_le_bytes());
     let content_hash = fnv1a(&data);
 
-    let destruction_intensity =
-        result.removed_volume / (result.modified_voxels.max(1) as f32);
+    let destruction_intensity = result.removed_volume / (result.modified_voxels.max(1) as f32);
     let is_no_op = result.modified_voxels == 0;
 
     SdfDestructionAnalyticsEvent {
@@ -311,7 +310,10 @@ mod tests {
         let result = sample_destruction_result(50, 1.0, 2);
         let r0 = sdf_destruction_to_db_record(&result, 0, 1);
         let r1 = sdf_destruction_to_db_record(&result, 1, 1);
-        assert_ne!(r0.content_hash, r1.content_hash, "different event_type → different hash");
+        assert_ne!(
+            r0.content_hash, r1.content_hash,
+            "different event_type → different hash"
+        );
     }
 
     // -- Bridge 2 tests --

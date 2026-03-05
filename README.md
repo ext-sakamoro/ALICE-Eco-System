@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (53 Components)                     │
+│                          ALICE Ecosystem (58 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -49,8 +49,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | v0.1.0 | Voice Procedural Codec | LPC parametric 100-600x, privacy-preserving | MIT |
 | [ALICE-Voice-Commercial](https://github.com/ext-sakamoro/ALICE-Voice-Commercial) | v0.1.0 | Voice Semantic Layer (L3) | Commercial TTS/STT semantic analysis extensions | Proprietary |
 | [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | v1.0.0 | Exception-Based Text Compression | Pattern recognition, columnar encoding | BSL 1.1 (→MIT 2028) |
-| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | v0.1.0 | 3D Signed Distance Functions | 10-1000x, infinite resolution, CSG ops | MIT |
-| [ALICE-Synth](https://github.com/ext-sakamoro/ALICE-Synth) | v0.1.0 | Procedural Audio Synthesis | FM/Additive/Subtractive/Wavetable, 64-voice polyphony, no_std | MIT |
+| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | v1.1.0 | 3D Signed Distance Functions | 10-1000x, infinite resolution, CSG ops | MIT |
+| [ALICE-Synth](https://github.com/ext-sakamoro/ALICE-Synth) | v0.1.1 | Procedural Audio Synthesis | FM/Additive/Subtractive/Wavetable, 64-voice polyphony, no_std, FFI 20fn, PyO3 | MIT |
 | [ALICE-Font](https://github.com/ext-sakamoro/ALICE-Font) | v0.1.0 | Parametric MetaFont Renderer | 40-byte params → SDF glyphs, variable-width pen, LRU atlas, no_std | MIT |
 
 ### Data & Storage

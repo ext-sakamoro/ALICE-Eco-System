@@ -1,2 +1,9 @@
+# Claude Code
+CLAUDE.md
+.claude/
+
+# Rust
 /target/
+
+# OS
 .DS_Store

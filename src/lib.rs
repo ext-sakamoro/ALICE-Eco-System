@@ -22,7 +22,7 @@
 
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 52 ALICE crates into unified pipelines with 456 cross-crate bridges across 71 bridge modules.
+//! Connects 52 ALICE crates into unified pipelines with 461 cross-crate bridges across 72 bridge modules.
 //! Powers 52 SaaS services (AGPL-3.0-or-later) via the MIT Core + AGPL SaaS Shell pattern.
 //!
 //! ```text
@@ -84,7 +84,8 @@
 //! Path S (Molecular Compilation):
 //!   [ALICE-Atoms] → [ALICE-Analytics] (crystal/band/property metrics) → [ALICE-DB] (compilation records) → [ALICE-Cache]
 //!
-//! Path T: Reserved for future use.
+//! Path T (Container Deployment):
+//!   [ALICE-Container] → [ALICE-Auth] → [ALICE-API] → [ALICE-CDN]
 //!
 //! Path U (Presence Protocol):
 //!   [ALICE-Presence] → [ALICE-Edge] (event telemetry) → [ALICE-Analytics] (crossing/proximity) → [ALICE-DB] / [ALICE-Cache]
@@ -102,6 +103,7 @@ pub mod bridge_atoms;
 #[cfg(feature = "atoms")]
 pub mod bridge_atoms_cross;
 pub mod bridge_auth;
+pub mod bridge_auth_ext;
 pub mod bridge_bio;
 pub mod bridge_bio_cross;
 pub mod bridge_browser;
@@ -152,6 +154,7 @@ pub mod bridge_presence_cross;
 #[cfg(feature = "print")]
 pub mod bridge_print_ext;
 pub mod bridge_queue;
+pub mod bridge_reverse;
 pub mod bridge_risk;
 pub mod bridge_risk_ext;
 pub mod bridge_rtos;
@@ -160,11 +163,13 @@ pub mod bridge_sdf_destruction;
 pub mod bridge_sdf_material;
 pub mod bridge_search;
 pub mod bridge_semantic_telemetry;
+pub mod bridge_semantic_telemetry_cross;
 pub mod bridge_settlement_ext;
 pub mod bridge_space;
 pub mod bridge_space_cross;
 pub mod bridge_sync;
 pub mod bridge_synth;
+pub mod bridge_telemetry_hooks;
 pub mod bridge_text;
 pub mod bridge_trt;
 pub mod bridge_vcs;
@@ -174,12 +179,40 @@ pub mod bridge_zip;
 pub mod hash;
 pub mod pipeline;
 
+// ── S9: ComposableBridge トレイト ──────────────────────────────────
+/// Composable bridge trait for chaining bridge conversions.
+///
+/// Enables `bridge_a.then(bridge_b)` composition for multi-hop data flow.
+pub trait BridgeConvert<T> {
+    type Output;
+    fn convert(&self, input: &T) -> Self::Output;
+}
+
+/// Chain two bridge conversions: A→B then B→C = A→C
+pub struct BridgeChain<A, B> {
+    pub first: A,
+    pub second: B,
+}
+
+impl<A, B, Input, Mid, Output> BridgeConvert<Input> for BridgeChain<A, B>
+where
+    A: BridgeConvert<Input, Output = Mid>,
+    B: BridgeConvert<Mid, Output = Output>,
+{
+    type Output = Output;
+    fn convert(&self, input: &Input) -> Output {
+        let mid = self.first.convert(input);
+        self.second.convert(&mid)
+    }
+}
+
 // Re-export pipeline API
 pub use pipeline::{
     path_g_ai_inference, path_h_voice_delivery, path_i_fulltext_search, path_j_dns_api_gateway,
     AiInferenceResult, AlicePipeline, AnimeProductionResult, AssetDeliveryResult, CdnNodeConfig,
-    DnsApiGatewayResult, EmbeddedResult, FullTextSearchResult, GameTickResult, MocapResult,
-    PipelineConfig, PrintOptResult, SensorIngestResult, VoiceDeliveryResult,
+    ContainerDeployResult, DnsApiGatewayResult, EmbeddedResult, FullTextSearchResult,
+    GameTickResult, MocapResult, PipelineConfig, PrintOptResult, SensorIngestResult,
+    VoiceDeliveryResult,
 };
 
 // Re-export key types from constituent crates

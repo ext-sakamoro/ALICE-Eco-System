@@ -721,7 +721,12 @@ fn classify_sdf2d(node: &Sdf2dNode) -> (u8, f32, f32, bool) {
             (3, dx, dy, true)
         }
         Sdf2dNode::Bezier {
-            p0, p1, p2, p3, thickness, ..
+            p0,
+            p1,
+            p2,
+            p3,
+            thickness,
+            ..
         } => {
             let min_x = p0[0].min(p1[0]).min(p2[0]).min(p3[0]) - thickness;
             let max_x = p0[0].max(p1[0]).max(p2[0]).max(p3[0]) + thickness;
@@ -742,7 +747,12 @@ fn classify_sdf2d(node: &Sdf2dNode) -> (u8, f32, f32, bool) {
         | Sdf2dNode::SmoothUnion { .. } => (6, 4.0, 4.0, false),
         Sdf2dNode::Translate { child, offset } => {
             let (_, cw, ch, _) = classify_sdf2d(child);
-            (7, cw + offset[0].abs() * 2.0, ch + offset[1].abs() * 2.0, false)
+            (
+                7,
+                cw + offset[0].abs() * 2.0,
+                ch + offset[1].abs() * 2.0,
+                false,
+            )
         }
         Sdf2dNode::Rotate { child, .. } => {
             let (_, cw, ch, _) = classify_sdf2d(child);
