@@ -173,8 +173,8 @@ pub fn asp_i_packet_to_sdf(packet: &AspPacket) -> Option<AspSdfDescriptor> {
             let area_px = r.bounds.width as u64 * r.bounds.height as u64;
 
             // Normalized center via reciprocal multiply
-            let center_x = (r.bounds.x as f32 + r.bounds.width as f32 * 0.5) * rcp_w;
-            let center_y = (r.bounds.y as f32 + r.bounds.height as f32 * 0.5) * rcp_h;
+            let center_x = (r.bounds.width as f32).mul_add(0.5, r.bounds.x as f32) * rcp_w;
+            let center_y = (r.bounds.height as f32).mul_add(0.5, r.bounds.y as f32) * rcp_h;
 
             AspSdfRegion {
                 bounds: r.bounds,
@@ -225,7 +225,10 @@ pub struct AspViewConfig {
 /// Falls back to a 1280×720 / 30 fps default when no I-Packet is supplied.
 #[inline]
 #[must_use]
-pub fn asp_to_view_config(stats: &StreamStats, last_i_packet: Option<&AspPacket>) -> AspViewConfig {
+pub const fn asp_to_view_config(
+    stats: &StreamStats,
+    last_i_packet: Option<&AspPacket>,
+) -> AspViewConfig {
     // Pull dimensions/fps from the last I-Packet when available
     let (render_width, render_height, fps, quality) = match last_i_packet {
         Some(pkt) => match &pkt.payload {
@@ -725,11 +728,12 @@ pub fn asp_to_ml_bitrate_features(stats: &StreamStats) -> AspMlBitrateFeatures {
 // ── Tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use libasp::{
-        AspPacket, Color, ColorPalette, DPacketPayload, IPacketPayload, PacketType, Rect,
-        RegionDescriptor, StreamStats,
+        AspPacket, Color, DPacketPayload, IPacketPayload, PacketType, Rect, RegionDescriptor,
+        StreamStats,
     };
 
     // ── Bridge 1 test ─────────────────────────────────────────────────────

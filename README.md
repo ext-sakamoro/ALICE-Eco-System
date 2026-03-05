@@ -6,13 +6,14 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (58 Components)                     │
+│                          ALICE Ecosystem (59 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
 │  │ Edge   Zip  Codec │  │ DB    Cache │  │ API    CDN    │  │ Auth      │ │
 │  │ Voice  Text  SDF  │  │ Queue Search│  │ DNS  Streaming│  │ Crypto    │ │
 │  │ Synth  Font       │  │            │  │ Sync Cloud-GW │  │           │ │
+│  │                    │  │            │  │ Bridge        │  │           │ │
 │  └───────────────────┘  └────────────┘  └───────────────┘  └───────────┘ │
 │                                                                             │
 │  ┌──── Compute ──────┐  ┌─── Analytics ──┐  ┌─── Application ────────┐  │
@@ -75,6 +76,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Cloud-Gateway](https://github.com/ext-sakamoro/ALICE-Cloud-Gateway) | v0.1.0 | Edge-to-Cloud SDF Ingest Gateway | ASP decrypt, BLAKE3 KDF, DDSketch/HLL telemetry | AGPL-3.0 |
 | [ALICE-DNS](https://github.com/ext-sakamoro/ALICE-DNS) | v0.1.0 | Bloom Filter DNS Ad-Blocker | 453KB binary, O(1) lookup, Pi-hole replacement | AGPL-3.0 |
 | [ALICE-Edge-Firewall](https://github.com/ext-sakamoro/ALICE-Edge-Firewall) | v0.1.0 | Network Firewall (Linux nfq) | Stateful packet inspection, nfqueue integration, edge-native rule engine | AGPL-3.0 |
+| [ALICE-Bridge](https://github.com/ext-sakamoro/ALICE-Bridge) | v0.1.0 | Universal Hardware Bridge | 5 protocol adapters (Buttplug/MQTT/REST/OSC/WS), 750+ devices, safety layer | AGPL-3.0 |
 
 ### Security & Cryptography
 
@@ -153,7 +155,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 456 bridges, 71 bridge modules, 20 pipeline paths (A-U), 52 crates connected | MIT |
 
-**Total: 58 components** | AGPL-3.0: 28 | MIT: 13 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
+**Total: 59 components** | AGPL-3.0: 29 | MIT: 13 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
 ## Quick Start
 

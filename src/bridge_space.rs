@@ -240,7 +240,7 @@ mod tests {
     #[test]
     fn test_differential_to_edge() {
         let mut diff = ModelDifferential::new(42, 1_000_000);
-        diff.add_param("thrust_x", 3.14);
+        diff.add_param("thrust_x", 3.25);
         diff.add_param("thrust_y", 2.71);
         diff.finalize();
         let ev = space_differential_to_edge(&diff);

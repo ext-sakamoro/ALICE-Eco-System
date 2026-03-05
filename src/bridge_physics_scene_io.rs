@@ -1,4 +1,4 @@
-//! Scene I/O bridges — ALICE-Physics (scene_io) ↔ DB, CDN, Cache, Analytics, Edge
+//! Scene I/O bridges — ALICE-Physics (`scene_io`) ↔ DB, CDN, Cache, Analytics, Edge
 //!
 //! 5 bridges connecting physics scene serialization to the ALICE ecosystem.
 //!
@@ -99,7 +99,7 @@ pub struct SceneCdnDescriptor {
 
 /// Build a `SceneCdnDescriptor` from a `PhysicsScene`.
 ///
-/// Binary size estimate: header(18) + config(40) + bodies(body_count * 128) + joints(joint_count * 57).
+/// Binary size estimate: header(18) + config(40) + `bodies(body_count` * 128) + `joints(joint_count` * 57).
 /// JSON size estimate: ~4x binary size (hex encoding + formatting).
 #[inline]
 #[must_use]
@@ -172,7 +172,7 @@ pub fn scene_to_cache(scene: &PhysicsScene) -> SceneCacheEntry {
     let eviction_priority = body_count as u32;
 
     // Hash: body_count + joint_count + version + first body position[0].
-    let first_body_pos = scene.bodies.first().map(|b| b.position[0]).unwrap_or(0);
+    let first_body_pos = scene.bodies.first().map_or(0, |b| b.position[0]);
     let mut bytes = [0u8; 24];
     bytes[0..8].copy_from_slice(&(body_count as u64).to_le_bytes());
     bytes[8..16].copy_from_slice(&(joint_count as u64).to_le_bytes());
@@ -213,7 +213,7 @@ pub struct SceneConfigAnalyticsEvent {
 
 /// Build a `SceneConfigAnalyticsEvent` from a `PhysicsScene`.
 ///
-/// Body type distribution counted via match on body_type byte:
+/// Body type distribution counted via match on `body_type` byte:
 /// 0=Dynamic, 1=Static, 2=Kinematic.
 #[inline]
 #[must_use]
@@ -224,10 +224,9 @@ pub fn scene_config_to_analytics(scene: &PhysicsScene) -> SceneConfigAnalyticsEv
     let mut distribution = [0usize; 3];
     for body in &scene.bodies {
         let idx = match body.body_type {
-            0 => 0,
             1 => 1,
             2 => 2,
-            _ => 0, // unknown defaults to dynamic
+            _ => 0, // 0 or unknown defaults to dynamic
         };
         distribution[idx] += 1;
     }
@@ -309,6 +308,7 @@ pub fn scene_to_edge_summary(scene: &PhysicsScene) -> SceneEdgeSummary {
 // ── Tests ──────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_physics::scene_io::PhysicsConfig as ScenePhysicsConfig;

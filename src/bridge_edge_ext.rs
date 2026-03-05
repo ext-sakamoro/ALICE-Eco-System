@@ -415,7 +415,7 @@ pub struct EdgeSynthTrigger {
 #[must_use]
 pub fn edge_to_synth_trigger(sensor_id: u32, value: f32, timestamp_ns: u64) -> EdgeSynthTrigger {
     let amplitude = value.abs().min(1.0);
-    let frequency_hz = 220.0 + value.abs() * 880.0;
+    let frequency_hz = value.abs().mul_add(880.0, 220.0);
     // Hash sensor_id + value bits + timestamp.
     let mut key = [0u8; 16];
     key[0..4].copy_from_slice(&sensor_id.to_le_bytes());
@@ -434,6 +434,7 @@ pub fn edge_to_synth_trigger(sensor_id: u32, value: f32, timestamp_ns: u64) -> E
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

@@ -223,6 +223,7 @@ pub fn risk_limits_to_ledger_entry(limits: &RiskLimits, used_position: u64) -> R
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_risk::{RiskLimits, RiskReject};
@@ -278,22 +279,19 @@ mod tests {
 
             assert_eq!(
                 event.reject_code, *expected_code,
-                "reject_code mismatch for variant {}",
-                expected_code
+                "reject_code mismatch for variant {expected_code}"
             );
             assert_eq!(event.timestamp_ns, ts);
             assert_ne!(
                 event.content_hash, 0,
-                "content_hash must be non-zero for code {}",
-                expected_code
+                "content_hash must be non-zero for code {expected_code}"
             );
 
             // Hash must be deterministic across two calls with same inputs.
             let event2 = risk_reject_to_analytics(reject, ts);
             assert_eq!(
                 event.content_hash, event2.content_hash,
-                "content_hash must be deterministic for code {}",
-                expected_code
+                "content_hash must be deterministic for code {expected_code}"
             );
         }
 

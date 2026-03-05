@@ -234,7 +234,7 @@ pub struct TrtViewConfig {
 /// `scale` must be >= 1.
 #[inline]
 #[must_use]
-pub fn trt_to_view_config(
+pub const fn trt_to_view_config(
     width: usize,
     height: usize,
     out_features: usize,
@@ -450,7 +450,7 @@ pub fn trt_to_physics_params(layer_shapes: &[(usize, usize)]) -> TrtPhysicsParam
     // Branchless: real-time when time_step_us fits within one 60 fps frame.
     let is_realtime = time_step_us <= 16_667;
     // Force magnitude scales with parameter count to reflect model influence.
-    let force_magnitude = 1.0 + param_count as f64 * 0.001;
+    let force_magnitude = (param_count as f64).mul_add(0.001, 1.0);
     TrtPhysicsParams {
         content_hash: hash,
         body_count,

@@ -648,7 +648,7 @@ pub struct SdfVolumeAnalyticsEvent {
     pub sample_count: u64,
     /// Fraction of samples inside the surface (0.0..1.0).
     pub fill_ratio: f64,
-    /// True when std_error / volume > 0.1 (low confidence estimate).
+    /// True when `std_error` / volume > 0.1 (low confidence estimate).
     pub is_low_confidence: bool,
 }
 
@@ -692,8 +692,8 @@ pub fn sdf_volume_to_analytics_event(est: &VolumeEstimate) -> SdfVolumeAnalytics
 pub struct Sdf2dViewDescriptor {
     /// FNV-1a hash of the 2D primitive content.
     pub content_hash: u64,
-    /// Primitive type: 0=circle, 1=rect, 2=rounded_rect, 3=line,
-    ///   4=bezier, 5=font_glyph, 6=boolean, 7=transform.
+    /// Primitive type: 0=circle, 1=rect, `2=rounded_rect`, 3=line,
+    ///   4=bezier, `5=font_glyph`, 6=boolean, 7=transform.
     pub primitive_type: u8,
     /// Estimated bounding width.
     pub bound_width: f32,
@@ -749,14 +749,14 @@ fn classify_sdf2d(node: &Sdf2dNode) -> (u8, f32, f32, bool) {
             let (_, cw, ch, _) = classify_sdf2d(child);
             (
                 7,
-                cw + offset[0].abs() * 2.0,
-                ch + offset[1].abs() * 2.0,
+                offset[0].abs().mul_add(2.0, cw),
+                offset[1].abs().mul_add(2.0, ch),
                 false,
             )
         }
         Sdf2dNode::Rotate { child, .. } => {
             let (_, cw, ch, _) = classify_sdf2d(child);
-            let diag = (cw * cw + ch * ch).sqrt();
+            let diag = cw.hypot(ch);
             (7, diag, diag, false)
         }
         Sdf2dNode::Scale { child, factor } => {
@@ -795,6 +795,7 @@ pub fn sdf_2d_to_view_descriptor(node: &Sdf2dNode) -> Sdf2dViewDescriptor {
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_sdf::SdfNode;
@@ -1099,7 +1100,7 @@ mod tests {
     #[test]
     fn test_sdf_volume_to_analytics_hash_determinism() {
         let est = VolumeEstimate {
-            volume: 3.14,
+            volume: 3.25,
             std_error: 0.01,
             sample_count: 50_000,
             fill_ratio: 0.4,

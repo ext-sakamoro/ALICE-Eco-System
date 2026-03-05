@@ -4,7 +4,7 @@
 //! and market data to the ALICE ecosystem.
 //!
 //! These bridges focus on order-level and market-data structures, complementing
-//! bridge_fix_ext which covers message-level analytics, fill-to-exec conversion,
+//! `bridge_fix_ext` which covers message-level analytics, fill-to-exec conversion,
 //! session telemetry, and message-to-risk input.
 
 use alice_fix::tag;
@@ -27,15 +27,15 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// Extracts the core order fields for analytics dashboards tracking order flow,
 /// symbol distribution, and side bias.
 pub struct FixOrderAnalyticsEvent {
-    /// FNV-1a content hash over ClOrdID, symbol hash, side, order type, qty, and price.
+    /// FNV-1a content hash over `ClOrdID`, symbol hash, side, order type, qty, and price.
     pub content_hash: u64,
-    /// FNV-1a hash of the ClOrdID (tag 11) string, or 0 if absent.
+    /// FNV-1a hash of the `ClOrdID` (tag 11) string, or 0 if absent.
     pub cl_ord_id_hash: u64,
     /// FNV-1a hash of the Symbol (tag 55) string, or 0 if absent.
     pub symbol_hash: u64,
     /// Side byte: b'1' = Buy, b'2' = Sell, 0 if absent.
     pub side: u8,
-    /// OrdType byte: b'1' = Market, b'2' = Limit, 0 if absent.
+    /// `OrdType` byte: b'1' = Market, b'2' = Limit, 0 if absent.
     pub ord_type: u8,
     /// Order quantity from tag 38, or 0 if absent.
     pub quantity: u64,
@@ -97,15 +97,15 @@ pub fn fix_order_to_analytics(msg: &FixMessage, timestamp_ns: u64) -> FixOrderAn
 /// Captures fill price, fill quantity, cumulative quantity, and order status
 /// for the DB audit trail.
 pub struct FixExecReportDbRecord {
-    /// FNV-1a content hash over exec_id_hash, order_id_hash, last_px, last_qty.
+    /// FNV-1a content hash over `exec_id_hash`, `order_id_hash`, `last_px`, `last_qty`.
     pub content_hash: u64,
-    /// FNV-1a hash of ExecID (tag 17), or 0 if absent.
+    /// FNV-1a hash of `ExecID` (tag 17), or 0 if absent.
     pub exec_id_hash: u64,
-    /// FNV-1a hash of OrderID (tag 37), or 0 if absent.
+    /// FNV-1a hash of `OrderID` (tag 37), or 0 if absent.
     pub order_id_hash: u64,
-    /// ExecType (tag 150) first byte, or 0 if absent.
+    /// `ExecType` (tag 150) first byte, or 0 if absent.
     pub exec_type: u8,
-    /// OrdStatus (tag 39) first byte, or 0 if absent.
+    /// `OrdStatus` (tag 39) first byte, or 0 if absent.
     pub ord_status: u8,
     /// Last fill price (tag 31) as f64, or 0.0.
     pub last_px: f64,
@@ -170,11 +170,11 @@ pub fn fix_exec_report_to_db(msg: &FixMessage) -> FixExecReportDbRecord {
 /// TTL is branchless: terminal statuses (filled, cancelled) get long TTL;
 /// active statuses get short TTL for frequent refresh.
 pub struct FixOrderCacheEntry {
-    /// FNV-1a content hash over cl_ord_id_hash and ord_status.
+    /// FNV-1a content hash over `cl_ord_id_hash` and `ord_status`.
     pub content_hash: u64,
-    /// FNV-1a hash of ClOrdID (tag 11).
+    /// FNV-1a hash of `ClOrdID` (tag 11).
     pub cl_ord_id_hash: u64,
-    /// OrdStatus byte (tag 39): '0'=New, '1'=PartialFill, '2'=Fill, '4'=Cancelled, etc.
+    /// `OrdStatus` byte (tag 39): '0'=New, '1'=`PartialFill`, '2'=Fill, '4'=Cancelled, etc.
     pub ord_status: u8,
     /// Leaves quantity (tag 151), or 0.
     pub leaves_qty: u64,
@@ -229,7 +229,7 @@ pub fn fix_order_to_cache(msg: &FixMessage) -> FixOrderCacheEntry {
 /// Captures top-of-book data from a FIX `MarketDataSnapshotFullRefresh` (35=W)
 /// or similar market data message. Fields are extracted from standard tags.
 pub struct FixMarketDataEdgeEvent {
-    /// FNV-1a content hash over symbol_hash, last_px bits, and timestamp.
+    /// FNV-1a content hash over `symbol_hash`, `last_px` bits, and timestamp.
     pub content_hash: u64,
     /// FNV-1a hash of the symbol (tag 55).
     pub symbol_hash: u64,
@@ -243,7 +243,7 @@ pub struct FixMarketDataEdgeEvent {
 
 /// Convert a FIX market data message into an edge event.
 ///
-/// Extracts Symbol (55), LastPx (31), LastQty (32).
+/// Extracts Symbol (55), `LastPx` (31), `LastQty` (32).
 #[inline]
 #[must_use]
 pub fn fix_market_data_to_edge(msg: &FixMessage, timestamp_ns: u64) -> FixMarketDataEdgeEvent {
@@ -276,7 +276,7 @@ pub fn fix_market_data_to_edge(msg: &FixMessage, timestamp_ns: u64) -> FixMarket
 /// Tracks the session state transitions, sequence number deltas, and
 /// message throughput for monitoring session health.
 pub struct FixSessionAnalyticsMetric {
-    /// FNV-1a content hash over sender_hash, target_hash, state_disc, and timestamp.
+    /// FNV-1a content hash over `sender_hash`, `target_hash`, `state_disc`, and timestamp.
     pub content_hash: u64,
     /// FNV-1a hash of sender comp ID from the message (tag 49), or 0.
     pub sender_hash: u64,
@@ -293,8 +293,8 @@ pub struct FixSessionAnalyticsMetric {
 
 /// Convert a FIX message into a session health analytics metric.
 ///
-/// Extracts SenderCompID (49), TargetCompID (56), MsgSeqNum (34), and
-/// classifies the MsgType into a compact discriminant.
+/// Extracts `SenderCompID` (49), `TargetCompID` (56), `MsgSeqNum` (34), and
+/// classifies the `MsgType` into a compact discriminant.
 #[inline]
 #[must_use]
 pub fn fix_session_to_analytics(msg: &FixMessage, timestamp_ns: u64) -> FixSessionAnalyticsMetric {
@@ -335,6 +335,7 @@ pub fn fix_session_to_analytics(msg: &FixMessage, timestamp_ns: u64) -> FixSessi
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_fix::FixMessage;
@@ -542,8 +543,7 @@ mod tests {
             let metric = fix_session_to_analytics(&msg, 0);
             assert_eq!(
                 metric.msg_type_disc, *expected_disc,
-                "msg_type '{}' should map to disc {}",
-                mtype, expected_disc
+                "msg_type '{mtype}' should map to disc {expected_disc}"
             );
         }
     }

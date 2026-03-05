@@ -4,6 +4,7 @@
 //! Enable for production monitoring, disable for zero-overhead in benchmarks.
 
 use std::collections::HashMap;
+use std::fmt::Write;
 
 // ── BridgeTelemetry ───────────────────────────────────────────────────────
 
@@ -103,9 +104,10 @@ impl BridgeTelemetry {
                 json.push(',');
             }
             // JSON特殊文字のエスケープ（ブリッジ名は英数字+アンダースコアのみ想定）
-            json.push_str(&format!(
+            let _ = write!(
+                json,
                 "{{\"name\":\"{name}\",\"calls\":{count},\"total_ns\":{latency}}}"
-            ));
+            );
         }
         json.push_str("]}");
         json

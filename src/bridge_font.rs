@@ -189,7 +189,7 @@ pub fn font_to_sdf_scene(
             }
         }
         let x = g.x * scale;
-        let right = x + g.advance * scale;
+        let right = g.advance.mul_add(scale, x);
         min_x = min_x.min(x);
         max_x = max_x.max(right);
         tiles.push(FontSdfTile {
@@ -365,7 +365,8 @@ pub fn font_to_print_contours(
             for col in 0..GLYPH_SDF_SIZE {
                 let idx = (tsy + row) * tex_size + (tsx + col);
                 if idx < atlas_px.len() && (atlas_px[idx] - threshold).abs() < 0.15 {
-                    let px = (g.x + col as f32 / GLYPH_SDF_SIZE as f32 * g.advance) * scale_mm;
+                    let px =
+                        (col as f32 / GLYPH_SDF_SIZE as f32).mul_add(g.advance, g.x) * scale_mm;
                     let py = (row as f32 / GLYPH_SDF_SIZE as f32) * scale_mm;
                     pts.push((px, py));
                     min_x = min_x.min(px);
@@ -377,7 +378,7 @@ pub fn font_to_print_contours(
             for i in 1..pts.len() {
                 let dx = pts[i].0 - pts[i - 1].0;
                 let dy = pts[i].1 - pts[i - 1].1;
-                path_len += (dx * dx + dy * dy).sqrt();
+                path_len += dx.hypot(dy);
             }
             contours.push(EngravingContour { points: pts });
         }

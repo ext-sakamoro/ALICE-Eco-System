@@ -244,8 +244,7 @@ pub fn energy_battery_to_cache(battery: &BatteryState) -> EnergyCacheBattery {
 mod tests {
     use super::*;
     use alice_energy::{
-        BatteryChemistry, BatteryId, BatteryState, NodeId, NodeKind, PhaseCorrection, PowerGrid,
-        PowerNode,
+        BatteryChemistry, BatteryState, NodeId, NodeKind, PhaseCorrection, PowerGrid, PowerNode,
     };
 
     #[test]

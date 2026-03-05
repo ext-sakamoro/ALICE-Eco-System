@@ -401,6 +401,7 @@ pub fn edge_to_analytics_metrics(
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

@@ -108,6 +108,7 @@ pub struct AnimPathKeyframe {
 /// Sample `MotionPlan` into animation keyframes for ALICE-Animation.
 #[inline]
 #[must_use]
+#[allow(clippy::while_float)]
 pub fn motion_to_animation_keyframes(plan: &MotionPlan, fps: f32) -> Vec<AnimPathKeyframe> {
     let dur = plan.duration();
     let dt = 1.0 / fps;

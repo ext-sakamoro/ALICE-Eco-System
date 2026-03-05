@@ -193,7 +193,7 @@ pub fn queue_to_cache_entry(msg: &Message) -> QueueCacheEntry {
 
 /// Priority escalation alert for ALICE-Risk when queue depth or priority spikes.
 pub struct QueueRiskEscalation {
-    /// Content hash (FNV-1a of queue_depth + max_priority + oldest_message_age_ms).
+    /// Content hash (FNV-1a of `queue_depth` + `max_priority` + `oldest_message_age_ms`).
     pub content_hash: u64,
     /// Current depth of the message queue.
     pub queue_depth: u32,
@@ -234,7 +234,7 @@ pub fn queue_to_risk_escalation(
 
 /// Queue resource utilization metrics for ALICE-Container orchestration.
 pub struct QueueContainerMetrics {
-    /// Content hash (FNV-1a of memory_usage_bytes + message_count + consumer_count).
+    /// Content hash (FNV-1a of `memory_usage_bytes` + `message_count` + `consumer_count`).
     pub content_hash: u64,
     /// Memory consumed by the queue in bytes.
     pub memory_usage_bytes: u64,
@@ -242,7 +242,7 @@ pub struct QueueContainerMetrics {
     pub message_count: u32,
     /// Number of active consumers attached to the queue.
     pub consumer_count: u16,
-    /// Cache TTL in seconds (branchless: 30 if consumer_count > 0, else 0).
+    /// Cache TTL in seconds (branchless: 30 if `consumer_count` > 0, else 0).
     pub ttl_secs: u32,
 }
 

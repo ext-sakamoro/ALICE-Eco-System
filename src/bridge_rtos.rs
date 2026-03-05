@@ -118,7 +118,7 @@ pub struct RtosContainerLimits {
 /// Analyze RTOS kernel for ALICE-Container resource allocation.
 #[inline]
 #[must_use]
-pub fn rtos_to_container_limits(
+pub const fn rtos_to_container_limits(
     stats: &KernelStats,
     task_count: usize,
     min_period_us: u32,
@@ -153,7 +153,7 @@ pub struct RtosTelemetryRecord {
 /// Convert `KernelStats` to telemetry record for ALICE-Analytics DDSketch/HLL.
 #[inline]
 #[must_use]
-pub fn rtos_to_analytics_telemetry(stats: &KernelStats) -> RtosTelemetryRecord {
+pub const fn rtos_to_analytics_telemetry(stats: &KernelStats) -> RtosTelemetryRecord {
     RtosTelemetryRecord {
         duration_us: stats.total_us,
         total_ticks: stats.total_ticks,
@@ -179,7 +179,7 @@ pub struct RtosDbLogEntry {
 /// Convert `KernelStats` to DB log entries for ALICE-DB.
 #[inline]
 #[must_use]
-pub fn rtos_to_db_log(stats: &KernelStats, timestamp_us: i64) -> RtosDbLogEntry {
+pub const fn rtos_to_db_log(stats: &KernelStats, timestamp_us: i64) -> RtosDbLogEntry {
     let compact =
         ((stats.tasks_executed as u32) << 16 | (stats.context_switches as u32 & 0xFFFF)) as f32;
     RtosDbLogEntry {
@@ -206,7 +206,7 @@ pub struct RtosSyncState {
 /// Package RTOS kernel state for ALICE-Sync P2P exchange.
 #[inline]
 #[must_use]
-pub fn rtos_to_sync_state(stats: &KernelStats) -> RtosSyncState {
+pub const fn rtos_to_sync_state(stats: &KernelStats) -> RtosSyncState {
     RtosSyncState {
         utilization: stats.utilization,
         tasks_executed: stats.tasks_executed as u32,

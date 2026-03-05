@@ -39,6 +39,7 @@ pub struct SdfColliderConfig {
 /// - `broad_phase_radius` = `collision_radius * scale` is a single multiply.
 #[inline]
 #[must_use]
+#[allow(clippy::tuple_array_conversions)]
 pub fn physics_to_sdf_collider_config(
     body: &RigidBody,
     body_index: usize,
@@ -108,6 +109,7 @@ pub struct PhysicsForceFieldDesc {
 /// - No heap allocation; all fields are scalars or small fixed-size arrays.
 #[inline]
 #[must_use]
+#[allow(clippy::tuple_array_conversions)]
 pub fn physics_to_force_field_desc(
     sdf_index: usize,
     force_type: &SdfForceType,
@@ -213,6 +215,7 @@ pub struct PhysicsViewSnapshot {
 /// - First-body position folded into the hash after the loop — no speculative work.
 #[inline]
 #[must_use]
+#[allow(clippy::tuple_array_conversions)]
 pub fn physics_to_view_snapshot(bodies: &[RigidBody], frame_seq: u64) -> PhysicsViewSnapshot {
     let cap = bodies.len();
     let mut positions = Vec::with_capacity(cap);
@@ -235,7 +238,7 @@ pub fn physics_to_view_snapshot(bodies: &[RigidBody], frame_seq: u64) -> Physics
         velocities.push([vx, vy, vz]);
 
         // Branchless classification: speed² threshold for sleeping detection.
-        let speed_sq = vx * vx + vy * vy + vz * vz;
+        let speed_sq = vz.mul_add(vz, vx.mul_add(vx, vy * vy));
         let is_sleeping = (speed_sq < 1e-6_f32) as usize;
         sleeping_count += is_sleeping;
         active_count += 1 - is_sleeping;
@@ -296,6 +299,7 @@ pub struct PhysicsDbRecord {
 ///   no division in the hot path.
 #[inline]
 #[must_use]
+#[allow(clippy::tuple_array_conversions)]
 pub fn physics_to_db_record(
     bodies: &[RigidBody],
     constraint_count: usize,
@@ -443,7 +447,7 @@ pub fn physics_to_analytics_metrics(
 
     for body in bodies {
         let (vx, vy, vz) = body.velocity.to_f32();
-        let speed_sq = vx * vx + vy * vy + vz * vz;
+        let speed_sq = vz.mul_add(vz, vx.mul_add(vx, vy * vy));
 
         // Branchless active/sleeping classification.
         let is_active = (speed_sq >= 1e-6_f32) as usize;
@@ -924,7 +928,7 @@ mod tests {
     fn test_multiworld_to_analytics() {
         let mut mw = MultiWorld::new();
         let config = PhysicsConfig::default();
-        let w0 = mw.add_world(config.clone());
+        let w0 = mw.add_world(config);
         let w1 = mw.add_world(config);
 
         // Add bodies to each world.

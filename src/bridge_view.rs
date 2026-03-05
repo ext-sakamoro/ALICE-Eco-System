@@ -383,6 +383,7 @@ pub fn view_to_cdn_lod_prefetch(
 // ── Tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

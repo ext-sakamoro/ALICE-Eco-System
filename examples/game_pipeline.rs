@@ -18,6 +18,13 @@
 //!
 //! Author: Moroya Sakamoto
 
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines
+)]
+
 use alice_cdn::content_types::{AsdfMetadata, ContentType};
 use alice_cdn::{ContentLocator, VivaldiCoord};
 use alice_physics::replay::{ReplayPlayer, ReplayRecorder};
@@ -55,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("  Level: ground + 2 pillars + arch");
     println!("  SDF nodes: {}", tree.node_count());
-    println!("  ASDF size: {} bytes", asdf_size);
+    println!("  ASDF size: {asdf_size} bytes");
     println!();
 
     // ========================================================================
@@ -65,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Detect content type from raw bytes
     let content_type = ContentType::detect(&asdf_bytes);
-    println!("  Detected type:    {:?}", content_type);
+    println!("  Detected type:    {content_type:?}");
     println!(
         "  Priority weight:  {} (latency-critical)",
         content_type.priority_weight()
@@ -87,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!();
 
     // CDN routing with type-aware priority
-    let game_servers = vec![
+    let game_servers = [
         ("Tokyo", VivaldiCoord::at(0.0, 0.0, 0.0, 2.0)),
         ("London", VivaldiCoord::at(30.0, 20.0, 0.0, 3.0)),
         ("NYC", VivaldiCoord::at(50.0, 10.0, 0.0, 4.0)),
@@ -162,9 +169,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let telemetry = SyncTelemetry::new(&telemetry_path)?;
 
     println!("  Mode: Lockstep (2 players)");
-    println!("  Frames: {} @ 60 FPS", frames_to_simulate);
-    println!("  Replay → ALICE-DB: {:?}", replay_path);
-    println!("  Telemetry → ALICE-DB: {:?}", telemetry_path);
+    println!("  Frames: {frames_to_simulate} @ 60 FPS");
+    println!("  Replay → ALICE-DB: {}", replay_path.display());
+    println!("  Telemetry → ALICE-DB: {}", telemetry_path.display());
     println!();
 
     // ========================================================================
@@ -192,7 +199,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             recorder.record_frame(&world)?;
 
             // Record telemetry
-            let simulated_rtt = 10.0 + (frame as f32) * 0.05; // simulated RTT
+            let simulated_rtt = (frame as f32).mul_add(0.05, 10.0); // simulated RTT
             telemetry.record_rtt(frame, simulated_rtt)?;
             telemetry.record_prediction_accuracy(frame, 1.0)?; // lockstep = perfect
         }
@@ -204,7 +211,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let p1_final = world.bodies[p1_id].position;
     let p2_final = world.bodies[p2_id].position;
 
-    println!("  After {} frames:", frames_to_simulate);
+    println!("  After {frames_to_simulate} frames:");
     println!(
         "    Player 1 final: ({:.2}, {:.2}, {:.2})",
         p1_final.x.to_f32(),
@@ -238,8 +245,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let p2 = player.get_position(frame, 1)?;
         if let (Some((x1, y1, _)), Some((x2, y2, _))) = (p1, p2) {
             println!(
-                "  │  {:>3}  │ ({:>7.2}, {:>7.2})          │ ({:>6.2}, {:>6.2}) │",
-                frame, x1, y1, x2, y2
+                "  │  {frame:>3}  │ ({x1:>7.2}, {y1:>7.2})          │ ({x2:>6.2}, {y2:>6.2}) │"
             );
         }
     }
@@ -271,22 +277,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         asdf_size,
         tree.node_count()
     );
-    println!(
-        "║  [ALICE-CDN]     → Content type: {:?}, route → {}     ║",
-        content_type, best_name
-    );
-    println!(
-        "║  [ALICE-Physics] → {} frames, 128-bit deterministic        ║",
-        frames_to_simulate
-    );
+    println!("║  [ALICE-CDN]     → Content type: {content_type:?}, route → {best_name}     ║");
+    println!("║  [ALICE-Physics] → {frames_to_simulate} frames, 128-bit deterministic        ║");
     println!(
         "║  [ALICE-Sync]    → Lockstep, {} confirmed frames           ║",
         session.confirmed_frame()
     );
-    println!(
-        "║  [ALICE-DB]      → Replay: {} frames + Telemetry           ║",
-        frames_to_simulate
-    );
+    println!("║  [ALICE-DB]      → Replay: {frames_to_simulate} frames + Telemetry           ║");
     println!("║                                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  CROSS-CRATE BRIDGES:                                        ║");

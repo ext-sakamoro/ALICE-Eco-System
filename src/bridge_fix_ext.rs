@@ -257,6 +257,7 @@ pub fn fix_message_to_risk(msg: &FixMessage) -> FixRiskInput {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_fix::{FixMessage, FixSession};

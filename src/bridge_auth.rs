@@ -161,7 +161,7 @@ pub struct AuthEdgeDevice {
 /// Configure `IoT` device authentication for ALICE-Edge.
 #[inline]
 #[must_use]
-pub fn auth_to_edge_device(id: &AliceId) -> AuthEdgeDevice {
+pub const fn auth_to_edge_device(id: &AliceId) -> AuthEdgeDevice {
     AuthEdgeDevice {
         device_id: *id.as_bytes(),
         challenge_bytes: 32,

@@ -184,7 +184,7 @@ pub struct ContainerCryptoPayload {
 /// `algo`: 0=Ed25519, 1=ECDSA-P256, 2=RSA-PSS-4096.
 #[inline]
 #[must_use]
-pub fn container_to_crypto_payload(
+pub const fn container_to_crypto_payload(
     image_hash: u64,
     manifest_size: usize,
     algo: u8,

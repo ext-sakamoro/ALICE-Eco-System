@@ -60,7 +60,7 @@ pub fn physics2d_world_to_view(world: &PhysicsWorld2D) -> Physics2DViewDescripto
         velocities.push([vx, vy]);
 
         // Branchless active/sleeping classification.
-        let speed_sq = vx * vx + vy * vy;
+        let speed_sq = vx.mul_add(vx, vy * vy);
         let is_sleeping = (speed_sq < 1e-6_f32) as usize;
         sleeping_count += is_sleeping;
         active_count += 1 - is_sleeping;
@@ -246,7 +246,7 @@ pub fn physics2d_world_to_analytics(world: &PhysicsWorld2D) -> Physics2DAnalytic
     for body in &world.bodies {
         let vx = body.velocity.x.to_f32();
         let vy = body.velocity.y.to_f32();
-        let speed_sq = vx * vx + vy * vy;
+        let speed_sq = vx.mul_add(vx, vy * vy);
 
         let is_active = (speed_sq >= 1e-6_f32) as usize;
         active_bodies += is_active;
@@ -317,7 +317,7 @@ pub fn physics2d_body_to_edge(body: &RigidBody2D, body_index: usize) -> Physics2
     let vx = body.velocity.x.to_f32();
     let vy = body.velocity.y.to_f32();
     let angle = body.angle.to_f32();
-    let speed = (vx * vx + vy * vy).sqrt();
+    let speed = vx.hypot(vy);
 
     let body_type_tag = match body.body_type {
         BodyType2D::Dynamic => 0,

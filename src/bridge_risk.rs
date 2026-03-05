@@ -5,7 +5,7 @@
 //!
 //! These bridges focus on limit snapshots, position snapshots, margin computation,
 //! circuit breaker state, and pre-trade checker health metrics, complementing
-//! bridge_risk_ext which covers rejection events, limit caching, semantic telemetry,
+//! `bridge_risk_ext` which covers rejection events, limit caching, semantic telemetry,
 //! and ledger gating.
 
 use alice_ledger::Position;
@@ -28,7 +28,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 /// Captures the full risk limit configuration for a given account at a point
 /// in time, enabling analytics dashboards to track limit changes over time.
 pub struct RiskLimitsAnalyticsEvent {
-    /// FNV-1a content hash over account_id, max_position, max_order_size, and max_notional.
+    /// FNV-1a content hash over `account_id`, `max_position`, `max_order_size`, and `max_notional`.
     pub content_hash: u64,
     /// Account identifier this snapshot belongs to.
     pub account_id: u64,
@@ -82,7 +82,7 @@ pub fn risk_limits_to_analytics(
 /// Captures the full position state at a point in time for the audit trail
 /// and mark-to-market reconciliation.
 pub struct RiskPositionDbRecord {
-    /// FNV-1a content hash over symbol_hash, net_quantity, avg_entry_price, and trade_count.
+    /// FNV-1a content hash over `symbol_hash`, `net_quantity`, `avg_entry_price`, and `trade_count`.
     pub content_hash: u64,
     /// FNV-derived hash of the instrument symbol.
     pub symbol_hash: u64,
@@ -134,7 +134,7 @@ pub fn risk_position_to_db(pos: &Position, timestamp_ns: u64) -> RiskPositionDbR
 /// TTL is branchless: margin calls (equity below maintenance) get short TTL
 /// for rapid refresh; normal states get longer TTL.
 pub struct RiskMarginCacheEntry {
-    /// FNV-1a content hash over price, quantity, initial_margin, and maintenance_margin.
+    /// FNV-1a content hash over price, quantity, `initial_margin`, and `maintenance_margin`.
     pub content_hash: u64,
     /// Mark price used for margin computation.
     pub price: i64,
@@ -146,7 +146,7 @@ pub struct RiskMarginCacheEntry {
     pub maintenance_margin: i64,
     /// True when account equity is below maintenance margin (margin call).
     pub is_margin_call: bool,
-    /// Cache TTL in seconds. Branchless: margin_call=5s, normal=60s.
+    /// Cache TTL in seconds. Branchless: `margin_call=5s`, normal=60s.
     pub ttl_secs: u32,
 }
 
@@ -155,8 +155,8 @@ pub struct RiskMarginCacheEntry {
 /// `account_equity` is used to determine whether a margin call is active.
 ///
 /// Branchless TTL: `60 - is_margin_call_u32 * 55`.
-/// - margin_call=true  → 60 - 55 = 5s  (rapid refresh)
-/// - margin_call=false → 60 - 0  = 60s (normal)
+/// - `margin_call=true`  → 60 - 55 = 5s  (rapid refresh)
+/// - `margin_call=false` → 60 - 0  = 60s (normal)
 #[inline]
 #[must_use]
 pub fn risk_margin_to_cache(
@@ -198,7 +198,7 @@ pub fn risk_margin_to_cache(
 /// Captures the circuit breaker configuration and trip state so the edge
 /// layer can alert on breaker trips and monitor fill-rate patterns.
 pub struct RiskCircuitBreakerEdgeEvent {
-    /// FNV-1a content hash over max_move, max_fills, window_ns, and tripped flag.
+    /// FNV-1a content hash over `max_move`, `max_fills`, `window_ns`, and tripped flag.
     pub content_hash: u64,
     /// Maximum allowed price deviation before trip (ticks).
     pub max_move: i64,
@@ -253,7 +253,7 @@ pub fn risk_circuit_breaker_to_edge(
 /// analytics dashboards can track daily P&L trends, open order counts,
 /// and circuit breaker status in real time.
 pub struct RiskCheckerAnalyticsMetric {
-    /// FNV-1a content hash over daily_pnl, open_order_count, and cb_tripped.
+    /// FNV-1a content hash over `daily_pnl`, `open_order_count`, and `cb_tripped`.
     pub content_hash: u64,
     /// Current accumulated daily P&L (may be negative).
     pub daily_pnl: i64,
@@ -261,7 +261,7 @@ pub struct RiskCheckerAnalyticsMetric {
     pub open_order_count: u32,
     /// True if the internal circuit breaker is tripped.
     pub circuit_breaker_tripped: bool,
-    /// Utilization ratio: open_order_count / max_open_orders (0.0 if max is 0).
+    /// Utilization ratio: `open_order_count` / `max_open_orders` (0.0 if max is 0).
     pub order_utilization: f64,
     /// Event timestamp in nanoseconds since epoch.
     pub timestamp_ns: u64,
@@ -307,6 +307,7 @@ pub fn risk_checker_to_analytics(
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_ledger::Position;
@@ -455,7 +456,7 @@ mod tests {
     fn test_circuit_breaker_to_edge_tripped() {
         let mut cb = CircuitBreaker::new(500, 5, 1_000_000_000);
         cb.reset(10_000, 0);
-        cb.on_fill(10_600, 100_000_000); // Price move > 500 trips
+        let _ = cb.on_fill(10_600, 100_000_000); // Price move > 500 trips
         assert!(cb.is_tripped());
 
         let ev = risk_circuit_breaker_to_edge(&cb, 200_000_000);
@@ -477,7 +478,7 @@ mod tests {
         let cb1 = CircuitBreaker::new(500, 5, 1_000_000_000);
         let mut cb2 = CircuitBreaker::new(500, 5, 1_000_000_000);
         cb2.reset(10_000, 0);
-        cb2.on_fill(10_600, 100_000_000); // Trip cb2
+        let _ = cb2.on_fill(10_600, 100_000_000); // Trip cb2
 
         let e1 = risk_circuit_breaker_to_edge(&cb1, 0);
         let e2 = risk_circuit_breaker_to_edge(&cb2, 0);

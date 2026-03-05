@@ -154,22 +154,18 @@ pub fn vcs_commit_sdf(repo: &mut Repository, sdf: &SdfTree, message: &str) -> Sd
     let node_count = count_ast_nodes(&tree);
 
     // Calculate diff vs parent
-    let diff_bytes = if let Some(parent_hash) = repo.head_tree().and_then(|_| {
-        let commits: Vec<_> = vec![hash]; // Current head
-        if commits.is_empty() {
-            None
-        } else {
-            Some(hash)
-        }
-    }) {
-        if let Some(ops) = repo.diff(parent_hash, hash) {
-            patch_size_bytes(&ops)
-        } else {
-            0
-        }
-    } else {
-        0
-    };
+    let diff_bytes = repo
+        .head_tree()
+        .and_then(|_| {
+            let commits: Vec<_> = vec![hash]; // Current head
+            if commits.is_empty() {
+                None
+            } else {
+                Some(hash)
+            }
+        })
+        .and_then(|parent_hash| repo.diff(parent_hash, hash))
+        .map_or(0, |ops| patch_size_bytes(&ops));
 
     SdfSceneSnapshot {
         commit_hash: hash,
@@ -326,7 +322,7 @@ pub struct VcsAuthRequest {
 }
 
 /// VCS operation type.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VcsOperation {
     Read,
     Write,

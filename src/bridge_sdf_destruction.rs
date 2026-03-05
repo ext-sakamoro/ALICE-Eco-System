@@ -33,7 +33,7 @@ pub struct SdfDestructionDbRecord {
     pub modified_voxels: u32,
     /// Schema version for migration.
     pub schema_version: u16,
-    /// Event type: 0=carve, 1=batch_carve, 2=explode, 3=fracture.
+    /// Event type: 0=carve, `1=batch_carve`, 2=explode, 3=fracture.
     pub event_type: u8,
 }
 
@@ -72,7 +72,7 @@ pub fn sdf_destruction_to_db_record(
 pub struct SdfDestructionViewDescriptor {
     /// FNV-1a hash of the carve shape content.
     pub content_hash: u64,
-    /// Shape type: 0=sphere, 1=box, 2=arbitrary_sdf.
+    /// Shape type: 0=sphere, 1=box, `2=arbitrary_sdf`.
     pub shape_type: u8,
     /// Bounding radius estimate for camera framing.
     pub bounding_radius: f32,
@@ -185,7 +185,7 @@ pub struct SdfDestructionAnalyticsEvent {
     pub removed_volume: f32,
     /// Number of modified voxels.
     pub modified_voxels: u32,
-    /// Destruction intensity: removed_volume / max(modified_voxels, 1) — higher = denser removal.
+    /// Destruction intensity: `removed_volume` / `max(modified_voxels`, 1) — higher = denser removal.
     pub destruction_intensity: f32,
     /// True when no material was actually removed (miss / out-of-bounds).
     pub is_no_op: bool,
@@ -233,7 +233,7 @@ pub struct SdfFracturePhysicsUpdate {
     pub center: [f32; 3],
     /// Voxel count (used for mass estimation).
     pub voxel_count: u32,
-    /// Estimated mass (voxel_count * voxel_volume * density).
+    /// Estimated mass (`voxel_count` * `voxel_volume` * density).
     pub estimated_mass_kg: f32,
     /// Collider type: always convex hull (3) for fracture pieces.
     pub collider_type: u8,
@@ -390,12 +390,12 @@ mod tests {
 
     #[test]
     fn test_fracture_to_physics_update() {
-        use alice_sdf::mesh::Mesh;
+        use alice_sdf::mesh::{Mesh, Vertex};
         let piece = FracturePiece {
             cell_index: 2,
             center: Vec3::new(0.5, 0.5, 0.5),
             mesh: Mesh {
-                vertices: vec![Default::default(); 30],
+                vertices: vec![Vertex::default(); 30],
                 indices: vec![0; 90],
             },
             voxel_count: 100,

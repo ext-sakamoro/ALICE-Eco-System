@@ -35,7 +35,7 @@ struct SensorGenerator {
 
 impl SensorGenerator {
     #[inline(always)]
-    fn new(count: usize, base_temp: f32, slope: f32) -> Self {
+    const fn new(count: usize, base_temp: f32, slope: f32) -> Self {
         Self {
             current: 0,
             count,
@@ -57,7 +57,7 @@ impl Iterator for SensorGenerator {
         self.current += 1;
         // Generate temperature data: y = slope * x + base
         // Values are in centidegrees (e.g., 2500 = 25.00°C)
-        Some(((self.base_temp + self.slope * i as f32) * 100.0) as i32)
+        Some((self.slope.mul_add(i as f32, self.base_temp) * 100.0) as i32)
     }
 }
 
@@ -71,7 +71,7 @@ fn serialize_coefficients(slope: i32, intercept: i32) -> [u8; 8] {
 
 /// Deserialize two i32 coefficients as single u64 load (Zero-Copy, Inline)
 #[inline(always)]
-fn deserialize_coefficients(buf: &[u8; 8]) -> (i32, i32) {
+const fn deserialize_coefficients(buf: &[u8; 8]) -> (i32, i32) {
     // Unpack u64 → two i32: single 64-bit load + shift
     let combined = u64::from_le_bytes(*buf);
     (combined as u32 as i32, (combined >> 32) as u32 as i32)
@@ -279,11 +279,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if launch_view {
         println!("  Launching ALICE-View...");
         println!("  Controls: Scroll=Zoom, Drag=Pan, F1=X-Ray, F2=Stats, Space=Pause");
-        println!();
     } else {
         println!("  Run with --view to launch the visualization window");
-        println!();
     }
+    println!();
 
     // ========================================================================
     // SUMMARY

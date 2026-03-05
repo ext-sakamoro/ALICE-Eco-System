@@ -327,6 +327,7 @@ mod tests {
 
     #[test]
     fn test_api_to_queue_message() {
+        use crate::hash::fnv1a;
         let req = api_to_queue_message(
             "/api/infer",
             HttpMethod::Post,
@@ -340,7 +341,6 @@ mod tests {
         // Payload byte 0 is the method byte for POST
         assert_eq!(req.message.payload[0], b'P');
         // Path hash embedded in payload bytes 1..9 must match standalone fnv1a
-        use crate::hash::fnv1a;
         let expected = fnv1a(b"/api/infer");
         let embedded = u64::from_le_bytes(req.message.payload[1..9].try_into().unwrap());
         assert_eq!(embedded, expected);

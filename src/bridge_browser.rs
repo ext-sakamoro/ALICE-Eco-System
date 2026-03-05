@@ -419,6 +419,7 @@ pub fn browser_to_dns_request(url: &str) -> BrowserDnsRequest {
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

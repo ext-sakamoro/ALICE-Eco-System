@@ -226,8 +226,8 @@ pub fn presence_proximity_to_analytics(proof: &ProximityProof) -> PresenceAnalyt
 mod tests {
     use super::*;
     use alice_presence::{
-        execute_presence_protocol, CrossingRecord, IdentityCommitment, PartyInfo, PresenceConfig,
-        PresenceEvent, ProximityProof, VivaldiCoord, ZkProof,
+        execute_presence_protocol, CrossingRecord, PartyInfo, PresenceConfig, PresenceEvent,
+        ProximityProof, VivaldiCoord,
     };
 
     fn make_crossing() -> CrossingRecord {

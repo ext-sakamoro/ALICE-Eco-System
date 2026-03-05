@@ -41,10 +41,15 @@ pub struct ClimateSdfField {
 #[inline]
 #[must_use]
 pub fn climate_response_to_sdf_field(resp: &ClimateResponse) -> ClimateSdfField {
-    let wind_speed = (resp.atmosphere.wind_velocity_ms[0].powi(2)
-        + resp.atmosphere.wind_velocity_ms[1].powi(2)
-        + resp.atmosphere.wind_velocity_ms[2].powi(2))
-    .sqrt();
+    let wind_speed = resp.atmosphere.wind_velocity_ms[2]
+        .mul_add(
+            resp.atmosphere.wind_velocity_ms[2],
+            resp.atmosphere.wind_velocity_ms[1].mul_add(
+                resp.atmosphere.wind_velocity_ms[1],
+                resp.atmosphere.wind_velocity_ms[0].powi(2),
+            ),
+        )
+        .sqrt();
 
     let iso_surface_value = resp.atmosphere.temperature_c / 100.0;
     let gradient_strength = wind_speed * 0.01;

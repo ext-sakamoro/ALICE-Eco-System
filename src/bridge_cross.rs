@@ -58,7 +58,7 @@ pub fn synth_rtos_audio_kernel(config: &AudioRtosConfig) -> (Kernel, KernelStats
 /// Calculate audio task timing from buffer size and sample rate.
 #[inline]
 #[must_use]
-pub fn synth_rtos_audio_config(buffer_size: usize, sample_rate: u32) -> AudioRtosConfig {
+pub const fn synth_rtos_audio_config(buffer_size: usize, sample_rate: u32) -> AudioRtosConfig {
     let period_us = (buffer_size as u64 * 1_000_000 / sample_rate as u64) as u32;
     let wcet_us = period_us / 4; // 25% CPU budget for audio
     AudioRtosConfig {
@@ -84,14 +84,14 @@ pub struct JointTrajectoryResult {
 /// Convert Motion Vec3 to Kinematics Vec3k.
 #[inline(always)]
 #[must_use]
-pub fn motion_to_kinematics_vec3(v: &Vec3) -> Vec3k {
+pub const fn motion_to_kinematics_vec3(v: &Vec3) -> Vec3k {
     Vec3k::new(v.x, v.y, v.z)
 }
 
 /// Convert Kinematics Vec3k to Motion Vec3.
 #[inline(always)]
 #[must_use]
-pub fn kinematics_to_motion_vec3(v: &Vec3k) -> Vec3 {
+pub const fn kinematics_to_motion_vec3(v: &Vec3k) -> Vec3 {
     Vec3::new(v.x, v.y, v.z)
 }
 
@@ -880,13 +880,16 @@ pub struct KinematicsVoiceParams {
 pub fn kinematics_voice_params(intent: &alice_kinematics::Intent) -> KinematicsVoiceParams {
     let t = intent.target;
     // x → pitch: clamp to [0, 1], map to [80, 400] Hz (bass → soprano)
-    let pitch_hz = 80.0 + t.x.abs().min(1.0) * 320.0;
+    let pitch_hz = t.x.abs().min(1.0).mul_add(320.0, 80.0);
     // y → F1: [200, 900] Hz (closed → open vowel)
-    let f1_hz = 200.0 + t.y.abs().min(1.0) * 700.0;
+    let f1_hz = t.y.abs().min(1.0).mul_add(700.0, 200.0);
     // z → F2: [700, 2500] Hz (back → front vowel)
-    let f2_hz = 700.0 + t.z.abs().min(1.0) * 1800.0;
+    let f2_hz = t.z.abs().min(1.0).mul_add(1800.0, 700.0);
     // speed proxy: magnitude of target vector
-    let speed = (t.x * t.x + t.y * t.y + t.z * t.z).sqrt().min(1.0);
+    let speed =
+        t.z.mul_add(t.z, t.x.mul_add(t.x, t.y * t.y))
+            .sqrt()
+            .min(1.0);
     let gain = speed;
     let voiced = speed > 0.05;
     // Hash the 12 bytes of the target xyz for dedup
@@ -1103,7 +1106,7 @@ pub fn view_text_overlay(text: &str, params: &MetaFontParams) -> ViewTextOverlay
     let content_hash = fnv1a(&compressed);
     let char_count = text.chars().count();
     // Advance per character: base 0.6 em, widened by font width param
-    let advance = 0.6 + params.width * 0.4;
+    let advance = params.width.mul_add(0.4, 0.6);
     let display_width_em = char_count as f32 * advance;
     ViewTextOverlay {
         compressed,
@@ -1670,7 +1673,7 @@ mod tests {
     #[test]
     fn test_ml_motion_predict_curve() {
         // 12-output model: maps to exactly 4 Bezier control points
-        let weights = alice_ml::TernaryWeight::from_ternary(&vec![1i8; 12 * 3], 12, 3);
+        let weights = alice_ml::TernaryWeight::from_ternary(&[1i8; 12 * 3], 12, 3);
         let state = [0.5f32, -0.5, 1.0];
         let pred = ml_motion_predict_curve(&weights, &state);
         assert_eq!(pred.raw_output.len(), 12);

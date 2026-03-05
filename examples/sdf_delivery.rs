@@ -14,11 +14,21 @@
 //!
 //! Optimizations:
 //! - In-memory ASDF serialization (zero disk I/O)
-//! - Fixed-array origin storage (zero HashMap alloc)
+//! - Fixed-array origin storage (zero `HashMap` alloc)
 //! - Pre-built lookup tables (zero per-request allocation)
 //! - Single-clone cache population
 //!
 //! Author: Moroya Sakamoto
+
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::too_many_lines,
+    clippy::unnecessary_wraps,
+    dead_code
+)]
 
 use alice_cache::{AliceCache, CacheConfig};
 use alice_cdn::{ContentLocator, MaglevHash, VivaldiCoord};
@@ -45,9 +55,9 @@ struct CdnNode {
     coord: VivaldiCoord,
 }
 
-/// Serialize SdfTree to ASDF binary format in-memory (zero disk I/O)
+/// Serialize `SdfTree` to ASDF binary format in-memory (zero disk I/O)
 ///
-/// Layout: [AsdfHeader: 16B] + [bincode body: variable]
+/// Layout: [`AsdfHeader`: 16B] + [bincode body: variable]
 /// CRC32 computed on-the-fly over body bytes.
 #[inline]
 fn serialize_asdf(tree: &SdfTree) -> Vec<u8> {
@@ -61,8 +71,8 @@ fn serialize_asdf(tree: &SdfTree) -> Vec<u8> {
 }
 
 /// Asset ID → array index (branchless)
-#[inline(always)]
-fn asset_idx(id: u64) -> usize {
+#[inline]
+const fn asset_idx(id: u64) -> usize {
     (id - ASSET_ID_BASE) as usize
 }
 
@@ -123,10 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     // PHASE 2: SETUP CDN EDGE NODES (Vivaldi + Maglev)
     // ========================================================================
-    println!(
-        "━━━ PHASE 2: CDN Edge Node Setup ({} Global Nodes) ━━━",
-        NUM_CDN_NODES
-    );
+    println!("━━━ PHASE 2: CDN Edge Node Setup ({NUM_CDN_NODES} Global Nodes) ━━━");
 
     let nodes: [CdnNode; NUM_CDN_NODES] = [
         CdnNode {
@@ -195,7 +202,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Pre-built node reference list (reused across all routing calls)
     let node_refs: Vec<(u64, &VivaldiCoord)> = nodes.iter().map(|n| (n.id, &n.coord)).collect();
 
-    println!("  Maglev hash table: {} nodes, O(1) lookup", NUM_CDN_NODES);
+    println!("  Maglev hash table: {NUM_CDN_NODES} nodes, O(1) lookup");
     println!("  Client location:   Near Tokyo (1.0, 1.0, 0.0)");
     println!();
 
@@ -257,10 +264,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // Cold requests
-    println!(
-        "  Cold start ({} requests → {} misses):",
-        NUM_ASSETS, NUM_ASSETS
-    );
+    println!("  Cold start ({NUM_ASSETS} requests → {NUM_ASSETS} misses):");
     for (i, &id) in asset_ids.iter().enumerate() {
         if cache.get(&id).is_some() {
             println!("    Asset {} ({}): HIT", id, ASSET_NAMES[i]);
@@ -275,10 +279,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!();
 
     // Warm requests (should all hit)
-    println!(
-        "  Warm requests ({} requests → should be cached):",
-        NUM_ASSETS
-    );
+    println!("  Warm requests ({NUM_ASSETS} requests → should be cached):");
     for (i, &id) in asset_ids.iter().enumerate() {
         if cache.get(&id).is_some() {
             println!("    Asset {} ({}): HIT", id, ASSET_NAMES[i]);
@@ -326,10 +327,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ========================================================================
     // PHASE 5: FULL PIPELINE SIMULATION
     // ========================================================================
-    println!(
-        "━━━ PHASE 5: Full Pipeline Simulation ({} Requests) ━━━",
-        SIMULATION_REQUESTS
-    );
+    println!("━━━ PHASE 5: Full Pipeline Simulation ({SIMULATION_REQUESTS} Requests) ━━━");
 
     cache.stats().reset();
 
@@ -359,7 +357,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let hit_rate = cache.hit_rate();
     let bandwidth_ratio = total_gltf_equiv as f64 / total_asdf_bytes as f64;
 
-    println!("  Requests:        {}", SIMULATION_REQUESTS);
+    println!("  Requests:        {SIMULATION_REQUESTS}");
     println!("  Cache hit rate:  {:.1}%", hit_rate * 100.0);
     println!(
         "  ASDF transferred: {} bytes ({:.1} KB)",
@@ -371,7 +369,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         total_gltf_equiv,
         total_gltf_equiv as f64 / 1_048_576.0,
     );
-    println!("  Bandwidth ratio:  {:.0}x reduction", bandwidth_ratio);
+    println!("  Bandwidth ratio:  {bandwidth_ratio:.0}x reduction");
     println!();
 
     // ========================================================================
@@ -387,14 +385,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("║     │ Request asset_id                                       ║");
     println!("║     ▼                                                        ║");
     println!("║  [ALICE-CDN] Vivaldi Routing + Maglev O(1)                   ║");
-    println!(
-        "║     │ {} edge nodes, RTT-optimized                            ║",
-        NUM_CDN_NODES
-    );
-    println!(
-        "║     │ Nearest: Tokyo ({:.1}ms)                               ║",
-        client_rtt
-    );
+    println!("║     │ {NUM_CDN_NODES} edge nodes, RTT-optimized                            ║");
+    println!("║     │ Nearest: Tokyo ({client_rtt:.1}ms)                               ║");
     println!("║     ▼                                                        ║");
     println!("║  [ALICE-Cache] 256-shard + Markov Prefetch                   ║");
     println!(

@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn test_zip_edge_fit_sensor() {
         // Linear sensor data: y = 2x + 1
-        let samples: Vec<f32> = (0..100).map(|i| 2.0 * i as f32 + 1.0).collect();
+        let samples: Vec<f32> = (0..100).map(|i| 2.0f32.mul_add(i as f32, 1.0)).collect();
         let result = zip_edge_fit_sensor(&samples, 3, 0.01);
         assert!(result.is_some());
         let r = result.unwrap();

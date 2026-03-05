@@ -49,7 +49,7 @@ pub fn cloth_to_analytics(cloth: &Cloth) -> ClothAnalyticsEvent {
     let triangle_count = cloth.triangles.len();
     let pinned_count = cloth.pinned.len();
     let (wx, wy, wz) = cloth.wind.to_f32();
-    let wind_magnitude = (wx * wx + wy * wy + wz * wz).sqrt();
+    let wind_magnitude = wz.mul_add(wz, wx.mul_add(wx, wy * wy)).sqrt();
 
     let mut bytes = [0u8; 24];
     bytes[0..8].copy_from_slice(&(particle_count as u64).to_le_bytes());
@@ -236,7 +236,7 @@ pub fn cloth_to_cache(cloth: &Cloth) -> ClothCacheEntry {
     let ttl_secs = 30 - has_self_coll * 25;
 
     // Hash: particle count + triangle count + first position XOR.
-    let first_hash = cloth.positions.first().map(|p| p.x.hi as u64).unwrap_or(0);
+    let first_hash = cloth.positions.first().map_or(0, |p| p.x.hi as u64);
     let mut bytes = [0u8; 24];
     bytes[0..8].copy_from_slice(&(particle_count as u64).to_le_bytes());
     bytes[8..16].copy_from_slice(&(triangle_count as u64).to_le_bytes());
@@ -287,7 +287,7 @@ pub fn fluid_to_edge(fluid: &Fluid) -> FluidEdgeEvent {
     let avg_density = sum_density * inv_count;
 
     let (gx, gy, gz) = fluid.config.gravity.to_f32();
-    let gravity_magnitude = (gx * gx + gy * gy + gz * gz).sqrt();
+    let gravity_magnitude = gz.mul_add(gz, gx.mul_add(gx, gy * gy)).sqrt();
 
     // Branchless TTL: large particle count → 5s, small → 30s.
     let is_large = (particle_count > 10000) as u32;
@@ -333,6 +333,7 @@ pub struct DeformableViewDescriptor {
 /// via the deformable body's own method.
 #[inline]
 #[must_use]
+#[allow(clippy::tuple_array_conversions)]
 pub fn deformable_to_view(body: &DeformableBody) -> DeformableViewDescriptor {
     let positions: Vec<[f32; 3]> = body
         .positions
@@ -368,6 +369,7 @@ pub fn deformable_to_view(body: &DeformableBody) -> DeformableViewDescriptor {
 // ── Tests ──────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_physics::{Cloth, DeformableBody, Fix128, Fluid, FluidConfig, Rope, Vec3Fix};

@@ -45,7 +45,7 @@ pub struct SettlementDbTradeRecord {
 ///
 /// Pending=0, Netted=1, Cleared=2, Settled=3, Failed=4.
 #[inline(always)]
-fn status_to_u8(status: SettlementStatus) -> u8 {
+const fn status_to_u8(status: SettlementStatus) -> u8 {
     match status {
         SettlementStatus::Pending => 0,
         SettlementStatus::Netted => 1,
@@ -107,7 +107,7 @@ pub struct SettlementAnalyticsEvent {
 /// TradeReceived=1, NettingCompleted=2, ClearingAttempted=3,
 /// SettlementCompleted=4, SettlementFailed=5.
 #[inline(always)]
-fn journal_event_to_type(event: &JournalEvent) -> u8 {
+const fn journal_event_to_type(event: &JournalEvent) -> u8 {
     match event {
         JournalEvent::TradeReceived { .. } => 1,
         JournalEvent::NettingCompleted { .. } => 2,
@@ -211,7 +211,7 @@ pub struct SettlementSemanticEvent {
 ///
 /// Failed=3, Pending/Netted/Cleared/Settled=1.
 #[inline(always)]
-fn status_to_severity(status: SettlementStatus) -> u8 {
+const fn status_to_severity(status: SettlementStatus) -> u8 {
     match status {
         SettlementStatus::Failed => 3,
         _ => 1,

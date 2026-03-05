@@ -224,6 +224,7 @@ pub fn sdf_material_to_cache_entry(mat: &Material) -> SdfMaterialCacheEntry {
 ///
 /// Tracks which PBR features are in use across the project to inform
 /// shader permutation pruning and rendering pipeline optimization.
+#[allow(clippy::struct_excessive_bools)]
 pub struct SdfMaterialAnalyticsEvent {
     /// FNV-1a hash of the material content.
     pub content_hash: u64,
@@ -383,6 +384,7 @@ pub fn sdf_material_to_edge_snapshot(mat: &Material) -> SdfMaterialEdgeSnapshot 
 // ── Tests ─────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

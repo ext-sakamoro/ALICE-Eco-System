@@ -283,6 +283,7 @@ pub fn ledger_fill_to_settlement_trade(fill: &Fill) -> LedgerSettlementTrade {
 // ── Tests ────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_ledger::{Fill, OrderId, Position, TimeInForce};

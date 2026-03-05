@@ -45,7 +45,7 @@ pub fn space_differential_to_codec_frame(diff: &ModelDifferential) -> SpaceCodec
         .map(|&(_, v)| v.abs())
         .fold(0.0f64, f64::max);
 
-    let delta_bits = ((max_delta * 1000.0 + 1.0).log2().ceil() as u32).max(1);
+    let delta_bits = (max_delta.mul_add(1000.0, 1.0).log2().ceil() as u32).max(1);
     let total_bits = delta_bits as usize * diff.param_updates.len();
     let estimated_bytes = total_bits.div_ceil(8);
 
@@ -225,7 +225,7 @@ mod tests {
 
     fn make_differential() -> ModelDifferential {
         let mut diff = ModelDifferential::new(42, 1_000_000);
-        diff.add_param("thrust_x", 3.14);
+        diff.add_param("thrust_x", 3.25);
         diff.add_param("thrust_y", 2.71);
         diff.finalize();
         diff

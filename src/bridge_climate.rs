@@ -179,7 +179,9 @@ pub fn climate_anomaly_to_edge(
     };
 
     let wv = resp.atmosphere.wind_velocity_ms;
-    let wind_speed = (wv[0].powi(2) + wv[1].powi(2) + wv[2].powi(2)).sqrt();
+    let wind_speed = wv[2]
+        .mul_add(wv[2], wv[1].mul_add(wv[1], wv[0].powi(2)))
+        .sqrt();
 
     let mut key = [0u8; 25];
     key[0] = kind_byte;
@@ -229,7 +231,9 @@ pub fn climate_response_to_cache(resp: &ClimateResponse) -> ClimateCacheEntry {
 
     // Adaptive TTL based on atmospheric volatility
     let wv = resp.atmosphere.wind_velocity_ms;
-    let wind_speed = (wv[0].powi(2) + wv[1].powi(2) + wv[2].powi(2)).sqrt();
+    let wind_speed = wv[2]
+        .mul_add(wv[2], wv[1].mul_add(wv[1], wv[0].powi(2)))
+        .sqrt();
     let temp = resp.atmosphere.temperature_c;
 
     let mut ttl: u32 = 120;

@@ -111,7 +111,7 @@ pub fn auth_rbac_to_api_policy(id: &AliceId, role_mask: u8) -> AuthRbacApiPolicy
 
 // ── Bridge 4: Auth KeyRotation → Edge (device key refresh) ───────────────
 
-/// Key rotation state for ALICE-Edge IoT device refresh.
+/// Key rotation state for ALICE-Edge `IoT` device refresh.
 pub struct AuthRotationEdgeRefresh {
     /// Content hash of current + previous key state.
     pub content_hash: u64,
@@ -276,7 +276,7 @@ pub struct AuthRevocationPurgeAnalytics {
     pub efficiency_u8: u8,
 }
 
-/// Convert revocation auto_purge result into Analytics metrics.
+/// Convert revocation `auto_purge` result into Analytics metrics.
 #[inline]
 #[must_use]
 pub fn auth_revocation_purge_to_analytics(

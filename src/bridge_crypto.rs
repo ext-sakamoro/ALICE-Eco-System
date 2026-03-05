@@ -4,7 +4,7 @@
 //! authenticated encryption primitives to the ALICE ecosystem.
 //!
 //! These bridges focus on Key/Shard/Nonce/Hash *structure* metadata, complementing
-//! bridge_crypto_ext which operates on raw data payloads.
+//! `bridge_crypto_ext` which operates on raw data payloads.
 
 use alice_crypto::{hash, Hash, Key, Nonce, Shard, TAG_SIZE};
 
@@ -206,7 +206,7 @@ pub fn crypto_key_nonce_to_edge(
 /// Captures the cost and overhead of a seal (encrypt) operation so the
 /// analytics layer can build throughput and overhead-ratio dashboards.
 pub struct CryptoSealAnalyticsMetric {
-    /// FNV-1a content hash over plaintext_bytes and overhead_bytes.
+    /// FNV-1a content hash over `plaintext_bytes` and `overhead_bytes`.
     pub content_hash: u64,
     /// Plaintext size in bytes.
     pub plaintext_bytes: u64,
@@ -252,6 +252,7 @@ pub fn crypto_seal_to_analytics(
 // ── Tests ───────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
     use alice_crypto::sss;

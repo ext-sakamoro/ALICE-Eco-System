@@ -163,7 +163,7 @@ pub fn energy_battery_to_ml_features(battery: &BatteryState) -> EnergyMlFeatures
     };
 
     // Approximate voltage from SoC (Li-ion nominal range 3.0V - 4.2V)
-    let voltage_v = 3.0 + battery.state_of_charge * 1.2;
+    let voltage_v = battery.state_of_charge.mul_add(1.2, 3.0);
     let degradation_index = battery.cycle_count as f64 / 5000.0;
 
     let mut key = [0u8; 41];
@@ -242,8 +242,7 @@ pub fn energy_phase_to_sync_event(correction: &PhaseCorrection) -> EnergySyncEve
 mod tests {
     use super::*;
     use alice_energy::{
-        BatteryChemistry, BatteryId, BatteryState, NodeId, NodeKind, PhaseCorrection, PowerGrid,
-        PowerNode,
+        BatteryChemistry, BatteryState, NodeId, NodeKind, PhaseCorrection, PowerGrid, PowerNode,
     };
 
     // ── Bridge 1: node → physics body ───────────────────────────────────
@@ -343,7 +342,7 @@ mod tests {
         assert_eq!(features.battery_id, 10);
         assert_eq!(features.chemistry, 0); // LithiumIon
         assert!((features.soc - 0.8).abs() < 1e-6);
-        assert!((features.voltage_v - (3.0 + 0.8 * 1.2)).abs() < 1e-6); // 3.96V
+        assert!((features.voltage_v - 0.8f64.mul_add(1.2, 3.0)).abs() < 1e-6); // 3.96V
         assert!((features.temperature_c - 35.0).abs() < 1e-6);
         assert_eq!(features.cycle_count, 1000);
         assert!((features.degradation_index - 0.2).abs() < 1e-6); // 1000 / 5000

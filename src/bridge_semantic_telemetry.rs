@@ -121,7 +121,7 @@ pub fn telemetry_drain_to_db_records(ring: &mut SemanticRing) -> Vec<TelemetryDb
 /// and threshold crossings to `ThresholdCrossing` events.
 #[inline]
 #[must_use]
-pub fn edge_sensor_to_semantic_event(
+pub const fn edge_sensor_to_semantic_event(
     timestamp_ns: u64,
     sensor_id: u64,
     kind: EventKind,
@@ -142,7 +142,7 @@ pub fn edge_sensor_to_semantic_event(
 /// Create a semantic event from an ML anomaly detection result.
 #[inline]
 #[must_use]
-pub fn ml_anomaly_to_semantic_event(
+pub const fn ml_anomaly_to_semantic_event(
     timestamp_ns: u64,
     model_id: u64,
     anomaly_score: f32,
@@ -244,7 +244,7 @@ pub fn physics_collision_to_semantic_event(
 /// `payload2` carries the body identity hash for cross-subsystem correlation.
 #[inline]
 #[must_use]
-pub fn physics_state_change_to_semantic_event(
+pub const fn physics_state_change_to_semantic_event(
     timestamp_ns: u64,
     body_hash: u64,
     from_state: u32,
@@ -270,7 +270,7 @@ pub fn physics_state_change_to_semantic_event(
 /// `payload` carries the frame number; `payload2` carries the session hash.
 #[inline]
 #[must_use]
-pub fn sync_frame_to_semantic_event(
+pub const fn sync_frame_to_semantic_event(
     timestamp_ns: u64,
     session_hash: u64,
     frame_number: u64,
@@ -303,7 +303,7 @@ pub fn sync_frame_to_semantic_event(
 /// for compact downstream decoding without heap allocation.
 #[inline]
 #[must_use]
-pub fn motion_trajectory_to_semantic_event(
+pub const fn motion_trajectory_to_semantic_event(
     timestamp_ns: u64,
     plan_hash: u64,
     segments: u32,
@@ -331,7 +331,7 @@ pub fn motion_trajectory_to_semantic_event(
 /// `payload` carries `task_hash`; `payload2` carries `slack_us` as u64.
 #[inline]
 #[must_use]
-pub fn rtos_task_to_semantic_event(
+pub const fn rtos_task_to_semantic_event(
     timestamp_ns: u64,
     task_hash: u64,
     deadline_met: bool,

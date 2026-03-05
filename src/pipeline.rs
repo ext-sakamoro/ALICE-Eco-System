@@ -867,7 +867,7 @@ impl AlicePipeline {
             alice_api::HttpMethod::Post,
             auth_decision.rate_allowed,
         );
-        let api_route = cdn_route_info.asset_path.clone();
+        let api_route = cdn_route_info.asset_path;
 
         // 4. ALICE-CDN: Vivaldi RTT 予測で最適エッジノードを選択
         let content_id = container_hash ^ (target_api_route.len() as u64);

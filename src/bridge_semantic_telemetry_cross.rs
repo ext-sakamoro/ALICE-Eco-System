@@ -3,7 +3,7 @@
 //!
 //! 5 bridges connecting semantic telemetry to cross-domain ALICE subsystems.
 
-use alice_semantic_telemetry::{EventKind, SemanticRing, Severity};
+use alice_semantic_telemetry::{EventKind, SemanticRing};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -19,7 +19,7 @@ fn fnv1a(data: &[u8]) -> u64 {
 
 /// Risk alert record derived from a semantic telemetry anomaly batch.
 pub struct TelemetryRiskAlert {
-    /// Content hash (FNV-1a of severity + anomaly_score bits + sensor_count).
+    /// Content hash (FNV-1a of severity + `anomaly_score` bits + `sensor_count`).
     pub content_hash: u64,
     /// Alert severity level (0 = low … 255 = critical).
     pub severity_level: u8,
@@ -67,7 +67,7 @@ pub fn telemetry_ring_to_risk_alert(
 
 /// Compliance audit record derived from a batch of semantic telemetry events.
 pub struct TelemetryLegalAuditRecord {
-    /// Content hash (FNV-1a of event_count + first_timestamp + last_timestamp + source_system_hash).
+    /// Content hash (FNV-1a of `event_count` + `first_timestamp` + `last_timestamp` + `source_system_hash`).
     pub content_hash: u64,
     /// Total number of events captured in the audit window.
     pub event_count: u64,
@@ -125,7 +125,7 @@ pub fn telemetry_ring_to_legal_audit_record(
 
 /// CDN bandwidth report derived from semantic telemetry throughput data.
 pub struct TelemetryCdnBandwidthReport {
-    /// Content hash (FNV-1a of bytes_per_sec + event_rate_hz bits + node_count).
+    /// Content hash (FNV-1a of `bytes_per_sec` + `event_rate_hz` bits + `node_count`).
     pub content_hash: u64,
     /// Observed data throughput in bytes per second.
     pub bytes_per_sec: u64,
@@ -133,7 +133,7 @@ pub struct TelemetryCdnBandwidthReport {
     pub event_rate_hz: f32,
     /// Number of CDN nodes that processed the telemetry stream.
     pub node_count: u32,
-    /// Cache TTL in seconds (branchless: 60 if node_count > 0, else 0).
+    /// Cache TTL in seconds (branchless: 60 if `node_count` > 0, else 0).
     pub ttl_secs: u32,
 }
 
@@ -168,7 +168,7 @@ pub fn telemetry_event_to_cdn_bandwidth_report(
 
 /// Data throughput settlement record for ALICE-Settlement billing.
 pub struct TelemetrySettlementRecord {
-    /// Content hash (FNV-1a of total_events + billable_bytes + period range).
+    /// Content hash (FNV-1a of `total_events` + `billable_bytes` + period range).
     pub content_hash: u64,
     /// Total number of telemetry events in the billing period.
     pub total_events: u64,
@@ -210,7 +210,7 @@ pub fn telemetry_ring_to_settlement_record(
 
 /// Container resource utilization record derived from semantic telemetry.
 pub struct TelemetryContainerResourceRecord {
-    /// Content hash (FNV-1a of cpu_usage_pct bits + memory_bytes + event_throughput + container_hash).
+    /// Content hash (FNV-1a of `cpu_usage_pct` bits + `memory_bytes` + `event_throughput` + `container_hash`).
     pub content_hash: u64,
     /// CPU usage percentage [0.0, 100.0].
     pub cpu_usage_pct: f32,
@@ -252,7 +252,7 @@ pub fn telemetry_event_to_container_resource_record(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_semantic_telemetry::{SemanticEvent, SemanticRing};
+    use alice_semantic_telemetry::{SemanticEvent, SemanticRing, Severity};
 
     /// テスト用のリングを作成するヘルパー
     fn make_ring_with_events(count: usize) -> SemanticRing {
