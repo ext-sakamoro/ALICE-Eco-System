@@ -92,6 +92,7 @@
 //! ```
 
 pub mod bridge_analytics;
+pub mod bridge_bridge;
 #[cfg(feature = "animation")]
 pub mod bridge_animation;
 pub mod bridge_api;

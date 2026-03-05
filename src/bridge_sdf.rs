@@ -763,6 +763,14 @@ fn classify_sdf2d(node: &Sdf2dNode) -> (u8, f32, f32, bool) {
             let (_, cw, ch, _) = classify_sdf2d(child);
             (7, cw * factor, ch * factor, false)
         }
+        Sdf2dNode::Ring { outer_radius, .. } => (8, outer_radius * 2.0, outer_radius * 2.0, true),
+        Sdf2dNode::RegularPolygon { radius, .. } => (9, radius * 2.0, radius * 2.0, true),
+        Sdf2dNode::Star { outer_radius, .. } => (10, outer_radius * 2.0, outer_radius * 2.0, true),
+        Sdf2dNode::Ellipse { semi_axes, .. } => (11, semi_axes[0] * 2.0, semi_axes[1] * 2.0, true),
+        Sdf2dNode::Onion { child, thickness } => {
+            let (_, cw, ch, _) = classify_sdf2d(child);
+            (12, cw + thickness * 2.0, ch + thickness * 2.0, false)
+        }
     }
 }
 

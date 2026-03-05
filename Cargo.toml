@@ -93,6 +93,9 @@ alice-history = { path = "../ALICE-History" }
 alice-atoms = { path = "../ALICE-Atoms", optional = true }
 alice-presence = { path = "../ALICE-Presence" }
 
+# Hardware bridge
+alice-bridge = { path = "../ALICE-Bridge" }
+
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"
 crc32fast = "1"
