@@ -22,7 +22,7 @@
 
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 52 ALICE crates into unified pipelines with 461 cross-crate bridges across 72 bridge modules.
+//! Connects 53 ALICE crates into unified pipelines with 467 cross-crate bridges across 73 bridge modules.
 //! Powers 52 `SaaS` services (AGPL-3.0-or-later) via the MIT Core + AGPL `SaaS` Shell pattern.
 //!
 //! ```text
@@ -89,6 +89,9 @@
 //!
 //! Path U (Presence Protocol):
 //!   [ALICE-Presence] → [ALICE-Edge] (event telemetry) → [ALICE-Analytics] (crossing/proximity) → [ALICE-DB] / [ALICE-Cache]
+//!
+//! Path V (Tokenization Pipeline):
+//!   [ALICE-Token] → [ALICE-Text] / [ALICE-ML] / [ALICE-Search] / [ALICE-DB] / [ALICE-Cache] / [ALICE-Analytics]
 //! ```
 
 pub mod bridge_analytics;
@@ -172,6 +175,7 @@ pub mod bridge_sync;
 pub mod bridge_synth;
 pub mod bridge_telemetry_hooks;
 pub mod bridge_text;
+pub mod bridge_token;
 pub mod bridge_trt;
 pub mod bridge_vcs;
 pub mod bridge_view;
@@ -248,3 +252,6 @@ pub use alice_space::{CommLink, ControlDecision, MissionEvent, ModelDifferential
 // Re-export advanced domain types (Path R-U)
 pub use alice_history::{Fragment, FragmentKind, InversionConfig, RestorationResult};
 pub use alice_presence::{CrossingRecord, CrossingStatus, PresenceEvent, VivaldiCoord};
+
+// Re-export tokenizer types
+pub use alice_token::{Tokenizer, Vocab, VocabBuilder};

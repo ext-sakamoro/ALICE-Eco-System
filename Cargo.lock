@@ -371,6 +371,7 @@ dependencies = [
  "alice-sync",
  "alice-synth",
  "alice-text",
+ "alice-token",
  "alice-trt",
  "alice-vcs",
  "alice-view",
@@ -580,6 +581,18 @@ dependencies = [
  "smallvec",
  "thiserror 1.0.69",
  "zstd",
+]
+
+[[package]]
+name = "alice-token"
+version = "1.0.0"
+dependencies = [
+ "base64",
+ "bincode",
+ "fancy-regex",
+ "rayon",
+ "rustc-hash 2.1.1",
+ "serde",
 ]
 
 [[package]]
@@ -2374,6 +2387,17 @@ dependencies = [
  "rayon-core",
  "smallvec",
  "zune-inflate",
+]
+
+[[package]]
+name = "fancy-regex"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e24cb5a94bcae1e5408b0effca5cd7172ea3c5755049c5f3af4cd283a165298"
+dependencies = [
+ "bit-set 0.8.0",
+ "regex-automata",
+ "regex-syntax",
 ]
 
 [[package]]

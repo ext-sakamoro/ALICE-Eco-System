@@ -67,6 +67,9 @@ alice-cloud-gateway = { path = "../ALICE-Cloud-Gateway", default-features = fals
 # Firewall bridge (Linux only — depends on nfq/netfilter)
 alice-edge-firewall = { path = "../ALICE-Edge-Firewall", default-features = false, optional = true }
 
+# Tokenizer bridge
+alice-token = { path = "../ALICE-Token" }
+
 # Semantic Telemetry bridge
 alice-semantic-telemetry = { path = "../ALICE-Semantic-Telemetry" }
 
