@@ -95,7 +95,6 @@
 //! ```
 
 pub mod bridge_analytics;
-pub mod bridge_bridge;
 #[cfg(feature = "animation")]
 pub mod bridge_animation;
 pub mod bridge_api;
@@ -110,6 +109,7 @@ pub mod bridge_auth;
 pub mod bridge_auth_ext;
 pub mod bridge_bio;
 pub mod bridge_bio_cross;
+pub mod bridge_bridge;
 pub mod bridge_browser;
 pub mod bridge_cache;
 pub mod bridge_cdn;
@@ -176,6 +176,7 @@ pub mod bridge_synth;
 pub mod bridge_telemetry_hooks;
 pub mod bridge_text;
 pub mod bridge_token;
+pub mod bridge_train;
 pub mod bridge_trt;
 pub mod bridge_vcs;
 pub mod bridge_view;

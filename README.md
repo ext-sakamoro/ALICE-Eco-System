@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (59 Components)                     │
+│                          ALICE Ecosystem (61 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -46,7 +46,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | v0.1.0 | Embedded Model Generator | 500x compression, 751ns/1K samples, sensors, MQTT, dashboard | MIT (Core) |
 | [ALICE-Edge-Commercial](https://github.com/ext-sakamoro/ALICE-Edge-Commercial) | v0.1.0 | Enterprise Edge Features | Commercial extensions for ALICE-Edge: advanced fleet management, SLA telemetry | Proprietary |
 | [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | v1.0.0 | Procedural Generation Compression | 10-1000x for patterns, LZMA fallback | Open Core (MIT core) |
-| [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | v0.1.0 | 3D Wavelet Video/Audio Codec | CDF 9/7 Wavelet, rANS entropy coding | AGPL-3.0 |
+| [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | v0.1.2 | 3D Wavelet Video/Audio Codec | CDF 9/7 Wavelet, rANS entropy coding, MP4/MKV container parser | AGPL-3.0 |
 | [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | v0.1.0 | Voice Procedural Codec | LPC parametric 100-600x, privacy-preserving | MIT |
 | [ALICE-Voice-Commercial](https://github.com/ext-sakamoro/ALICE-Voice-Commercial) | v0.1.0 | Voice Semantic Layer (L3) | Commercial TTS/STT semantic analysis extensions | Proprietary |
 | [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | v1.0.0 | Exception-Based Text Compression | Pattern recognition, columnar encoding | BSL 1.1 (→MIT 2028) |
@@ -95,6 +95,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | v0.6.0 | Deterministic 128-bit Physics Engine | I64F64, CORDIC, XPBD, GJK/EPA, BVH, 2D physics, cloth/fluid/rope, CCD, Netcode, PyO3 | AGPL-3.0 |
 | [ALICE-RTOS](https://github.com/ext-sakamoro/ALICE-RTOS) | v0.1.0 | Math-First Real-Time OS | RMS scheduler, Liu-Layland analysis, SPSC ring, < 2KB kernel | AGPL-3.0 |
 | [ALICE-SIMD](https://github.com/ext-sakamoro/ALICE-SIMD) | v1.0.0 | Shared SIMD & Fast-Math Primitives | AlignedVec, BitMask64, branchless ops, fast reciprocal/rsqrt, FNV-1a, Bloom filter, no_std | MIT |
+| [ALICE-Token](https://github.com/ext-sakamoro/ALICE-Token) | v1.0.0 | Ultra-Fast BPE Tokenizer | Byte-pair encoding, vocab training, O(n) encode/decode, no_std | MIT |
+| [ALICE-Train](https://github.com/ext-sakamoro/ALICE-Train) | v0.1.0 | Backpropagation Training Framework | STE for ternary weights, ReLU/SiLU/GELU backward, BitLinear backward | AGPL-3.0 |
 
 ### Motion & Version Control
 
@@ -153,9 +155,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 456 bridges, 71 bridge modules, 20 pipeline paths (A-U), 52 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 499 bridges, 78 bridge modules, 20 pipeline paths (A-U), 54 crates connected | MIT |
 
-**Total: 59 components** | AGPL-3.0: 29 | MIT: 13 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
+**Total: 61 components** | AGPL-3.0: 30 | MIT: 14 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
 ## Quick Start
 
@@ -278,7 +280,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **456 cross-crate bridges** across 71 bridge files and 20 pipeline paths (A-U), connecting 52 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **499 cross-crate bridges** across 78 bridge files and 20 pipeline paths (A-U), connecting 54 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -304,6 +306,7 @@ The ALICE ecosystem contains **456 cross-crate bridges** across 71 bridge files 
 | **ML/TRT Bridges** | ML→Physics, ML→SDF, ML→Animation, TRT→SDF, TRT→Physics, TRT→View, TRT→Kinematics, TRT→Edge | Ternary AI inference |
 | **DNS/API Bridges** | DNS→Browser, DNS→Cache, API→Auth, API→CDN, API→Queue, API→Analytics, API→DB | DNS ad-blocking + API gateway |
 | **Search Bridges** | Search→DB, Search→Browser, Search→VCS | FM-Index full-text search |
+| **Train Bridges** | Train→DB, Train→Cache, Train→Analytics, Train→Edge, Train→ML (5 total) | Backpropagation training to ecosystem |
 | **Zip Bridges** | Zip→Edge, Zip→DB, Zip→Crypto, Zip→ML, Zip→Cache | Procedural compression + storage |
 | **Auth Bridges** | Auth→DB, Auth→Cache, Auth→Crypto, Auth→API, Auth→CDN, Auth→Edge, Auth→DNS, Auth→Sync | Ed25519 ZKP identity to ecosystem |
 | **Crypto Bridges** | Crypto→DB, Crypto→Cache, Crypto→CDN, Crypto→VCS, Crypto→Edge, Crypto→Sync, Crypto→Zip | BLAKE3 + XChaCha20 + SSS to ecosystem |
@@ -345,11 +348,11 @@ The ALICE ecosystem contains **456 cross-crate bridges** across 71 bridge files 
 
 ### Hardware-Native Optimization
 
-All 456 bridge functions are optimized following the ALICE hardware-native methodology:
+All 499 bridge functions are optimized following the ALICE hardware-native methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|
-| `#[inline]` / `#[inline(always)]` | 480+ annotations | Zero call overhead after LTO |
+| `#[inline]` / `#[inline(always)]` | 500+ annotations | Zero call overhead after LTO |
 | Branchless patterns | `.min()` / `.max()` / `.get().map_or()` | `minss`/`maxss`/`cmov` instructions |
 | Division exorcism | Reciprocal multiplication, hoisted loop-invariant `1.0/x` | 5-8x latency reduction on hot loops |
 | Batch-friendly loops | `chunks_exact_mut()`, pre-allocated buffers | Bounds-check elimination, autovectorization |
@@ -1042,6 +1045,11 @@ Cross-crate bridges (15 total):
 │  ║  │ALICE-Kinematics   │  7-DoF arm, jerk min., 8-byte intent packets    ║   │
 │  ║  │ MIT decoder       │  Open Core (encoder = AGPL-3.0)                  ║   │
 │  ║  └───────────────────┘                                                  ║   │
+│  ║  ┌───────────────┐ ┌───────────────┐                                    ║   │
+│  ║  │ ALICE-Token   │ │ ALICE-Train   │                                    ║   │
+│  ║  │ BPE tokenizer │ │ Backprop STE  │                                    ║   │
+│  ║  │ MIT           │ │ AGPL-3.0      │                                    ║   │
+│  ║  └───────────────┘ └───────────────┘                                    ║   │
 │  ║                                                                          ║   │
 │  ║  LAYER 1b: Financial Trading                                            ║   │
 │  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌─────────────┐  ║   │
@@ -1114,7 +1122,7 @@ The ALICE ecosystem uses a **5-tier hierarchical testing strategy** to prevent f
 | [ALICE-Animation](https://github.com/ext-sakamoro/ALICE-Animation) | 11 | 9 | T0-T3 | macOS, Linux |
 | [ALICE-Manga](https://github.com/ext-sakamoro/ALICE-Manga) | 11 | 8 | T0-T3 | macOS, Linux |
 
-**Total: 59 feature flag test configurations across 8 crates.**
+**Total: 59 feature flag test configurations across 8 crates.** (CI coverage for Token, Train pending)
 
 ### CI Job Structure
 
@@ -1171,7 +1179,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  │ ALICE-DNS  ALICE-Codec  ALICE-RTOS  ALICE-VCS           │     │
 │  │ ALICE-Ledger  ALICE-Risk  ALICE-Settlement              │     │
 │  │ ALICE-Bio  ALICE-Legal  ALICE-Energy  ALICE-Neural     │     │
-│  │ ALICE-Climate  ALICE-History                            │     │
+│  │ ALICE-Climate  ALICE-History  ALICE-Train                │     │
 │  │ Distribution servers / Infrastructure / Backend         │     │
 │  │ AGPL requires source disclosure if used in SaaS         │     │
 │  └─────────────────────────────────────────────────────────┘     │
@@ -1181,7 +1189,7 @@ The ALICE ecosystem employs a **3-layer license strategy** designed to maximize 
 │  │ ALICE-SDF  ALICE-Edge (Open Core)  ALICE-Voice  ALICE-View │  │
 │  │ ALICE-Streaming-Protocol  ALICE-Eco-System              │     │
 │  │ ALICE-Synth  ALICE-Motion  ALICE-Font  ALICE-FIX        │     │
-│  │ ALICE-Space  ALICE-Presence                             │     │
+│  │ ALICE-Space  ALICE-Presence  ALICE-Token  ALICE-SIMD    │     │
 │  │ Format definitions / Viewers / Renderers / Decoders     │     │
 │  │ MIT = maximum adoption, anyone can build readers        │     │
 │  └─────────────────────────────────────────────────────────┘     │

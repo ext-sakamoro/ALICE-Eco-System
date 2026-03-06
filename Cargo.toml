@@ -3,7 +3,7 @@ name = "alice-eco-system"
 version = "0.3.2"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration Hub - 456 bridges, 20 pipeline paths (A-U), 71 bridge modules, 52 crates, 52 SaaS services"
+description = "ALICE Ecosystem Integration Hub - 499 bridges, 20 pipeline paths (A-U), 78 bridge modules, 54 crates, 53 SaaS services"
 license = "MIT"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
@@ -72,6 +72,9 @@ alice-token = { path = "../ALICE-Token" }
 
 # Semantic Telemetry bridge
 alice-semantic-telemetry = { path = "../ALICE-Semantic-Telemetry" }
+
+# Training bridge
+alice-train = { path = "../ALICE-Train" }
 
 # Telemetry & Messaging bridges
 alice-analytics = { path = "../ALICE-Analytics", default-features = false, features = ["std"] }
