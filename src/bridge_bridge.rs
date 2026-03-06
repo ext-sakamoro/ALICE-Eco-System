@@ -3,8 +3,8 @@
 //! 5 bridges connecting the universal hardware bridge to the ALICE ecosystem.
 //! Device actions, mappings, and safety events → telemetry, storage, edge control.
 
-use alice_bridge::{ActuatorType, DeviceMapping, SafetyLimits};
 use alice_bridge::bridge::BridgeAction;
+use alice_bridge::{ActuatorType, DeviceMapping, SafetyLimits};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -32,7 +32,7 @@ pub struct BridgeActionAnalyticsEvent {
     pub high_intensity: bool,
 }
 
-/// BridgeAction を Analytics イベントに変換。
+/// `BridgeAction` を Analytics イベントに変換。
 #[inline]
 #[must_use]
 pub fn bridge_action_to_analytics(action: &BridgeAction) -> BridgeActionAnalyticsEvent {
@@ -54,7 +54,7 @@ pub fn bridge_action_to_analytics(action: &BridgeAction) -> BridgeActionAnalytic
 
 /// デバイスマッピングのDB永続化レコード。
 pub struct BridgeMappingDbRecord {
-    /// コンテンツハッシュ（device_id + group + source_filter）。
+    /// `コンテンツハッシュ（device_id` + group + `source_filter`）。
     pub content_hash: u64,
     /// デバイスID。
     pub device_id: String,
@@ -74,11 +74,13 @@ pub struct BridgeMappingDbRecord {
     pub group: String,
 }
 
-/// DeviceMapping を DB レコードに変換。
+/// `DeviceMapping` を DB レコードに変換。
 #[inline]
 #[must_use]
 pub fn bridge_mapping_to_db(mapping: &DeviceMapping) -> BridgeMappingDbRecord {
-    let mut key_data = Vec::with_capacity(mapping.device_id.len() + mapping.group.len() + mapping.source_filter.len());
+    let mut key_data = Vec::with_capacity(
+        mapping.device_id.len() + mapping.group.len() + mapping.source_filter.len(),
+    );
     key_data.extend_from_slice(mapping.device_id.as_bytes());
     key_data.extend_from_slice(mapping.group.as_bytes());
     key_data.extend_from_slice(mapping.source_filter.as_bytes());
@@ -100,7 +102,7 @@ pub fn bridge_mapping_to_db(mapping: &DeviceMapping) -> BridgeMappingDbRecord {
 
 /// 安全制限のEdge通知レコード。
 pub struct BridgeSafetyEdgeReport {
-    /// コンテンツハッシュ（actuator_type + max_intensity + ramp_rate）。
+    /// `コンテンツハッシュ（actuator_type` + `max_intensity` + `ramp_rate`）。
     pub content_hash: u64,
     /// アクチュエータ種別（0=Vibrate..9=Custom）。
     pub actuator_type: u8,
@@ -116,8 +118,8 @@ pub struct BridgeSafetyEdgeReport {
     pub safety_critical: bool,
 }
 
-/// ActuatorType の u8 コード変換。
-fn actuator_type_to_u8(atype: ActuatorType) -> u8 {
+/// `ActuatorType` の u8 コード変換。
+const fn actuator_type_to_u8(atype: ActuatorType) -> u8 {
     match atype {
         ActuatorType::Vibrate => 0,
         ActuatorType::Rotate => 1,
@@ -132,7 +134,7 @@ fn actuator_type_to_u8(atype: ActuatorType) -> u8 {
     }
 }
 
-/// SafetyLimits + ActuatorType を Edge レポートに変換。
+/// `SafetyLimits` + `ActuatorType` を Edge レポートに変換。
 #[inline]
 #[must_use]
 pub fn bridge_safety_to_edge(limits: &SafetyLimits, atype: ActuatorType) -> BridgeSafetyEdgeReport {
@@ -158,7 +160,7 @@ pub fn bridge_safety_to_edge(limits: &SafetyLimits, atype: ActuatorType) -> Brid
 
 /// 最新デバイスアクションのCacheエントリ。
 pub struct BridgeActionCacheEntry {
-    /// コンテンツハッシュ（device_id + position）。
+    /// `コンテンツハッシュ（device_id` + position）。
     pub content_hash: u64,
     /// デバイスID。
     pub device_id: String,
@@ -172,7 +174,7 @@ pub struct BridgeActionCacheEntry {
     pub ttl_secs: u32,
 }
 
-/// BridgeAction を Cache エントリに変換。
+/// `BridgeAction` を Cache エントリに変換。
 #[inline]
 #[must_use]
 pub fn bridge_action_to_cache(action: &BridgeAction, device_id: &str) -> BridgeActionCacheEntry {
@@ -198,7 +200,7 @@ pub fn bridge_action_to_cache(action: &BridgeAction, device_id: &str) -> BridgeA
 
 /// デバイスマッピングのAnalytics統計イベント。
 pub struct BridgeMappingAnalyticsEvent {
-    /// コンテンツハッシュ（device_id + scale + offset + invert）。
+    /// `コンテンツハッシュ（device_id` + scale + offset + invert）。
     pub content_hash: u64,
     /// デバイスID。
     pub device_id: String,
@@ -214,7 +216,7 @@ pub struct BridgeMappingAnalyticsEvent {
     pub is_custom: bool,
 }
 
-/// DeviceMapping を Analytics 統計イベントに変換。
+/// `DeviceMapping` を Analytics 統計イベントに変換。
 #[inline]
 #[must_use]
 pub fn bridge_mapping_to_analytics(mapping: &DeviceMapping) -> BridgeMappingAnalyticsEvent {

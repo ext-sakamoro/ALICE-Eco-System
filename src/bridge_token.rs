@@ -97,7 +97,7 @@ pub struct TokenSearchDocument {
     pub token_ids: Vec<u32>,
     /// Token count (posting list size estimate).
     pub token_count: usize,
-    /// Estimated index bytes (token_count * 4).
+    /// Estimated index bytes (`token_count` * 4).
     pub estimated_index_bytes: usize,
 }
 
