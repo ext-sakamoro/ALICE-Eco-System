@@ -107,9 +107,7 @@ pub struct LegalAiAnalyticsRiskEvent {
 /// Convert a risk assessment into a metrics event for ALICE-Analytics.
 #[inline]
 #[must_use]
-pub fn legal_ai_risk_to_analytics_event(
-    assessment: &RiskAssessment,
-) -> LegalAiAnalyticsRiskEvent {
+pub fn legal_ai_risk_to_analytics_event(assessment: &RiskAssessment) -> LegalAiAnalyticsRiskEvent {
     let score_bits = assessment.score.to_bits();
     let factor_count = assessment.factors.len() as u32;
     let mut key = [0u8; 12];
@@ -190,10 +188,7 @@ pub struct LegalAiCacheEntry {
 /// Low/Medium (level < 2) → 300 s.
 #[inline]
 #[must_use]
-pub fn legal_ai_to_cache_entry(
-    clause: &Clause,
-    assessment: &RiskAssessment,
-) -> LegalAiCacheEntry {
+pub fn legal_ai_to_cache_entry(clause: &Clause, assessment: &RiskAssessment) -> LegalAiCacheEntry {
     let content_hash = fnv1a(clause.text.as_bytes());
     let level_code = risk_level_to_u8(&assessment.level);
     // Branchless TTL: elevated=1 → 300-240=60, normal=0 → 300.
@@ -261,12 +256,19 @@ mod tests {
     }
 
     fn make_assessment(level: RiskLevel, score: f64, factors: Vec<String>) -> RiskAssessment {
-        RiskAssessment { level, factors, score }
+        RiskAssessment {
+            level,
+            score,
+            factors,
+        }
     }
 
     #[test]
     fn test_clause_to_db_record_obligation() {
-        let clause = make_clause("The licensee shall pay within 30 days.", ClauseType::Indemnification);
+        let clause = make_clause(
+            "The licensee shall pay within 30 days.",
+            ClauseType::Indemnification,
+        );
         let rec = legal_ai_clause_to_db_record(&clause);
         assert_ne!(rec.content_hash, 0);
         assert_eq!(rec.clause_type, 0); // Indemnification → 0
@@ -275,7 +277,10 @@ mod tests {
 
     #[test]
     fn test_clause_to_db_record_confidentiality() {
-        let clause = make_clause("All information is strictly confidential.", ClauseType::Confidentiality);
+        let clause = make_clause(
+            "All information is strictly confidential.",
+            ClauseType::Confidentiality,
+        );
         let rec = legal_ai_clause_to_db_record(&clause);
         assert_ne!(rec.content_hash, 0);
         assert_eq!(rec.clause_type, 3); // Confidentiality → 3
@@ -286,7 +291,10 @@ mod tests {
         let assessment = make_assessment(
             RiskLevel::High,
             0.75,
-            vec!["unlimited liability".to_string(), "no indemnity cap".to_string()],
+            vec![
+                "unlimited liability".to_string(),
+                "no indemnity cap".to_string(),
+            ],
         );
         let ev = legal_ai_risk_to_analytics_event(&assessment);
         assert_ne!(ev.content_hash, 0);
@@ -297,7 +305,11 @@ mod tests {
 
     #[test]
     fn test_risk_to_analytics_event_critical() {
-        let assessment = make_assessment(RiskLevel::Critical, 0.95, vec!["waiver of rights".to_string()]);
+        let assessment = make_assessment(
+            RiskLevel::Critical,
+            0.95,
+            vec!["waiver of rights".to_string()],
+        );
         let ev = legal_ai_risk_to_analytics_event(&assessment);
         assert_eq!(ev.risk_level, 3); // Critical → 3
         assert_eq!(ev.risk_score_permille, 950);
@@ -337,18 +349,25 @@ mod tests {
     #[test]
     fn test_search_record_fields() {
         let clause = make_clause("Warranty of merchantability implied.", ClauseType::Warranty);
-        let assessment = make_assessment(RiskLevel::Medium, 0.55, vec!["implied warranty".to_string()]);
+        let assessment = make_assessment(
+            RiskLevel::Medium,
+            0.55,
+            vec!["implied warranty".to_string()],
+        );
         let rec = legal_ai_to_search_record(&clause, &assessment);
         assert_ne!(rec.content_hash, 0);
         assert_eq!(rec.clause_type, 5); // Warranty → 5
-        assert_eq!(rec.risk_level, 1);  // Medium → 1
+        assert_eq!(rec.risk_level, 1); // Medium → 1
         assert_eq!(rec.risk_score_permille, 550);
         assert_eq!(rec.text_byte_len, clause.text.len());
     }
 
     #[test]
     fn test_hash_determinism() {
-        let clause = make_clause("The parties agree to arbitration.", ClauseType::Indemnification);
+        let clause = make_clause(
+            "The parties agree to arbitration.",
+            ClauseType::Indemnification,
+        );
         let rec1 = legal_ai_clause_to_db_record(&clause);
         let rec2 = legal_ai_clause_to_db_record(&clause);
         assert_eq!(rec1.content_hash, rec2.content_hash);

@@ -4,9 +4,7 @@
 //! Search index entries, Analytics metrics, Token vocabulary embeddings,
 //! and Cache.
 
-use alice_vectordb::{
-    cosine_similarity, DistanceMetric, HnswIndex, SearchResult, VectorRecord,
-};
+use alice_vectordb::{HnswIndex, SearchResult, VectorRecord};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -128,9 +126,13 @@ pub fn vectordb_record_to_search_index(record: &VectorRecord) -> VectordbSearchI
 }
 
 fn sqrt_f32(x: f32) -> f32 {
-    if x <= 0.0 { return 0.0; }
+    if x <= 0.0 {
+        return 0.0;
+    }
     let mut g = x / 2.0;
-    for _ in 0..15 { g = (g + x / g) / 2.0; }
+    for _ in 0..15 {
+        g = f32::midpoint(g, x / g);
+    }
     g
 }
 
@@ -203,8 +205,16 @@ pub fn vectordb_token_to_vector(token_id: u32, vocab_size: usize) -> VectordbTok
     key[4..12].copy_from_slice(&(vocab_size as u64).to_le_bytes());
 
     let embed_seed = fnv1a(&key);
-    let recommended_dim = if vocab_size < 1024 { vocab_size / 2 } else { 512 };
-    let recommended_dim = if recommended_dim == 0 { 1 } else { recommended_dim };
+    let recommended_dim = if vocab_size < 1024 {
+        vocab_size / 2
+    } else {
+        512
+    };
+    let recommended_dim = if recommended_dim == 0 {
+        1
+    } else {
+        recommended_dim
+    };
 
     VectordbTokenVector {
         content_hash: fnv1a(&key),

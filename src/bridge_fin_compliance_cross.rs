@@ -9,7 +9,6 @@ use alice_fix::message::FixMessage;
 use alice_fix::tag;
 use alice_ledger::position::Position;
 use alice_risk::check::RiskReject;
-use alice_risk::limit::RiskLimits;
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -159,18 +158,13 @@ pub struct FinComplianceFixAudit {
 pub fn fin_compliance_fix_message_to_audit(msg: &FixMessage) -> FinComplianceFixAudit {
     let sender_hash = msg
         .get(tag::SENDER_COMP_ID)
-        .map(|s| fnv1a(s.as_bytes()))
-        .unwrap_or(0);
+        .map_or(0, |s| fnv1a(s.as_bytes()));
     let target_hash = msg
         .get(tag::TARGET_COMP_ID)
-        .map(|s| fnv1a(s.as_bytes()))
-        .unwrap_or(0);
+        .map_or(0, |s| fnv1a(s.as_bytes()));
     let msg_type_hash = fnv1a(msg.msg_type.as_bytes());
     let seq_num = msg.get_u64(tag::MSG_SEQ_NUM).unwrap_or(0);
-    let symbol_hash = msg
-        .get(tag::SYMBOL)
-        .map(|s| fnv1a(s.as_bytes()))
-        .unwrap_or(0);
+    let symbol_hash = msg.get(tag::SYMBOL).map_or(0, |s| fnv1a(s.as_bytes()));
 
     // 注文関連メッセージ: D=NewOrderSingle, F=CancelRequest, G=CancelReplace, 8=ExecutionReport
     let is_order_message = matches!(msg.msg_type.as_str(), "D" | "F" | "G" | "8");
@@ -227,9 +221,7 @@ pub fn fin_compliance_risk_reject_to_alert(reject: &RiskReject) -> FinCompliance
         RiskReject::OrderSizeTooLarge { size, limit } => {
             (1u8, *size as i64, 0i64, *limit as i64, false)
         }
-        RiskReject::NotionalExceeded { notional, limit } => {
-            (2u8, *notional, 0i64, *limit, false)
-        }
+        RiskReject::NotionalExceeded { notional, limit } => (2u8, *notional, 0i64, *limit, false),
         RiskReject::MaxOpenOrdersReached { count, limit } => {
             (3u8, *count as i64, 0i64, *limit as i64, false)
         }

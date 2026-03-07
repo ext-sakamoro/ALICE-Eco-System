@@ -291,9 +291,7 @@ mod tests {
 
     #[test]
     fn test_observability_to_db_span_record_duration() {
-        let rec = observability_to_db_span_record(
-            "t1", "s1", "db.query", 1_000, 1_200, false, 0,
-        );
+        let rec = observability_to_db_span_record("t1", "s1", "db.query", 1_000, 1_200, false, 0);
         assert_eq!(rec.duration_ms, 200);
         assert!(!rec.is_error);
     }
@@ -311,7 +309,11 @@ mod tests {
         // 990 good out of 1000 total → ratio 0.99.
         let p = observability_to_analytics_sli("api-availability", 990, 1_000, 0.999, 86_400_000);
         assert_ne!(p.content_hash, 0);
-        assert!((p.sli_ratio - 0.99).abs() < 1e-9, "sli_ratio={}", p.sli_ratio);
+        assert!(
+            (p.sli_ratio - 0.99).abs() < 1e-9,
+            "sli_ratio={}",
+            p.sli_ratio
+        );
         assert_eq!(p.good_events, 990);
         assert_eq!(p.total_events, 1_000);
     }
@@ -326,8 +328,7 @@ mod tests {
 
     #[test]
     fn test_observability_to_cache_span_complete_ttl() {
-        let entry =
-            observability_to_cache_span("trace-1", "span-1", 1_000, 2_000, false);
+        let entry = observability_to_cache_span("trace-1", "span-1", 1_000, 2_000, false);
         assert_ne!(entry.content_hash, 0);
         assert!(entry.is_complete);
         // complete → ttl = 30 + 270 = 300

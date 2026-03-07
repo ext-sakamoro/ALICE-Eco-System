@@ -3,9 +3,7 @@
 //! 5 bridges connecting A/B experiment data to ML feature extraction,
 //! Analytics metrics, ML reward signals, and Cache.
 
-use alice_experiment::{
-    z_test_proportions, p_value_from_z, BanditArm, ConversionData, Variant,
-};
+use alice_experiment::{p_value_from_z, z_test_proportions, BanditArm, ConversionData, Variant};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -277,7 +275,10 @@ mod tests {
 
     #[test]
     fn test_experiment_variant_to_ml_feature() {
-        let v = Variant { name: String::from("control"), traffic_pct: 0.5 };
+        let v = Variant {
+            name: String::from("control"),
+            traffic_pct: 0.5,
+        };
         let feat = experiment_variant_to_ml_feature(&v);
         assert_ne!(feat.content_hash, 0);
         assert_ne!(feat.name_hash, 0);
@@ -287,7 +288,10 @@ mod tests {
 
     #[test]
     fn test_experiment_variant_to_ml_feature_deterministic() {
-        let v = Variant { name: String::from("treatment"), traffic_pct: 0.3 };
+        let v = Variant {
+            name: String::from("treatment"),
+            traffic_pct: 0.3,
+        };
         let f1 = experiment_variant_to_ml_feature(&v);
         let f2 = experiment_variant_to_ml_feature(&v);
         assert_eq!(f1.content_hash, f2.content_hash);

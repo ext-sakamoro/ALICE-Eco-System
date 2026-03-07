@@ -105,7 +105,11 @@ pub fn metrics_histogram_to_analytics(
     p99: f64,
 ) -> MetricsHistogramAnalytics {
     let name_hash = fnv1a(name.as_bytes());
-    let mean = if total_count == 0 { 0.0 } else { sum / total_count as f64 };
+    let mean = if total_count == 0 {
+        0.0
+    } else {
+        sum / total_count as f64
+    };
     let mut key = [0u8; 24];
     key[0..8].copy_from_slice(&name_hash.to_le_bytes());
     key[8..16].copy_from_slice(&total_count.to_le_bytes());
@@ -279,9 +283,8 @@ mod tests {
 
     #[test]
     fn test_counter_to_span_ok_status() {
-        let span = metrics_counter_to_observability_span(
-            "http_requests_total", "method=GET", 50, 100,
-        );
+        let span =
+            metrics_counter_to_observability_span("http_requests_total", "method=GET", 50, 100);
         assert_ne!(span.content_hash, 0);
         assert_eq!(span.status, 0); // below threshold → Ok
         assert_eq!(span.counter_value, 50);
@@ -290,9 +293,7 @@ mod tests {
 
     #[test]
     fn test_counter_to_span_error_status() {
-        let span = metrics_counter_to_observability_span(
-            "error_count", "svc=api", 200, 100,
-        );
+        let span = metrics_counter_to_observability_span("error_count", "svc=api", 200, 100);
         assert_eq!(span.status, 1); // above threshold → Error
         assert_eq!(span.counter_value, 200);
     }
@@ -368,7 +369,7 @@ mod tests {
 
     #[test]
     fn test_snapshot_cache_stable_ttl() {
-        let entry = metrics_snapshot_to_cache(100, 3.14, 25.0, true);
+        let entry = metrics_snapshot_to_cache(100, 7.5, 25.0, true);
         assert_ne!(entry.content_hash, 0);
         assert_eq!(entry.ttl_secs, 120); // stable → 120s
         assert_eq!(entry.counter_value, 100);

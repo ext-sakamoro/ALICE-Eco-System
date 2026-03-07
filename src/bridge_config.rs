@@ -2,7 +2,7 @@
 //!
 //! 5 bridges connecting the configuration layer to the ALICE ecosystem.
 
-use alice_config::{ConfigStore, ConfigValue, FeatureFlag, flag_enabled};
+use alice_config::{flag_enabled, ConfigStore, ConfigValue, FeatureFlag};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -51,7 +51,11 @@ pub fn config_to_db_snapshot(store: &ConfigStore, created_at_ms: u64) -> ConfigD
         }
         hash_data.push(b'|');
     }
-    let content_hash = if hash_data.is_empty() { fnv1a(b"empty") } else { fnv1a(&hash_data) };
+    let content_hash = if hash_data.is_empty() {
+        fnv1a(b"empty")
+    } else {
+        fnv1a(&hash_data)
+    };
     ConfigDbSnapshot {
         content_hash,
         layer_count: store.layer_count(),
@@ -86,8 +90,15 @@ pub struct ConfigCacheEntry {
 #[must_use]
 pub fn config_to_cache_entry(store: &ConfigStore, key: &str) -> ConfigCacheEntry {
     let content_hash = fnv1a(key.as_bytes());
-    match store.get(key) {
-        Some(val) => {
+    store.get(key).map_or(
+        ConfigCacheEntry {
+            content_hash,
+            value_type: 0,
+            found: false,
+            ttl_secs: 10,
+            value_hash: 0,
+        },
+        |val| {
             let (value_type, value_bytes): (u8, Vec<u8>) = match val {
                 ConfigValue::String(s) => (0, s.as_bytes().to_vec()),
                 ConfigValue::Int(n) => (1, n.to_le_bytes().to_vec()),
@@ -105,15 +116,8 @@ pub fn config_to_cache_entry(store: &ConfigStore, key: &str) -> ConfigCacheEntry
                 ttl_secs,
                 value_hash,
             }
-        }
-        None => ConfigCacheEntry {
-            content_hash,
-            value_type: 0,
-            found: false,
-            ttl_secs: 10,
-            value_hash: 0,
         },
-    }
+    )
 }
 
 // ── Bridge 3: Config → Analytics (flag usage) ─────────────────────────────
@@ -231,13 +235,16 @@ pub fn config_to_edge_push(
         hash_data.extend_from_slice(k.as_bytes());
         let vlen = match v {
             ConfigValue::String(s) => s.len(),
-            ConfigValue::Int(_) => 8,
-            ConfigValue::Float(_) => 8,
+            ConfigValue::Int(_) | ConfigValue::Float(_) => 8,
             ConfigValue::Bool(_) => 1,
         };
         payload_bytes += k.len() + vlen;
     }
-    let content_hash = if hash_data.is_empty() { fnv1a(b"empty") } else { fnv1a(&hash_data) };
+    let content_hash = if hash_data.is_empty() {
+        fnv1a(b"empty")
+    } else {
+        fnv1a(&hash_data)
+    };
     ConfigEdgePush {
         content_hash,
         key_count: merged.len(),
@@ -257,7 +264,10 @@ mod tests {
     fn make_store() -> ConfigStore {
         let mut store = ConfigStore::new();
         let mut layer = BTreeMap::new();
-        layer.insert(String::from("host"), ConfigValue::String(String::from("localhost")));
+        layer.insert(
+            String::from("host"),
+            ConfigValue::String(String::from("localhost")),
+        );
         layer.insert(String::from("port"), ConfigValue::Int(8080));
         layer.insert(String::from("debug"), ConfigValue::Bool(false));
         store.add_layer("base", layer);
@@ -265,7 +275,11 @@ mod tests {
     }
 
     fn make_flag(rollout: f64) -> FeatureFlag {
-        FeatureFlag { key: String::from("dark_mode"), enabled: true, rollout_rate: rollout }
+        FeatureFlag {
+            key: String::from("dark_mode"),
+            enabled: true,
+            rollout_rate: rollout,
+        }
     }
 
     // ── Bridge 1 ──────────────────────────────────────────────────────────

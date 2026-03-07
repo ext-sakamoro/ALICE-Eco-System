@@ -328,8 +328,15 @@ mod tests {
         // 100 visitors, 25 conversions → 0.25 rate.
         let m = experiment_to_analytics_metrics("exp-1", "variant_a", 100, 25, 2.1, 0.05);
         assert_ne!(m.content_hash, 0);
-        assert!((m.conversion_rate - 0.25).abs() < 1e-9, "rate={}", m.conversion_rate);
-        assert!(m.is_significant, "z=2.1 should be significant at alpha=0.05");
+        assert!(
+            (m.conversion_rate - 0.25).abs() < 1e-9,
+            "rate={}",
+            m.conversion_rate
+        );
+        assert!(
+            m.is_significant,
+            "z=2.1 should be significant at alpha=0.05"
+        );
     }
 
     #[test]
@@ -363,7 +370,11 @@ mod tests {
         // 80 successes, 20 failures → expected_reward = 0.8.
         let rec = experiment_to_ml_bandit_record("bandit-1", "arm-a", 80, 20, 1.23);
         assert_ne!(rec.content_hash, 0);
-        assert!((rec.expected_reward - 0.8).abs() < 1e-9, "reward={}", rec.expected_reward);
+        assert!(
+            (rec.expected_reward - 0.8).abs() < 1e-9,
+            "reward={}",
+            rec.expected_reward
+        );
         assert!((rec.ucb1_index - 1.23).abs() < 1e-9);
     }
 

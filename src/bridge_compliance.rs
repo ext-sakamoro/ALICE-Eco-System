@@ -158,12 +158,12 @@ pub fn compliance_to_cache_entry(
     rule_count: u32,
     rule_set_byte_len: usize,
 ) -> ComplianceCacheEntry {
-    let content_hash = fnv1a(regulation_id.as_bytes());
-
     // Branchless TTL: base=7200, step=300 per rule, max 20 rules subtracted.
     const BASE: u32 = 7_200;
     const STEP: u32 = 300;
     const MAX_RULES: u32 = 20;
+
+    let content_hash = fnv1a(regulation_id.as_bytes());
     let clamped = rule_count.min(MAX_RULES);
     let ttl_seconds = BASE - clamped * STEP;
 
@@ -368,7 +368,10 @@ mod tests {
     fn test_legal_record_hash_covers_both_ids() {
         let rec_a = compliance_to_legal_record(REG_ID, "RULE-A", 0, 1, 1, 0);
         let rec_b = compliance_to_legal_record(REG_ID, "RULE-B", 0, 1, 1, 0);
-        assert_ne!(rec_a.content_hash, rec_b.content_hash, "different rule_id → different content_hash");
+        assert_ne!(
+            rec_a.content_hash, rec_b.content_hash,
+            "different rule_id → different content_hash"
+        );
         assert_ne!(rec_a.rule_hash, rec_b.rule_hash);
     }
 

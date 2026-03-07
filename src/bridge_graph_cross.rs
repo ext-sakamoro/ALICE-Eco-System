@@ -3,7 +3,7 @@
 //! 5 bridges connecting graph structures to vector embedding, ML feature
 //! extraction, analytics metrics, search indexing, and cache.
 
-use alice_graph::{detect_communities, dijkstra, pagerank, Edge, Node, PropertyGraph, ShortestPath};
+use alice_graph::{Edge, Node, PropertyGraph, ShortestPath};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -175,8 +175,13 @@ pub fn graph_pagerank_to_analytics(scores: &[f64]) -> GraphPagerankAnalytics {
     let (mut min_s, mut max_s, mut sum_s, mut top_id) = (f64::INFINITY, f64::NEG_INFINITY, 0.0, 0);
 
     for (i, &s) in scores.iter().enumerate() {
-        if s < min_s { min_s = s; }
-        if s > max_s { max_s = s; top_id = i; }
+        if s < min_s {
+            min_s = s;
+        }
+        if s > max_s {
+            max_s = s;
+            top_id = i;
+        }
         sum_s += s;
     }
 
@@ -185,7 +190,11 @@ pub fn graph_pagerank_to_analytics(scores: &[f64]) -> GraphPagerankAnalytics {
         max_s = 0.0;
     }
 
-    let mean_s = if node_count > 0 { sum_s / node_count as f64 } else { 0.0 };
+    let mean_s = if node_count > 0 {
+        sum_s / node_count as f64
+    } else {
+        0.0
+    };
     let metric_name_hash = fnv1a(b"graph.pagerank");
 
     let mut key = [0u8; 40];
@@ -266,8 +275,15 @@ pub fn graph_community_to_search_record(
     let mid = b":node:";
     let nid = itoa_small(node_id);
     let mut pos = 0usize;
-    for &b in prefix.iter().chain(&cid.0[..cid.1]).chain(mid.iter()).chain(&nid.0[..nid.1]) {
-        if pos >= 48 { break; }
+    for &b in prefix
+        .iter()
+        .chain(&cid.0[..cid.1])
+        .chain(mid.iter())
+        .chain(&nid.0[..nid.1])
+    {
+        if pos >= 48 {
+            break;
+        }
         search_key[pos] = b;
         pos += 1;
     }
@@ -311,7 +327,11 @@ pub struct GraphPathCache {
 #[inline]
 #[must_use]
 pub fn graph_path_to_cache(src: usize, dst: usize, path: &ShortestPath) -> GraphPathCache {
-    let hop_count = if path.path.len() > 1 { path.path.len() - 1 } else { 0 };
+    let hop_count = if path.path.len() > 1 {
+        path.path.len() - 1
+    } else {
+        0
+    };
 
     // Branchless TTL: long paths (>5 hops) get 60s less
     let long_path = (hop_count > 5) as u32;
@@ -345,16 +365,16 @@ mod tests {
     use std::collections::BTreeMap;
 
     fn test_graph() -> PropertyGraph {
-        let mut g = PropertyGraph::new();
-        let a = g.add_node("Person", BTreeMap::new());
-        let b = g.add_node("Person", BTreeMap::new());
-        let c = g.add_node("Person", BTreeMap::new());
-        let d = g.add_node("Person", BTreeMap::new());
-        g.add_edge(a, b, "KNOWS", 1.0, BTreeMap::new());
-        g.add_edge(b, c, "KNOWS", 2.0, BTreeMap::new());
-        g.add_edge(a, c, "KNOWS", 10.0, BTreeMap::new());
-        g.add_edge(c, d, "KNOWS", 1.0, BTreeMap::new());
-        g
+        let mut graph = PropertyGraph::new();
+        let node_a = graph.add_node("Person", BTreeMap::new());
+        let node_b = graph.add_node("Person", BTreeMap::new());
+        let node_c = graph.add_node("Person", BTreeMap::new());
+        let node_d = graph.add_node("Person", BTreeMap::new());
+        graph.add_edge(node_a, node_b, "KNOWS", 1.0, BTreeMap::new());
+        graph.add_edge(node_b, node_c, "KNOWS", 2.0, BTreeMap::new());
+        graph.add_edge(node_a, node_c, "KNOWS", 10.0, BTreeMap::new());
+        graph.add_edge(node_c, node_d, "KNOWS", 1.0, BTreeMap::new());
+        graph
     }
 
     // ── Bridge 1: node → vectordb record ─────────────────────────────

@@ -114,10 +114,10 @@ pub fn compliance_violation_to_legal_ai_clause(violation: &Violation) -> Complia
 
     // コンプライアンス severity → LegalAI RiskLevel マッピング
     let estimated_risk = match violation.severity {
-        Severity::Info | Severity::Low => 0,    // RiskLevel::Low
-        Severity::Medium => 1,                   // RiskLevel::Medium
-        Severity::High => 2,                     // RiskLevel::High
-        Severity::Critical => 3,                 // RiskLevel::Critical
+        Severity::Info | Severity::Low => 0, // RiskLevel::Low
+        Severity::Medium => 1,               // RiskLevel::Medium
+        Severity::High => 2,                 // RiskLevel::High
+        Severity::Critical => 3,             // RiskLevel::Critical
     };
 
     let mut key = [0u8; 33];
@@ -356,7 +356,7 @@ mod tests {
         assert_ne!(audit.content_hash, 0);
         assert_ne!(audit.rule_id_hash, 0);
         assert_eq!(audit.regulation, 0); // Gdpr
-        assert_eq!(audit.severity, 3);   // High
+        assert_eq!(audit.severity, 3); // High
         assert_ne!(audit.description_hash, 0);
     }
 
@@ -437,7 +437,7 @@ mod tests {
         let analytics = compliance_legal_ai_risk_to_analytics(&clause);
         assert_ne!(analytics.content_hash, 0);
         assert_eq!(analytics.clause_type, 0); // Indemnification
-        assert_eq!(analytics.risk_level, 3);  // Critical
+        assert_eq!(analytics.risk_level, 3); // Critical
         assert_eq!(analytics.risk_score, 10); // Critical → 10
     }
 
@@ -452,8 +452,8 @@ mod tests {
         };
         let analytics = compliance_legal_ai_risk_to_analytics(&clause);
         assert_eq!(analytics.clause_type, 6); // Governing
-        assert_eq!(analytics.risk_level, 0);  // Low
-        assert_eq!(analytics.risk_score, 1);  // Low → 1
+        assert_eq!(analytics.risk_level, 0); // Low
+        assert_eq!(analytics.risk_score, 1); // Low → 1
     }
 
     // ── Bridge 5: audit → cache ─────────────────────────────────────────
@@ -463,15 +463,15 @@ mod tests {
         let rule = sample_rule(Severity::Critical);
         let cache = compliance_audit_to_cache(&rule);
         assert_ne!(cache.content_hash, 0);
-        assert_eq!(cache.severity, 4);     // Critical
-        assert_eq!(cache.ttl_secs, 120);   // 短いTTL
+        assert_eq!(cache.severity, 4); // Critical
+        assert_eq!(cache.ttl_secs, 120); // 短いTTL
     }
 
     #[test]
     fn test_compliance_audit_to_cache_low() {
         let rule = sample_rule(Severity::Low);
         let cache = compliance_audit_to_cache(&rule);
-        assert_eq!(cache.severity, 1);     // Low
-        assert_eq!(cache.ttl_secs, 1800);  // 長いTTL
+        assert_eq!(cache.severity, 1); // Low
+        assert_eq!(cache.ttl_secs, 1800); // 長いTTL
     }
 }

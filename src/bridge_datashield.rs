@@ -161,13 +161,13 @@ pub fn datashield_to_cache_entry(
     mask_char: u8,
     field_type: u8,
 ) -> DataShieldCacheEntry {
-    let content_hash = fnv1a(field_name.as_bytes());
-
     // Branchless TTL: base=3600, step=600 per sensitivity level, max 3 levels.
     // field_type 0 (generic) → 3600; field_type 3 (phone) → 1800.
     const BASE: u32 = 3_600;
     const STEP: u32 = 600;
     const MAX_TYPE: u8 = 3;
+
+    let content_hash = fnv1a(field_name.as_bytes());
     let clamped = field_type.min(MAX_TYPE) as u32;
     let ttl_seconds = BASE - clamped * STEP;
 

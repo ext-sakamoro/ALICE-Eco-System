@@ -283,7 +283,7 @@ mod tests {
     fn make_records(n: usize) -> Vec<VectorRecord> {
         (0..n)
             .map(|i| VectorRecord {
-                id: format!("vec-{}", i),
+                id: format!("vec-{i}"),
                 vector: vec![i as f32, (i * 2) as f32, (i * 3) as f32],
             })
             .collect()

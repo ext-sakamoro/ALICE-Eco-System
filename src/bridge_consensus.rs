@@ -49,10 +49,7 @@ pub struct ConsensusDbLogRecord {
 /// Build a Raft log entry persistence record for ALICE-DB.
 #[inline]
 #[must_use]
-pub fn consensus_to_db_log_record(
-    entry: &LogEntry,
-    node_id: u64,
-) -> ConsensusDbLogRecord {
+pub fn consensus_to_db_log_record(entry: &LogEntry, node_id: u64) -> ConsensusDbLogRecord {
     let content_hash = fnv1a(&entry.command);
     let command_hash = fnv1a(&entry.command);
     ConsensusDbLogRecord {
@@ -188,9 +185,7 @@ pub fn consensus_to_sync_payload(
     hash_data[..8].copy_from_slice(&state.commit_index.to_le_bytes());
     hash_data[8..16].copy_from_slice(&state.last_applied.to_le_bytes());
     let content_hash = fnv1a(&hash_data);
-    let new_entries = state
-        .commit_index
-        .saturating_sub(checkpoint_index) as usize;
+    let new_entries = state.commit_index.saturating_sub(checkpoint_index) as usize;
     let quorum_ok = has_quorum(votes_received, state.cluster_size);
     ConsensusSyncPayload {
         content_hash,
@@ -260,7 +255,11 @@ mod tests {
     }
 
     fn make_log_entry() -> LogEntry {
-        LogEntry { term: 1, index: 1, command: vec![0xCA, 0xFE, 0xBA, 0xBE] }
+        LogEntry {
+            term: 1,
+            index: 1,
+            command: vec![0xCA, 0xFE, 0xBA, 0xBE],
+        }
     }
 
     // ── Bridge 1 ──────────────────────────────────────────────────────────

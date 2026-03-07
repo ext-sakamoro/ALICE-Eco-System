@@ -122,10 +122,7 @@ pub struct MigrateCacheEntry {
 /// Build a cached schema hash entry for ALICE-Cache.
 #[inline]
 #[must_use]
-pub fn migrate_to_cache_entry(
-    ddl_statements: &[&str],
-    expected_hash: u64,
-) -> MigrateCacheEntry {
+pub fn migrate_to_cache_entry(ddl_statements: &[&str], expected_hash: u64) -> MigrateCacheEntry {
     let schema_hash_val = schema_hash(ddl_statements);
     let content_hash = fnv1a(&schema_hash_val.to_le_bytes());
     let is_clean = schema_hash_val == expected_hash;
@@ -233,8 +230,12 @@ mod tests {
     use alice_migrate::{detect_drift, plan_migrations};
 
     fn make_migration() -> Migration {
-        Migration::new("001", "create users", "CREATE TABLE users (id INT PRIMARY KEY)")
-            .with_rollback("DROP TABLE users")
+        Migration::new(
+            "001",
+            "create users",
+            "CREATE TABLE users (id INT PRIMARY KEY)",
+        )
+        .with_rollback("DROP TABLE users")
     }
 
     fn make_plan() -> MigrationPlan {

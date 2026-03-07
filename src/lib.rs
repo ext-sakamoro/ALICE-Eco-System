@@ -6,6 +6,10 @@
 // - too_many_lines: pipeline orchestration functions span multiple crate calls
 // - missing_docs: bridge conversion functions are self-documenting by signature
 // - unreadable_literal: FNV-1a constants are standard hex values
+// - doc_markdown: bridge doc comments use snake_case field names as prose, not code references
+// - ignored_unit_patterns: match guards on () use _ for readability in bridge encoding tables
+// - too_many_arguments: some bridge conversion functions mirror multi-field source structs
+// - missing_const_for_fn: bridge functions reference non-const dependencies
 #![allow(
     clippy::inline_always,
     clippy::cast_possible_truncation,
@@ -17,7 +21,11 @@
     clippy::module_name_repetitions,
     clippy::too_many_lines,
     clippy::unreadable_literal,
-    clippy::missing_docs_in_private_items
+    clippy::missing_docs_in_private_items,
+    clippy::doc_markdown,
+    clippy::ignored_unit_patterns,
+    clippy::too_many_arguments,
+    clippy::missing_const_for_fn
 )]
 
 //! ALICE Eco-System — Unified Pipeline Library
@@ -187,57 +195,57 @@ pub mod bridge_voice;
 pub mod bridge_zip;
 
 // Infrastructure bridges
-pub mod bridge_scheduler;
-pub mod bridge_log;
-pub mod bridge_config;
-pub mod bridge_migrate;
 pub mod bridge_backup;
 pub mod bridge_circuit;
+pub mod bridge_config;
 pub mod bridge_consensus;
+pub mod bridge_log;
+pub mod bridge_migrate;
+pub mod bridge_scheduler;
 
 // Data/Communication bridges
-pub mod bridge_serial;
+pub mod bridge_collab;
+pub mod bridge_notify;
 pub mod bridge_rate_limit;
 pub mod bridge_realtime;
-pub mod bridge_collab;
+pub mod bridge_serial;
 pub mod bridge_workflow;
-pub mod bridge_notify;
 
 // Security bridges
 pub mod bridge_browser_secure;
-pub mod bridge_datashield;
 pub mod bridge_compliance;
 pub mod bridge_compliance_cross;
+pub mod bridge_datashield;
 pub mod bridge_fin_compliance;
 pub mod bridge_fin_compliance_cross;
 
 // Analytics/Monitoring bridges
+pub mod bridge_experiment;
+pub mod bridge_experiment_cross;
 pub mod bridge_metrics;
 pub mod bridge_metrics_cross;
 pub mod bridge_observability;
-pub mod bridge_experiment;
-pub mod bridge_experiment_cross;
 pub mod bridge_test;
 
 // Domain bridges
 pub mod bridge_billing;
 pub mod bridge_billing_cross;
-pub mod bridge_legal_ai;
 pub mod bridge_digital_twin;
+pub mod bridge_document;
+pub mod bridge_geo;
 pub mod bridge_graph;
 pub mod bridge_graph_cross;
-pub mod bridge_geo;
-pub mod bridge_document;
 pub mod bridge_i18n;
+pub mod bridge_legal_ai;
 
 // Media/Compression/Low-level bridges
+pub mod bridge_ffi;
 pub mod bridge_image;
 pub mod bridge_text_compression;
 pub mod bridge_vectordb;
 pub mod bridge_vectordb_cross;
 pub mod bridge_wasm;
 pub mod bridge_wasm_cross;
-pub mod bridge_ffi;
 
 pub mod hash;
 pub mod pipeline;

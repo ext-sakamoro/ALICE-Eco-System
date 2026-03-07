@@ -247,7 +247,9 @@ mod tests {
 
     fn make_diff(changed: usize, added: usize, removed: usize) -> StateDiff {
         StateDiff {
-            changed: (0..changed).map(|i| (format!("k{i}"), i as f64, i as f64 + 1.0)).collect(),
+            changed: (0..changed)
+                .map(|i| (format!("k{i}"), i as f64, i as f64 + 1.0))
+                .collect(),
             added: (0..added).map(|i| (format!("a{i}"), i as f64)).collect(),
             removed: (0..removed).map(|i| format!("r{i}")).collect(),
         }
@@ -255,10 +257,11 @@ mod tests {
 
     #[test]
     fn test_state_to_db_record() {
-        let state = make_state("twin-A", 1_700_000_000_000, vec![
-            ("temperature", 25.5),
-            ("active", 1.0),
-        ]);
+        let state = make_state(
+            "twin-A",
+            1_700_000_000_000,
+            vec![("temperature", 25.5), ("active", 1.0)],
+        );
         let rec = digital_twin_state_to_db_record(&state);
         assert_ne!(rec.content_hash, 0);
         assert_ne!(rec.twin_id_hash, 0);
@@ -280,13 +283,17 @@ mod tests {
 
     #[test]
     fn test_state_to_physics_input_numeric_count() {
-        let state = make_state("twin-C", 500, vec![
-            ("pos_x", 1.0),
-            ("pos_y", 2.0),
-            ("vel_x", 3.0),
-            ("enabled", 0.0),
-            ("scale", 1.5),
-        ]);
+        let state = make_state(
+            "twin-C",
+            500,
+            vec![
+                ("pos_x", 1.0),
+                ("pos_y", 2.0),
+                ("vel_x", 3.0),
+                ("enabled", 0.0),
+                ("scale", 1.5),
+            ],
+        );
         let inp = digital_twin_state_to_physics_input(&state);
         assert_ne!(inp.content_hash, 0);
         assert_eq!(inp.numeric_property_count, 5);
@@ -295,7 +302,14 @@ mod tests {
     #[test]
     fn test_state_to_cache_entry_simple_ttl() {
         // <= 20 properties → ttl = 30
-        let props: Vec<_> = (0..5).map(|i| (Box::leak(format!("p{i}").into_boxed_str()) as &str, i as f64)).collect();
+        let props: Vec<_> = (0..5)
+            .map(|i| {
+                (
+                    Box::leak(format!("p{i}").into_boxed_str()) as &str,
+                    i as f64,
+                )
+            })
+            .collect();
         let state = make_state("twin-D", 100, props);
         let entry = digital_twin_state_to_cache_entry(&state);
         assert_ne!(entry.content_hash, 0);
@@ -305,7 +319,14 @@ mod tests {
     #[test]
     fn test_state_to_cache_entry_active_ttl() {
         // > 20 properties → ttl = 5
-        let props: Vec<_> = (0..25).map(|i| (Box::leak(format!("p{i}").into_boxed_str()) as &str, i as f64)).collect();
+        let props: Vec<_> = (0..25)
+            .map(|i| {
+                (
+                    Box::leak(format!("p{i}").into_boxed_str()) as &str,
+                    i as f64,
+                )
+            })
+            .collect();
         let state = make_state("twin-E", 200, props);
         let entry = digital_twin_state_to_cache_entry(&state);
         assert_eq!(entry.ttl_secs, 5);

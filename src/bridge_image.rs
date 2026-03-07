@@ -2,9 +2,9 @@
 //!
 //! 5 bridges connecting SIMD-accelerated image processing to the ALICE ecosystem.
 
-use alice_image::{otsu_threshold, resize_bilinear, resize_lanczos3, rgb_to_lab, Image};
 #[cfg(test)]
 use alice_image::Rgba;
+use alice_image::{otsu_threshold, resize_bilinear, resize_lanczos3, rgb_to_lab, Image};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -52,7 +52,11 @@ pub struct ImageDbRecord {
 pub fn image_to_db_record(img: &Image) -> ImageDbRecord {
     // 8×8 downsample for perceptual hashing.
     let thumb = resize_bilinear(img, 8, 8);
-    let thumb_bytes: Vec<u8> = thumb.pixels.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+    let thumb_bytes: Vec<u8> = thumb
+        .pixels
+        .iter()
+        .flat_map(|p| [p.r, p.g, p.b, p.a])
+        .collect();
     let content_hash = fnv1a(&thumb_bytes);
 
     // Per-channel means.
@@ -110,8 +114,11 @@ pub struct ImageCacheEntry {
 #[must_use]
 pub fn image_to_cache_entry(img: &Image) -> ImageCacheEntry {
     let thumb = resize_lanczos3(img, 16, 16);
-    let thumb_bytes: Vec<u8> =
-        thumb.pixels.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+    let thumb_bytes: Vec<u8> = thumb
+        .pixels
+        .iter()
+        .flat_map(|p| [p.r, p.g, p.b, p.a])
+        .collect();
     let content_hash = fnv1a(&thumb_bytes);
 
     // Branchless TTL: large images (> 1 MP) get 1800 s, others 3600 s.
@@ -159,8 +166,11 @@ pub struct ImageCdnDescriptor {
 #[must_use]
 pub fn image_to_cdn_descriptor(img: &Image) -> ImageCdnDescriptor {
     let thumb = resize_bilinear(img, 32, 32);
-    let thumb_bytes: Vec<u8> =
-        thumb.pixels.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+    let thumb_bytes: Vec<u8> = thumb
+        .pixels
+        .iter()
+        .flat_map(|p| [p.r, p.g, p.b, p.a])
+        .collect();
     let content_hash = fnv1a(&thumb_bytes);
 
     // Mean Lab from centre 4×4 of the 32×32 thumbnail.
@@ -223,8 +233,11 @@ pub struct ImageAnalyticsMetrics {
 #[must_use]
 pub fn image_to_analytics_metrics(img: &Image, blur_sigma: f64) -> ImageAnalyticsMetrics {
     let thumb = resize_bilinear(img, 8, 8);
-    let thumb_bytes: Vec<u8> =
-        thumb.pixels.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+    let thumb_bytes: Vec<u8> = thumb
+        .pixels
+        .iter()
+        .flat_map(|p| [p.r, p.g, p.b, p.a])
+        .collect();
     let content_hash = fnv1a(&thumb_bytes);
 
     let n = img.pixels.len().max(1);
@@ -281,8 +294,11 @@ pub struct ImageEdgeEvent {
 #[must_use]
 pub fn image_to_edge_event(img: &Image, event_kind: u8) -> ImageEdgeEvent {
     let thumb = resize_bilinear(img, 8, 8);
-    let thumb_bytes: Vec<u8> =
-        thumb.pixels.iter().flat_map(|p| [p.r, p.g, p.b, p.a]).collect();
+    let thumb_bytes: Vec<u8> = thumb
+        .pixels
+        .iter()
+        .flat_map(|p| [p.r, p.g, p.b, p.a])
+        .collect();
     let content_hash = fnv1a(&thumb_bytes);
 
     // Branchless processing hint: > 4 MP → gpu_upscale (2), else none (0).
@@ -314,7 +330,11 @@ mod tests {
         for y in 0..h {
             for x in 0..w {
                 let v = ((x + y) % 256) as u8;
-                img.set_pixel(x, y, Rgba::rgb(v, (v / 2).wrapping_add(30), v.wrapping_sub(20)));
+                img.set_pixel(
+                    x,
+                    y,
+                    Rgba::rgb(v, (v / 2).wrapping_add(30), v.wrapping_sub(20)),
+                );
             }
         }
         img

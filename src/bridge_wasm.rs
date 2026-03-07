@@ -296,7 +296,13 @@ pub fn wasm_to_edge_event(program: &[Opcode], num_locals: usize, fuel: u64) -> W
     let edge_action = (other_error as u8) * 2 + (fuel_exhausted as u8);
 
     // Branchless event_kind: fuel_exhausted → 3, other_error → 2, ok → 1.
-    let event_kind = if fuel_exhausted { 3 } else if other_error { 2 } else { 1 };
+    let event_kind = if fuel_exhausted {
+        3
+    } else if other_error {
+        2
+    } else {
+        1
+    };
 
     WasmEdgeEvent {
         content_hash,
@@ -423,7 +429,12 @@ mod tests {
 
     #[test]
     fn test_edge_event_fuel_exhausted() {
-        let prog = vec![Opcode::Push(1), Opcode::Push(2), Opcode::Push(3), Opcode::Halt];
+        let prog = vec![
+            Opcode::Push(1),
+            Opcode::Push(2),
+            Opcode::Push(3),
+            Opcode::Halt,
+        ];
         let ev = wasm_to_edge_event(&prog, 0, 1);
         assert!(!ev.execution_ok);
         assert_eq!(ev.event_kind, 3); // fuel_exhausted

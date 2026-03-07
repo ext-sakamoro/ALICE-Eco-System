@@ -174,18 +174,18 @@ pub struct LogSearchDocument {
 pub fn log_to_search_document(entry: &LogEntry) -> LogSearchDocument {
     let content_hash = fnv1a(entry.message.as_bytes());
     // フィールドキーを連結してスキーマフィンガープリント計算
-    let schema_bytes: Vec<u8> = entry
-        .fields
-        .iter()
-        .flat_map(|(k, _)| k.bytes())
-        .collect();
+    let schema_bytes: Vec<u8> = entry.fields.iter().flat_map(|(k, _)| k.bytes()).collect();
     let schema_hash = if schema_bytes.is_empty() {
         0
     } else {
         fnv1a(&schema_bytes)
     };
     let doc_bytes = entry.message.len()
-        + entry.fields.iter().map(|(k, v)| k.len() + v.len()).sum::<usize>();
+        + entry
+            .fields
+            .iter()
+            .map(|(k, v)| k.len() + v.len())
+            .sum::<usize>();
     LogSearchDocument {
         content_hash,
         schema_hash,
@@ -224,9 +224,10 @@ pub struct LogEdgeForward {
 #[must_use]
 pub fn log_to_edge_forward(entry: &LogEntry, ctx: Option<&TraceContext>) -> LogEdgeForward {
     let content_hash = fnv1a(entry.message.as_bytes());
-    let (trace_id, span_id) = ctx
-        .map(|c| (c.trace_id, c.span_id))
-        .unwrap_or((entry.trace_id.unwrap_or(0), entry.span_id.unwrap_or(0)));
+    let (trace_id, span_id) = ctx.map_or_else(
+        || (entry.trace_id.unwrap_or(0), entry.span_id.unwrap_or(0)),
+        |c| (c.trace_id, c.span_id),
+    );
     LogEdgeForward {
         content_hash,
         level: level_to_u8(entry.level),

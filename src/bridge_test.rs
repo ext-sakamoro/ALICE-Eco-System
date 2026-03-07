@@ -311,9 +311,14 @@ mod tests {
     #[test]
     fn test_test_to_analytics_metrics_pass_rate() {
         // 800 passed out of 1000 → 0.8.
-        let m = test_to_analytics_metrics("alice_zip", "compress", 800, 1_000, 12.5, 98.0, false, 0);
+        let m =
+            test_to_analytics_metrics("alice_zip", "compress", 800, 1_000, 12.5, 98.0, false, 0);
         assert_ne!(m.content_hash, 0);
-        assert!((m.pass_rate - 0.8).abs() < 1e-9, "pass_rate={}", m.pass_rate);
+        assert!(
+            (m.pass_rate - 0.8).abs() < 1e-9,
+            "pass_rate={}",
+            m.pass_rate
+        );
         assert!((m.bench_mean_us - 12.5).abs() < 1e-9);
         assert!(!m.regression_detected);
     }
@@ -345,7 +350,11 @@ mod tests {
     fn test_test_to_ml_record_pass_rate_and_seed() {
         let rec = test_to_ml_record("alice_physics", "collision", 0xDEAD_BEEF, 950, 1_000, 2, 15);
         assert_ne!(rec.content_hash, 0);
-        assert!((rec.pass_rate - 0.95).abs() < 1e-9, "pass_rate={}", rec.pass_rate);
+        assert!(
+            (rec.pass_rate - 0.95).abs() < 1e-9,
+            "pass_rate={}",
+            rec.pass_rate
+        );
         assert_eq!(rec.seed, 0xDEAD_BEEF);
         assert_eq!(rec.unique_failures, 2);
         assert_eq!(rec.shrink_steps, 15);

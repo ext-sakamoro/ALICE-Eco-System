@@ -4,7 +4,9 @@
 //! Covers CRDT state persistence, state caching, collab metric telemetry,
 //! state synchronization, and version-control tracking.
 
-use alice_collab::{GCounter, LWWRegister, PNCounter, TextOp, apply_op};
+extern crate alloc;
+
+use alice_collab::{apply_op, GCounter, LWWRegister, PNCounter, TextOp};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -299,7 +301,10 @@ mod tests {
 
     #[test]
     fn test_collab_to_analytics_op_event_insert() {
-        let op = TextOp::Insert { pos: 5, text: alloc::string::String::from("XY") };
+        let op = TextOp::Insert {
+            pos: 5,
+            text: alloc::string::String::from("XY"),
+        };
         let ev = collab_to_analytics_op_event("doc-1", "hello world", &op);
         assert_ne!(ev.content_hash, 0);
         assert_eq!(ev.op_type, 0); // Insert
@@ -366,5 +371,3 @@ mod tests {
         assert_eq!(commit.net_edits, 0);
     }
 }
-
-extern crate alloc;

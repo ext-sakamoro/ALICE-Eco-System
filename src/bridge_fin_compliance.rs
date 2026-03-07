@@ -320,7 +320,7 @@ mod tests {
         assert_ne!(rec.content_hash, 0);
         assert_ne!(rec.entity_hash, 0);
         assert_eq!(rec.meets_minimums, 1);
-        assert_eq!(rec.cet1_ratio_bps, 900);   // 0.09 × 10000
+        assert_eq!(rec.cet1_ratio_bps, 900); // 0.09 × 10000
         assert_eq!(rec.tier1_ratio_bps, 1_200);
         assert_eq!(rec.total_ratio_bps, 1_600);
         assert_eq!(rec.leverage_ratio_bps, 500);
@@ -343,11 +343,18 @@ mod tests {
 
     #[test]
     fn test_analytics_event_basic() {
-        let ev = fin_compliance_to_analytics_event(PORTFOLIO_ID, 12_345.67, 11_000.0, 0.95, 2, 1_700_000_001_000);
+        let ev = fin_compliance_to_analytics_event(
+            PORTFOLIO_ID,
+            12_345.67,
+            11_000.0,
+            0.95,
+            2,
+            1_700_000_001_000,
+        );
         assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.var_centis, 1_234_567);   // 12345.67 × 100
+        assert_eq!(ev.var_centis, 1_234_567); // 12345.67 × 100
         assert_eq!(ev.parametric_var_centis, 1_100_000);
-        assert_eq!(ev.confidence_bps, 9_500);   // 0.95 × 10000
+        assert_eq!(ev.confidence_bps, 9_500); // 0.95 × 10000
         assert_eq!(ev.aml_alert_count, 2);
         assert_eq!(ev.timestamp_ms, 1_700_000_001_000);
     }
@@ -361,7 +368,8 @@ mod tests {
 
     #[test]
     fn test_risk_record_large_txn() {
-        let rec = fin_compliance_to_risk_record(TXN_ID, "LARGE_TXN", 5.0, 500_000, 0, 1_700_000_002_000);
+        let rec =
+            fin_compliance_to_risk_record(TXN_ID, "LARGE_TXN", 5.0, 500_000, 0, 1_700_000_002_000);
         assert_ne!(rec.content_hash, 0);
         assert_ne!(rec.rule_hash, 0);
         assert_eq!(rec.risk_score_centis, 500); // 5.0 × 100
@@ -400,7 +408,14 @@ mod tests {
     #[test]
     fn test_fix_record_compliant_order() {
         // 0 AML violations, VaR below limit → compliance_pass = 1.
-        let rec = fin_compliance_to_fix_record(CL_ORD_ID, 5_000.0, 1_000_000, 0, 10_000.0, 1_700_000_004_000);
+        let rec = fin_compliance_to_fix_record(
+            CL_ORD_ID,
+            5_000.0,
+            1_000_000,
+            0,
+            10_000.0,
+            1_700_000_004_000,
+        );
         assert_ne!(rec.content_hash, 0);
         assert_eq!(rec.compliance_pass, 1);
         assert_eq!(rec.order_var_centis, 500_000); // 5000.0 × 100

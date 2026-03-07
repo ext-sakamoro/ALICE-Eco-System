@@ -133,7 +133,11 @@ pub fn image_buffer_to_ml_input(img: &Image) -> ImageMlInput {
         sum_b += px.b as u64;
     }
 
-    let n = if pixel_count > 0 { pixel_count as f32 } else { 1.0 };
+    let n = if pixel_count > 0 {
+        pixel_count as f32
+    } else {
+        1.0
+    };
     let mean_r = sum_r as f32 / (n * 255.0);
     let mean_g = sum_g as f32 / (n * 255.0);
     let mean_b = sum_b as f32 / (n * 255.0);
@@ -252,7 +256,7 @@ pub fn image_metadata_to_analytics(img: &Image) -> ImageAnalyticsEvent {
             // 簡易エッジ検出: 右隣ピクセルとの差分
             if x + 1 < img.width {
                 let right = img.get_pixel(x + 1, y).to_grayscale();
-                let diff = if g > right { g - right } else { right - g };
+                let diff = g.abs_diff(right);
                 if diff > 30 {
                     edge_count += 1;
                 }
@@ -321,7 +325,11 @@ pub fn image_to_cache(img: &Image) -> ImageCacheEntry {
     let ttl_secs = 3600 - is_large * 2400;
 
     // 高速フィンガープリント: 先頭64ピクセルのハッシュ
-    let sample_count = if img.pixels.len() > 64 { 64 } else { img.pixels.len() };
+    let sample_count = if img.pixels.len() > 64 {
+        64
+    } else {
+        img.pixels.len()
+    };
     let mut fp_key = [0u8; 264]; // 8 (w+h) + 64*4 = 264
     fp_key[0..4].copy_from_slice(&img.width.to_le_bytes());
     fp_key[4..8].copy_from_slice(&img.height.to_le_bytes());

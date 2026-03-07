@@ -315,10 +315,16 @@ mod tests {
 
     #[test]
     fn test_analytics_metrics_fields() {
-        let snaps: Vec<Snapshot> = (0..3).map(|i| Snapshot {
-            id: i, parent_id: None, timestamp: i * 1000,
-            full_checksum: 12345, diff: vec![], is_full: i == 0,
-        }).collect();
+        let snaps: Vec<Snapshot> = (0..3)
+            .map(|i| Snapshot {
+                id: i,
+                parent_id: None,
+                timestamp: i * 1000,
+                full_checksum: 12345,
+                diff: vec![],
+                is_full: i == 0,
+            })
+            .collect();
         let m = backup_to_analytics_metrics(&snaps, RetentionPolicy::KeepLast(2), 5_000);
         assert_eq!(m.snapshot_count, 3);
         assert_eq!(m.full_count, 1);

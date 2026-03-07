@@ -162,7 +162,12 @@ pub struct GeoCdnTileDelivery {
 /// max-age mirrors the cache TTL: high-zoom tiles get 3600 s, others 300 s.
 #[inline]
 #[must_use]
-pub fn geo_tile_to_cdn_delivery(tile_x: u32, tile_y: u32, zoom: u8, format: u8) -> GeoCdnTileDelivery {
+pub fn geo_tile_to_cdn_delivery(
+    tile_x: u32,
+    tile_y: u32,
+    zoom: u8,
+    format: u8,
+) -> GeoCdnTileDelivery {
     let fmt = format.min(2);
     let mut key = [0u8; 10];
     key[0..4].copy_from_slice(&tile_x.to_le_bytes());
@@ -203,11 +208,7 @@ pub struct GeoEdgeEvent {
 /// Convert a geo point into an edge geo event for ALICE-Edge.
 #[inline]
 #[must_use]
-pub fn geo_point_to_edge_event(
-    point: &Coord,
-    event_type: u8,
-    distance_m: f64,
-) -> GeoEdgeEvent {
+pub fn geo_point_to_edge_event(point: &Coord, event_type: u8, distance_m: f64) -> GeoEdgeEvent {
     let lat_bits = point.lat.to_bits();
     let lon_bits = point.lon.to_bits();
     let evt = event_type.min(2);
@@ -232,11 +233,17 @@ mod tests {
     use alice_geo::Coord;
 
     fn tokyo() -> Coord {
-        Coord { lat: 35.6762, lon: 139.6503 }
+        Coord {
+            lat: 35.6762,
+            lon: 139.6503,
+        }
     }
 
     fn london() -> Coord {
-        Coord { lat: 51.5074, lon: -0.1278 }
+        Coord {
+            lat: 51.5074,
+            lon: -0.1278,
+        }
     }
 
     #[test]
@@ -262,7 +269,7 @@ mod tests {
         let ev = geo_point_to_analytics_event(&p, 0, 12_345.6);
         assert_ne!(ev.content_hash, 0);
         assert_eq!(ev.query_type, 0);
-        assert_eq!(ev.distance_m, 12_345.6);
+        assert!((ev.distance_m - 12_345.6).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -303,7 +310,7 @@ mod tests {
         let ev = geo_point_to_edge_event(&p, 0, 45.2);
         assert_ne!(ev.content_hash, 0);
         assert_eq!(ev.event_type, 0);
-        assert_eq!(ev.distance_m, 45.2);
+        assert!((ev.distance_m - 45.2).abs() < f64::EPSILON);
     }
 
     #[test]

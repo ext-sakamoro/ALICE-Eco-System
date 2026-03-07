@@ -147,14 +147,14 @@ pub fn browser_secure_to_cache_entry(
     csp_header: &str,
     directive_count: u32,
 ) -> BrowserSecureCacheEntry {
-    let content_hash = fnv1a(csp_header.as_bytes());
-    let header_byte_len = csp_header.len();
-
     // Branchless TTL: base=3600, step=300, max reduction at 8 directives.
     // Each extra directive reduces TTL by 300 s; floor at 3600 - 8*300 = 1200.
     const BASE: u32 = 3_600;
     const STEP: u32 = 300;
     const MAX_REDUCTION_DIRECTIVES: u32 = 8;
+
+    let content_hash = fnv1a(csp_header.as_bytes());
+    let header_byte_len = csp_header.len();
     let clamped = directive_count.min(MAX_REDUCTION_DIRECTIVES);
     let ttl_seconds = BASE - clamped * STEP;
 
@@ -302,7 +302,10 @@ mod tests {
         let rec = browser_secure_to_db_record(RAW_INPUT, SESSION_ID, 2, true, 1_700_000_000_000);
         assert_ne!(rec.content_hash, 0);
         assert_ne!(rec.session_hash, 0);
-        assert_ne!(rec.content_hash, rec.session_hash, "hashes of different inputs differ");
+        assert_ne!(
+            rec.content_hash, rec.session_hash,
+            "hashes of different inputs differ"
+        );
         assert_eq!(rec.xss_threat_count, 2);
         assert_eq!(rec.csrf_verified, 1);
         assert_eq!(rec.timestamp_ms, 1_700_000_000_000);
@@ -323,7 +326,10 @@ mod tests {
         assert_eq!(e0.ttl_seconds, 3_600);
 
         // 4 directives → TTL = 3600 - 4*300 = 2400.
-        let e4 = browser_secure_to_cache_entry("default-src 'self'; script-src 'self'; img-src *; style-src 'self'", 4);
+        let e4 = browser_secure_to_cache_entry(
+            "default-src 'self'; script-src 'self'; img-src *; style-src 'self'",
+            4,
+        );
         assert_eq!(e4.ttl_seconds, 2_400);
 
         // 8 directives → TTL = 3600 - 8*300 = 1200.

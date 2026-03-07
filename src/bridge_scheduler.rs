@@ -258,7 +258,11 @@ mod tests {
     }
 
     fn make_edf_task() -> EdfTask {
-        EdfTask { id: 0, deadline: 2_000_000_000, execution_time: 500 }
+        EdfTask {
+            id: 0,
+            deadline: 2_000_000_000,
+            execution_time: 500,
+        }
     }
 
     // ── Bridge 1 ──────────────────────────────────────────────────────────
@@ -374,7 +378,11 @@ mod tests {
         let disp = scheduler_to_queue_dispatch(&task, "export", 1_000, 500);
         assert_eq!(disp.ttl_secs, 3600);
         // deadline = 0 → ttl_secs = 86400
-        let nodl = EdfTask { id: 1, deadline: 0, execution_time: 100 };
+        let nodl = EdfTask {
+            id: 1,
+            deadline: 0,
+            execution_time: 100,
+        };
         let disp2 = scheduler_to_queue_dispatch(&nodl, "export", 1_000, 500);
         assert_eq!(disp2.ttl_secs, 86400);
     }

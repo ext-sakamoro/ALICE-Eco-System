@@ -4,7 +4,11 @@
 //! Covers rate metric telemetry, limit-state persistence, cache-backed state,
 //! auth-scoped enforcement, and edge enforcement event delivery.
 
-use alice_rate_limit::{FairQueueEntry, FixedWindowCounter, Gcra, SlidingWindowCounter, TokenBucket};
+extern crate alloc;
+
+use alice_rate_limit::{
+    FairQueueEntry, FixedWindowCounter, Gcra, SlidingWindowCounter, TokenBucket,
+};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -129,11 +133,7 @@ pub struct RateLimitCacheEntry {
 /// `ttl_secs` is branchless: 10 when `retry_after_ms > 0` (throttled), else 60.
 #[inline]
 #[must_use]
-pub fn rate_limit_to_cache_entry(
-    client_id: &str,
-    gcra: &Gcra,
-    now_ms: u64,
-) -> RateLimitCacheEntry {
+pub fn rate_limit_to_cache_entry(client_id: &str, gcra: &Gcra, now_ms: u64) -> RateLimitCacheEntry {
     let retry_after_ms = gcra.time_until_allowed(now_ms);
     let is_throttled = retry_after_ms > 0;
     let throttled_flag = is_throttled as u32;
@@ -230,10 +230,7 @@ pub struct RateLimitEdgeEvent {
 /// Build a rate-limit enforcement event for ALICE-Edge from a `FairQueueEntry`.
 #[inline]
 #[must_use]
-pub fn rate_limit_to_edge_event(
-    entry: &FairQueueEntry,
-    global_avg_vft: f64,
-) -> RateLimitEdgeEvent {
+pub fn rate_limit_to_edge_event(entry: &FairQueueEntry, global_avg_vft: f64) -> RateLimitEdgeEvent {
     let mut hash_data = [0u8; 8];
     hash_data.copy_from_slice(&entry.tenant_id.to_le_bytes());
     RateLimitEdgeEvent {
@@ -310,7 +307,7 @@ mod tests {
         let mut gcra = Gcra::new(1, 1_000, 0); // 1req/sec, burst=0
         gcra.try_acquire(0); // 1回目は通過
         gcra.try_acquire(0); // 2回目で TAT が前進
-        // now=0 のまま → retry_after_ms > 0 → スロットル
+                             // now=0 のまま → retry_after_ms > 0 → スロットル
         let entry = rate_limit_to_cache_entry("client-y", &gcra, 0);
         // スロットル中かどうかはGCRA内部状態に依存するが、構造体が正しく生成されることを確認
         assert_ne!(entry.content_hash, 0);
@@ -352,7 +349,11 @@ mod tests {
 
     #[test]
     fn test_rate_limit_to_edge_event_basic() {
-        let entry = FairQueueEntry { tenant_id: 77, weight: 2.0, virtual_finish_time: 50.0 };
+        let entry = FairQueueEntry {
+            tenant_id: 77,
+            weight: 2.0,
+            virtual_finish_time: 50.0,
+        };
         let ev = rate_limit_to_edge_event(&entry, 30.0);
         assert_ne!(ev.content_hash, 0);
         assert_eq!(ev.tenant_id, 77);
@@ -362,10 +363,12 @@ mod tests {
 
     #[test]
     fn test_rate_limit_to_edge_event_not_deprioritized() {
-        let entry = FairQueueEntry { tenant_id: 1, weight: 1.0, virtual_finish_time: 10.0 };
+        let entry = FairQueueEntry {
+            tenant_id: 1,
+            weight: 1.0,
+            virtual_finish_time: 10.0,
+        };
         let ev = rate_limit_to_edge_event(&entry, 100.0);
         assert!(!ev.is_deprioritized); // VFT 10 < avg 100
     }
 }
-
-extern crate alloc;

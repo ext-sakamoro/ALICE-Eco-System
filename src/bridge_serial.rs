@@ -4,6 +4,8 @@
 //! Covers serialized record persistence in DB, cache entry encoding, Edge binary
 //! protocol delivery, Crypto encrypted payload routing, and CDN asset delivery.
 
+extern crate alloc;
+
 use alice_serial::{encode, encode_varint, zigzag_encode, Value};
 
 #[inline(always)]
@@ -279,7 +281,10 @@ mod tests {
 
     #[test]
     fn test_serial_to_db_record_map() {
-        let map = Value::Map(alloc::vec![(Value::Str(alloc::string::String::from("k")), Value::U64(1))]);
+        let map = Value::Map(alloc::vec![(
+            Value::Str(alloc::string::String::from("k")),
+            Value::U64(1)
+        )]);
         let rec = serial_to_db_record(&map);
         assert_eq!(rec.value_type, 8); // Map
         assert_eq!(rec.varint_count, 1);
@@ -350,7 +355,10 @@ mod tests {
 
     #[test]
     fn test_serial_to_cdn_asset_map_content_type() {
-        let map = Value::Map(alloc::vec![(Value::Str(alloc::string::String::from("x")), Value::U64(0))]);
+        let map = Value::Map(alloc::vec![(
+            Value::Str(alloc::string::String::from("x")),
+            Value::U64(0)
+        )]);
         let asset = serial_to_cdn_asset(&map);
         assert_ne!(asset.content_hash, 0);
         assert_eq!(asset.content_type, "application/x-alice-serial");
@@ -370,5 +378,3 @@ mod tests {
         assert_eq!(asset.content_type, "application/octet-stream");
     }
 }
-
-extern crate alloc;

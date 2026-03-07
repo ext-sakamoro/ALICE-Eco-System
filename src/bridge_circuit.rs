@@ -3,8 +3,8 @@
 //! 5 bridges connecting the fault-tolerance layer to the ALICE ecosystem.
 
 use alice_circuit::{
-    health_from_error_rate, Bulkhead, CircuitBreaker, CircuitState, HealthStatus, RetryPolicy,
-    retry_delay,
+    health_from_error_rate, retry_delay, Bulkhead, CircuitBreaker, CircuitState, HealthStatus,
+    RetryPolicy,
 };
 
 #[inline(always)]
@@ -383,7 +383,10 @@ mod tests {
     #[test]
     fn test_edge_event_hash_nonzero() {
         let cb = make_open_breaker();
-        let policy = RetryPolicy::Fixed { delay_ms: 500, max_retries: 3 };
+        let policy = RetryPolicy::Fixed {
+            delay_ms: 500,
+            max_retries: 3,
+        };
         let ev = circuit_to_edge_event("search-service", &cb, policy, 0, 5_000);
         assert_ne!(ev.content_hash, 0);
     }
@@ -391,7 +394,11 @@ mod tests {
     #[test]
     fn test_edge_event_open_blocks() {
         let cb = make_open_breaker();
-        let policy = RetryPolicy::Exponential { base_ms: 100, max_delay_ms: 10_000, max_retries: 5 };
+        let policy = RetryPolicy::Exponential {
+            base_ms: 100,
+            max_delay_ms: 10_000,
+            max_retries: 5,
+        };
         let ev = circuit_to_edge_event("search-service", &cb, policy, 1, 5_000);
         assert!(ev.block_edge);
         assert_eq!(ev.retry_delay_ms, 200); // base * 2^1
@@ -400,7 +407,10 @@ mod tests {
     #[test]
     fn test_edge_event_closed_no_block() {
         let cb = make_closed_breaker();
-        let policy = RetryPolicy::Fixed { delay_ms: 100, max_retries: 3 };
+        let policy = RetryPolicy::Fixed {
+            delay_ms: 100,
+            max_retries: 3,
+        };
         let ev = circuit_to_edge_event("search-service", &cb, policy, 0, 1_000);
         assert!(!ev.block_edge);
     }

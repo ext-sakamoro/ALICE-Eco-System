@@ -164,7 +164,11 @@ pub fn digital_twin_state_to_kinematics_intent(state: &TwinState) -> TwinKinemat
     let target_y = state.get("target_y").unwrap_or(0.0) as f32;
     let target_z = state.get("target_z").unwrap_or(0.0) as f32;
     let duration_raw = state.get("duration_ms").unwrap_or(100.0) as u32;
-    let duration_ms = if duration_raw > 255 { 255 } else { duration_raw as u8 };
+    let duration_ms = if duration_raw > 255 {
+        255
+    } else {
+        duration_raw as u8
+    };
     let intent_raw = state.get("intent_type").unwrap_or(0.0) as u8;
     let intent_type = match intent_raw {
         1 => 1, // Point

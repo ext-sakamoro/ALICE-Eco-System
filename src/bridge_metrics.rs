@@ -267,9 +267,9 @@ mod tests {
 
     #[test]
     fn test_metrics_to_db_record_field_values() {
-        let rec = metrics_to_db_record("cpu_usage", "host=a", 42, 3.14, 100, 9_999);
+        let rec = metrics_to_db_record("cpu_usage", "host=a", 42, 7.5, 100, 9_999);
         assert_eq!(rec.counter_value, 42);
-        assert!((rec.gauge_value - 3.14).abs() < 1e-9);
+        assert!((rec.gauge_value - 7.5).abs() < 1e-9);
         assert_eq!(rec.histogram_count, 100);
         assert_eq!(rec.snapshot_at_ms, 9_999);
     }

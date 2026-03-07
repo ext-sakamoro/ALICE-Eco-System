@@ -51,7 +51,10 @@ pub struct I18nDbTranslationRecord {
 /// Convert a message bundle and locale into a DB translation record for ALICE-DB.
 #[inline]
 #[must_use]
-pub fn i18n_bundle_to_db_record(bundle: &MessageBundle, locale: &Locale) -> I18nDbTranslationRecord {
+pub fn i18n_bundle_to_db_record(
+    bundle: &MessageBundle,
+    locale: &Locale,
+) -> I18nDbTranslationRecord {
     let tag = locale.tag();
     let locale_hash = fnv1a(tag.as_bytes());
     let message_count = bundle.locale_count() as u32;
@@ -252,7 +255,7 @@ mod tests {
     fn make_locale(language: &str, region: Option<&str>) -> Locale {
         Locale {
             language: language.to_string(),
-            region: region.map(|r| r.to_string()),
+            region: region.map(std::string::ToString::to_string),
         }
     }
 
@@ -268,10 +271,8 @@ mod tests {
     #[test]
     fn test_bundle_to_db_record() {
         let locale = make_locale("ja", Some("JP"));
-        let bundle = make_bundle_with_entries(&locale, &[
-            ("hello", "こんにちは"),
-            ("bye", "さようなら"),
-        ]);
+        let bundle =
+            make_bundle_with_entries(&locale, &[("hello", "こんにちは"), ("bye", "さようなら")]);
         let rec = i18n_bundle_to_db_record(&bundle, &locale);
         assert_ne!(rec.content_hash, 0);
         assert_ne!(rec.locale_hash, 0);

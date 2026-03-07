@@ -4,7 +4,7 @@
 //! Covers notification record persistence, state caching, metric telemetry,
 //! Queue-based dispatch, and Edge push event forwarding.
 
-use alice_notify::{BloomFilter, Channel, ExponentialBackoff, Notification, Urgency, hmac_sign};
+use alice_notify::{hmac_sign, BloomFilter, Channel, ExponentialBackoff, Notification, Urgency};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -90,10 +90,7 @@ pub struct NotifyCacheEntry {
 /// `ttl_secs` is branchless: 60 when urgency >= High (2), else 300.
 #[inline]
 #[must_use]
-pub fn notify_to_cache_entry(
-    notification: &Notification,
-    bloom: &BloomFilter,
-) -> NotifyCacheEntry {
+pub fn notify_to_cache_entry(notification: &Notification, bloom: &BloomFilter) -> NotifyCacheEntry {
     let content_hash = fnv1a(notification.id.as_bytes());
     let may_be_duplicate = bloom.might_contain(notification.id.as_bytes());
     let urgency: u8 = match notification.urgency {
@@ -164,7 +161,11 @@ pub fn notify_to_analytics_event(
         Urgency::Critical => 3,
     };
     let payload_bytes = notification.subject.len() + notification.body.len();
-    let next_retry_ms = if attempt == 0 { 0 } else { backoff.delay(attempt) };
+    let next_retry_ms = if attempt == 0 {
+        0
+    } else {
+        backoff.delay(attempt)
+    };
     let is_exhausted = !backoff.should_retry(attempt);
     NotifyAnalyticsEvent {
         content_hash,

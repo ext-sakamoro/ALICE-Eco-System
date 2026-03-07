@@ -232,7 +232,7 @@ pub fn billing_invoice_to_settlement_request(invoice: &Invoice) -> BillingSettle
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_billing::{generate_invoice, InvoiceLine, Amount};
+    use alice_billing::{generate_invoice, Amount, InvoiceLine};
 
     fn make_invoice(id: &str, lines: Vec<InvoiceLine>, tax_rate_bps: u32) -> Invoice {
         generate_invoice(id.to_string(), lines, tax_rate_bps)
@@ -249,11 +249,7 @@ mod tests {
 
     #[test]
     fn test_billing_invoice_to_db_record_basic() {
-        let inv = make_invoice(
-            "inv-001",
-            vec![make_line_item("Pro plan", 1, 9900)],
-            1000,
-        );
+        let inv = make_invoice("inv-001", vec![make_line_item("Pro plan", 1, 9900)], 1000);
         let rec = billing_invoice_to_db_record(&inv);
         assert_ne!(rec.content_hash, 0);
         assert_ne!(rec.invoice_id_hash, 0);
@@ -292,11 +288,7 @@ mod tests {
 
     #[test]
     fn test_billing_invoice_to_ledger_entry() {
-        let inv = make_invoice(
-            "inv-004",
-            vec![make_line_item("SaaS sub", 1, 50_000)],
-            1000,
-        );
+        let inv = make_invoice("inv-004", vec![make_line_item("SaaS sub", 1, 50_000)], 1000);
         let entry = billing_invoice_to_ledger_entry(&inv);
         assert_ne!(entry.content_hash, 0);
         assert_eq!(entry.debit_cents, inv.total.0);

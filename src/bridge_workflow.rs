@@ -4,6 +4,8 @@
 //! Covers workflow record persistence, metric telemetry, state caching,
 //! task dispatch via Queue, and edge event forwarding.
 
+extern crate alloc;
+
 use alice_workflow::{StateMachine, Task, TaskStatus, WorkflowDag};
 
 #[inline(always)]
@@ -39,10 +41,7 @@ pub struct WorkflowDbRecord {
 /// Build a workflow DB record from a `StateMachine`.
 #[inline]
 #[must_use]
-pub fn workflow_to_db_record(
-    workflow_id: &str,
-    sm: &StateMachine,
-) -> WorkflowDbRecord {
+pub fn workflow_to_db_record(workflow_id: &str, sm: &StateMachine) -> WorkflowDbRecord {
     let mut key = alloc::vec::Vec::with_capacity(workflow_id.len() + sm.current.len());
     key.extend_from_slice(workflow_id.as_bytes());
     key.extend_from_slice(sm.current.as_bytes());
@@ -91,8 +90,7 @@ pub fn workflow_to_analytics_metrics(
     let content_hash = fnv1a(dag_id.as_bytes());
     let task_count = dag.task_count() as u32;
     let total_safe = task_count.max(1);
-    let completion_permille =
-        completed_count.min(total_safe).wrapping_mul(1_000) / total_safe;
+    let completion_permille = completed_count.min(total_safe).wrapping_mul(1_000) / total_safe;
     WorkflowAnalyticsMetrics {
         content_hash,
         task_count,
@@ -128,10 +126,7 @@ pub struct WorkflowCacheState {
 /// `ttl_secs` is branchless: 300 when terminal (no events), else 30.
 #[inline]
 #[must_use]
-pub fn workflow_to_cache_state(
-    workflow_id: &str,
-    sm: &StateMachine,
-) -> WorkflowCacheState {
+pub fn workflow_to_cache_state(workflow_id: &str, sm: &StateMachine) -> WorkflowCacheState {
     let content_hash = fnv1a(workflow_id.as_bytes());
     let state_hash = fnv1a(sm.current.as_bytes());
     let is_terminal = sm.available_events().is_empty();
@@ -219,8 +214,7 @@ pub fn workflow_to_edge_event(
 ) -> WorkflowEdgeEvent {
     let task_count = dag.task_count() as u32;
     let total_safe = task_count.max(1);
-    let completion_permille =
-        completed_count.min(total_safe).wrapping_mul(1_000) / total_safe;
+    let completion_permille = completed_count.min(total_safe).wrapping_mul(1_000) / total_safe;
     let mut key_data = [0u8; 4];
     key_data.copy_from_slice(&completion_permille.to_le_bytes());
     let mut hash_input = alloc::vec::Vec::with_capacity(workflow_id.len() + 4);
@@ -243,20 +237,23 @@ mod tests {
     use alice_workflow::{StateMachine, Transition, WorkflowDag};
 
     fn order_sm() -> StateMachine {
-        StateMachine::new("created", alloc::vec![
-            Transition {
-                from: alloc::string::String::from("created"),
-                to: alloc::string::String::from("paid"),
-                event: alloc::string::String::from("pay"),
-                guard: None,
-            },
-            Transition {
-                from: alloc::string::String::from("paid"),
-                to: alloc::string::String::from("shipped"),
-                event: alloc::string::String::from("ship"),
-                guard: None,
-            },
-        ])
+        StateMachine::new(
+            "created",
+            alloc::vec![
+                Transition {
+                    from: alloc::string::String::from("created"),
+                    to: alloc::string::String::from("paid"),
+                    event: alloc::string::String::from("pay"),
+                    guard: None,
+                },
+                Transition {
+                    from: alloc::string::String::from("paid"),
+                    to: alloc::string::String::from("shipped"),
+                    event: alloc::string::String::from("ship"),
+                    guard: None,
+                },
+            ],
+        )
     }
 
     fn build_dag() -> WorkflowDag {
@@ -403,5 +400,3 @@ mod tests {
         assert!(!ev.has_failures);
     }
 }
-
-extern crate alloc;

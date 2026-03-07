@@ -4,7 +4,7 @@
 //! full-text search indexing, locale detection, analytics events,
 //! and cache entries with page-count-based TTL.
 
-use alice_document::{PdfDocument, PageSize};
+use alice_document::PdfDocument;
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -149,10 +149,10 @@ pub fn document_to_i18n_locale(doc: &PdfDocument) -> DocumentLocaleSeed {
 
     let has_multibyte = high_byte_count > 0;
     let locale_hint = match () {
-        _ if total_bytes == 0 => 0,    // Unknown
-        _ if ascii_ratio > 0.95 => 1,  // Latin
-        _ if ascii_ratio < 0.50 => 2,  // CJK
-        _ => 3,                        // Mixed
+        _ if total_bytes == 0 => 0,   // Unknown
+        _ if ascii_ratio > 0.95 => 1, // Latin
+        _ if ascii_ratio < 0.50 => 2, // CJK
+        _ => 3,                       // Mixed
     };
 
     let mut key = [0u8; 14];

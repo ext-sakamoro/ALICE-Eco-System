@@ -153,8 +153,7 @@ pub fn ffi_to_analytics_metrics(
     let content_hash = fnv1a(fn_name.as_bytes());
     let error_calls = total_calls.saturating_sub(success_calls);
     let total_safe = total_calls.max(1);
-    let error_rate_permille =
-        (error_calls.min(total_safe).wrapping_mul(1_000) / total_safe) as u32;
+    let error_rate_permille = (error_calls.min(total_safe).wrapping_mul(1_000) / total_safe) as u32;
     FfiAnalyticsMetrics {
         content_hash,
         total_calls,
@@ -255,11 +254,7 @@ pub struct FfiEdgeEvent {
 /// - Success → allow (0).
 #[inline]
 #[must_use]
-pub fn ffi_to_edge_event(
-    fn_name: &str,
-    arg_buf: &FfiBuffer,
-    result: FfiResult,
-) -> FfiEdgeEvent {
+pub fn ffi_to_edge_event(fn_name: &str, arg_buf: &FfiBuffer, result: FfiResult) -> FfiEdgeEvent {
     let content_hash = fnv1a(fn_name.as_bytes());
     let arg_hash = fnv1a(arg_buf.read());
 
@@ -274,7 +269,13 @@ pub fn ffi_to_edge_event(
     let is_error = result.is_err();
 
     // Branchless event_kind: overflow → 3, other error → 2, success → 1.
-    let event_kind: u8 = if is_overflow { 3 } else if is_error { 2 } else { 1 };
+    let event_kind: u8 = if is_overflow {
+        3
+    } else if is_error {
+        2
+    } else {
+        1
+    };
 
     // Branchless edge_action: overflow → 2 (block), other error → 1 (rate_limit), ok → 0.
     let edge_action: u8 = (is_overflow as u8) * 2 + (!is_overflow && is_error) as u8;
@@ -418,7 +419,8 @@ mod tests {
         let ev = ffi_to_edge_event("fn_overflow", &arg, FfiResult::BufferTooSmall);
         assert_eq!(ev.event_kind, 3); // buffer_overflow
         assert_eq!(ev.edge_action, 2); // block
-        assert!(!ev.fn_name_valid_utf8 || ev.fn_name_valid_utf8); // either is fine, no panic
+                                       // fn_name_valid_utf8 はパニックしないことを検証（値はどちらでも可）
+        let _ = ev.fn_name_valid_utf8;
     }
 
     #[test]

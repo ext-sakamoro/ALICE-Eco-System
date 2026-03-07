@@ -88,7 +88,9 @@ pub fn graph_to_analytics_metrics_event(
     key[0..8].copy_from_slice(&graph_name_hash.to_le_bytes());
     key[8..16].copy_from_slice(&node_count.to_le_bytes());
     key[16..24].copy_from_slice(&edge_count.to_le_bytes());
-    let max_edges = node_count.saturating_mul(node_count.saturating_sub(1)).max(1);
+    let max_edges = node_count
+        .saturating_mul(node_count.saturating_sub(1))
+        .max(1);
     let density_permille = (edge_count.min(max_edges).wrapping_mul(1_000) / max_edges) as u32;
     GraphAnalyticsMetricsEvent {
         content_hash: fnv1a(&key),
@@ -314,7 +316,7 @@ mod tests {
         assert_eq!(emb.from_node, src as u64);
         assert_eq!(emb.to_node, dst as u64);
         assert_ne!(emb.label_hash, 0);
-        assert_eq!(emb.weight, 0.8);
+        assert!((emb.weight - 0.8).abs() < f64::EPSILON);
     }
 
     #[test]

@@ -4,7 +4,7 @@
 //! Covers session metric telemetry, session record persistence, session state
 //! caching, CDN-backed realtime delivery, and Edge event forwarding.
 
-use alice_realtime::{BackpressureAction, Client, PubSubChannel, Room, backpressure_check};
+use alice_realtime::{backpressure_check, BackpressureAction, Client, PubSubChannel, Room};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -86,10 +86,7 @@ pub struct RealtimeDbSessionRecord {
 /// Build a realtime session record for ALICE-DB from a `Client`.
 #[inline]
 #[must_use]
-pub fn realtime_to_db_session_record(
-    client: &Client,
-    peak_rtt_ms: u32,
-) -> RealtimeDbSessionRecord {
+pub fn realtime_to_db_session_record(client: &Client, peak_rtt_ms: u32) -> RealtimeDbSessionRecord {
     let mut id_bytes = [0u8; 8];
     id_bytes.copy_from_slice(&client.id.to_le_bytes());
     let content_hash = fnv1a(&id_bytes);
