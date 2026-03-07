@@ -131,6 +131,7 @@ pub mod bridge_cross;
 pub mod bridge_crypto;
 pub mod bridge_crypto_ext;
 pub mod bridge_db;
+pub mod bridge_db_enterprise;
 pub mod bridge_digital_twin_cross;
 pub mod bridge_dns;
 pub mod bridge_document_cross;
@@ -192,6 +193,8 @@ pub mod bridge_trt;
 pub mod bridge_vcs;
 pub mod bridge_view;
 pub mod bridge_voice;
+#[cfg(feature = "voice-commercial")]
+pub mod bridge_voice_commercial;
 pub mod bridge_zip;
 
 // Infrastructure bridges
@@ -237,6 +240,9 @@ pub mod bridge_graph;
 pub mod bridge_graph_cross;
 pub mod bridge_i18n;
 pub mod bridge_legal_ai;
+
+// SIMD bridge
+pub mod bridge_simd;
 
 // Media/Compression/Low-level bridges
 pub mod bridge_ffi;

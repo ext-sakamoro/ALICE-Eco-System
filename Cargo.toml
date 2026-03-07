@@ -147,6 +147,11 @@ alice-vectordb = { path = "../ALICE-VectorDB", default-features = false }
 alice-wasm = { path = "../ALICE-WASM", default-features = false }
 alice-ffi = { path = "../ALICE-FFI", default-features = false }
 
+# Enterprise/Commercial bridges
+alice-db-enterprise = { path = "../ALICE-DB-Enterprise", default-features = false }
+alice-simd = { path = "../ALICE-SIMD", default-features = false, features = ["std"] }
+alice-voice-commercial = { path = "../ALICE-Voice-Commercial", package = "alice-voice-semantic", optional = true, default-features = false }
+
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"
 crc32fast = "1"
@@ -184,7 +189,8 @@ edge-commercial = ["dep:alice-edge-commercial"]
 streaming-protocol-commercial = ["dep:alice-streaming-protocol-commercial"]
 neural = ["dep:alice-neural"]
 atoms = ["dep:alice-atoms"]
-enterprise = ["edge-commercial", "streaming-protocol-commercial"]
+voice-commercial = ["dep:alice-voice-commercial"]
+enterprise = ["edge-commercial", "streaming-protocol-commercial", "voice-commercial"]
 
 [[bench]]
 name = "bridge_bench"
