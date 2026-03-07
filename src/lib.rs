@@ -22,7 +22,7 @@
 
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 53 ALICE crates into unified pipelines with 467 cross-crate bridges across 73 bridge modules.
+//! Connects 86 ALICE crates into unified pipelines with 719 cross-crate bridges across 122 bridge modules.
 //! Powers 52 `SaaS` services (AGPL-3.0-or-later) via the MIT Core + AGPL `SaaS` Shell pattern.
 //!
 //! ```text
@@ -123,7 +123,9 @@ pub mod bridge_cross;
 pub mod bridge_crypto;
 pub mod bridge_crypto_ext;
 pub mod bridge_db;
+pub mod bridge_digital_twin_cross;
 pub mod bridge_dns;
+pub mod bridge_document_cross;
 pub mod bridge_edge;
 #[cfg(feature = "edge-commercial")]
 pub mod bridge_edge_commercial;
@@ -137,6 +139,7 @@ pub mod bridge_fix_ext;
 pub mod bridge_font;
 pub mod bridge_history;
 pub mod bridge_history_cross;
+pub mod bridge_image_cross;
 pub mod bridge_kinematics;
 pub mod bridge_ledger;
 pub mod bridge_legal;
@@ -182,6 +185,60 @@ pub mod bridge_vcs;
 pub mod bridge_view;
 pub mod bridge_voice;
 pub mod bridge_zip;
+
+// Infrastructure bridges
+pub mod bridge_scheduler;
+pub mod bridge_log;
+pub mod bridge_config;
+pub mod bridge_migrate;
+pub mod bridge_backup;
+pub mod bridge_circuit;
+pub mod bridge_consensus;
+
+// Data/Communication bridges
+pub mod bridge_serial;
+pub mod bridge_rate_limit;
+pub mod bridge_realtime;
+pub mod bridge_collab;
+pub mod bridge_workflow;
+pub mod bridge_notify;
+
+// Security bridges
+pub mod bridge_browser_secure;
+pub mod bridge_datashield;
+pub mod bridge_compliance;
+pub mod bridge_compliance_cross;
+pub mod bridge_fin_compliance;
+pub mod bridge_fin_compliance_cross;
+
+// Analytics/Monitoring bridges
+pub mod bridge_metrics;
+pub mod bridge_metrics_cross;
+pub mod bridge_observability;
+pub mod bridge_experiment;
+pub mod bridge_experiment_cross;
+pub mod bridge_test;
+
+// Domain bridges
+pub mod bridge_billing;
+pub mod bridge_billing_cross;
+pub mod bridge_legal_ai;
+pub mod bridge_digital_twin;
+pub mod bridge_graph;
+pub mod bridge_graph_cross;
+pub mod bridge_geo;
+pub mod bridge_document;
+pub mod bridge_i18n;
+
+// Media/Compression/Low-level bridges
+pub mod bridge_image;
+pub mod bridge_text_compression;
+pub mod bridge_vectordb;
+pub mod bridge_vectordb_cross;
+pub mod bridge_wasm;
+pub mod bridge_wasm_cross;
+pub mod bridge_ffi;
+
 pub mod hash;
 pub mod pipeline;
 

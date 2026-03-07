@@ -3,7 +3,7 @@ name = "alice-eco-system"
 version = "0.3.2"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration Hub - 499 bridges, 20 pipeline paths (A-U), 78 bridge modules, 54 crates, 53 SaaS services"
+description = "ALICE Ecosystem Integration Hub - 719 bridges, 22 pipeline paths (A-V), 122 bridge modules, 86 crates, 53 SaaS services"
 license = "MIT"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
@@ -101,6 +101,51 @@ alice-presence = { path = "../ALICE-Presence" }
 
 # Hardware bridge
 alice-bridge = { path = "../ALICE-Bridge" }
+
+# Infrastructure bridges
+alice-scheduler = { path = "../ALICE-Scheduler", default-features = false }
+alice-log = { path = "../ALICE-Log", default-features = false }
+alice-config = { path = "../ALICE-Config", default-features = false }
+alice-migrate = { path = "../ALICE-Migrate", default-features = false }
+alice-backup = { path = "../ALICE-Backup", default-features = false }
+alice-circuit = { path = "../ALICE-Circuit", default-features = false }
+alice-consensus = { path = "../ALICE-Consensus", default-features = false }
+
+# Data/Communication bridges
+alice-serial = { path = "../ALICE-Serial", default-features = false }
+alice-rate-limit = { path = "../ALICE-RateLimit", default-features = false }
+alice-realtime = { path = "../ALICE-Realtime" }
+alice-collab = { path = "../ALICE-Collab", default-features = false }
+alice-workflow = { path = "../ALICE-Workflow", default-features = false }
+alice-notify = { path = "../ALICE-Notify" }
+
+# Security bridges
+alice-browser-secure = { path = "../ALICE-Browser-Secure", default-features = false }
+alice-datashield = { path = "../ALICE-DataShield", default-features = false }
+alice-compliance = { path = "../ALICE-Compliance", default-features = false }
+alice-fincompliance = { path = "../ALICE-FinCompliance", default-features = false }
+
+# Analytics/Monitoring bridges
+alice-metrics = { path = "../ALICE-Metrics", default-features = false }
+alice-observability = { path = "../ALICE-Observability", default-features = false }
+alice-experiment = { path = "../ALICE-Experiment" }
+alice-test = { path = "../ALICE-Test" }
+
+# Domain bridges
+alice-billing = { path = "../ALICE-Billing" }
+alice-legal-ai = { path = "../ALICE-Legal-AI", default-features = false }
+alice-digital-twin = { path = "../ALICE-Digital-Twin", default-features = false }
+alice-graph = { path = "../ALICE-Graph" }
+alice-geo = { path = "../ALICE-Geo" }
+alice-document = { path = "../ALICE-Document" }
+alice-i18n = { path = "../ALICE-i18n", default-features = false }
+
+# Media/Compression/Low-level bridges
+alice-image = { path = "../ALICE-Image" }
+alice-text-compression = { path = "../ALICE-Text-Compression", default-features = false }
+alice-vectordb = { path = "../ALICE-VectorDB", default-features = false }
+alice-wasm = { path = "../ALICE-WASM", default-features = false }
+alice-ffi = { path = "../ALICE-FFI", default-features = false }
 
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"

@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (58 Components)                     │
+│                          ALICE Ecosystem (86 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -155,9 +155,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 499 bridges, 78 bridge modules, 20 pipeline paths (A-U), 54 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 719 bridges, 122 bridge modules, 22 pipeline paths (A-V), 86 crates connected | MIT |
 
-**Total: 58 components** | AGPL-3.0: 30 | MIT: 14 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
+**Total: 86 components** | AGPL-3.0: 30 | MIT: 14 | MIT (Core): 1 | MIT/Apache-2.0: 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
 ## Quick Start
 
@@ -280,7 +280,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **499 cross-crate bridges** across 78 bridge files and 20 pipeline paths (A-U), connecting 54 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **719 cross-crate bridges** across 122 bridge files and 22 pipeline paths (A-V), connecting 86 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -348,7 +348,7 @@ The ALICE ecosystem contains **499 cross-crate bridges** across 78 bridge files 
 
 ### Hardware-Native Optimization
 
-All 499 bridge functions are optimized following the ALICE hardware-native methodology:
+All 719 bridge functions are optimized following the ALICE hardware-native methodology:
 
 | Optimization | Applied | Impact |
 |-------------|---------|--------|
@@ -1151,7 +1151,7 @@ Cross-crate `path = "../ALICE-*"` dependencies are resolved in CI by creating li
     echo "" > ../ALICE-Physics/src/lib.rs
 ```
 
-This enables each crate to build independently in CI without requiring the full 51-component workspace.
+This enables each crate to build independently in CI without requiring the full 86-component workspace.
 
 ## License Strategy — 3-Layer Monetization Architecture
 

@@ -198,6 +198,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-backup"
+version = "0.1.0"
+
+[[package]]
+name = "alice-billing"
+version = "0.1.0"
+dependencies = [
+ "libm",
+]
+
+[[package]]
 name = "alice-bio"
 version = "0.1.0"
 dependencies = [
@@ -235,6 +246,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-browser-secure"
+version = "0.1.0"
+
+[[package]]
 name = "alice-cache"
 version = "0.2.0"
 dependencies = [
@@ -246,6 +261,10 @@ dependencies = [
 [[package]]
 name = "alice-cdn"
 version = "0.2.0"
+
+[[package]]
+name = "alice-circuit"
+version = "0.1.0"
 
 [[package]]
 name = "alice-climate"
@@ -279,6 +298,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-collab"
+version = "0.1.0"
+
+[[package]]
+name = "alice-compliance"
+version = "0.1.0"
+
+[[package]]
+name = "alice-config"
+version = "0.1.0"
+dependencies = [
+ "libm",
+]
+
+[[package]]
+name = "alice-consensus"
+version = "0.1.0"
+
+[[package]]
 name = "alice-container"
 version = "0.2.1"
 dependencies = [
@@ -293,6 +331,10 @@ dependencies = [
  "chacha20poly1305",
  "getrandom 0.2.17",
 ]
+
+[[package]]
+name = "alice-datashield"
+version = "0.1.0"
 
 [[package]]
 name = "alice-db"
@@ -316,10 +358,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-digital-twin"
+version = "0.1.0"
+
+[[package]]
 name = "alice-dns"
 version = "0.1.0"
 dependencies = [
  "alice-cache",
+]
+
+[[package]]
+name = "alice-document"
+version = "0.1.0"
+dependencies = [
+ "libm",
 ]
 
 [[package]]
@@ -331,51 +384,85 @@ dependencies = [
  "alice-api",
  "alice-atoms",
  "alice-auth",
+ "alice-backup",
+ "alice-billing",
  "alice-bio",
  "alice-bridge",
  "alice-browser",
+ "alice-browser-secure",
  "alice-cache",
  "alice-cdn",
+ "alice-circuit",
  "alice-climate",
  "alice-cloud-gateway",
  "alice-codec",
+ "alice-collab",
+ "alice-compliance",
+ "alice-config",
+ "alice-consensus",
  "alice-container",
  "alice-crypto",
+ "alice-datashield",
  "alice-db",
+ "alice-digital-twin",
  "alice-dns",
+ "alice-document",
  "alice-edge",
  "alice-edge-enterprise",
  "alice-edge-firewall",
  "alice-energy",
+ "alice-experiment",
+ "alice-ffi",
+ "alice-fincompliance",
  "alice-fix",
  "alice-font",
+ "alice-geo",
+ "alice-graph",
  "alice-history",
+ "alice-i18n",
+ "alice-image",
  "alice-kinematics",
  "alice-ledger",
  "alice-legal",
+ "alice-legal-ai",
+ "alice-log",
  "alice-manga",
+ "alice-metrics",
+ "alice-migrate",
  "alice-ml",
  "alice-motion",
  "alice-neural",
+ "alice-notify",
+ "alice-observability",
  "alice-physics",
  "alice-presence",
  "alice-print",
  "alice-queue",
+ "alice-rate-limit",
+ "alice-realtime",
  "alice-risk",
  "alice-rtos",
+ "alice-scheduler",
  "alice-sdf",
  "alice-search",
  "alice-semantic-telemetry",
+ "alice-serial",
  "alice-settlement",
  "alice-space",
  "alice-sync",
  "alice-synth",
+ "alice-test",
  "alice-text",
+ "alice-text-compression",
  "alice-token",
+ "alice-train",
  "alice-trt",
  "alice-vcs",
+ "alice-vectordb",
  "alice-view",
  "alice-voice",
+ "alice-wasm",
+ "alice-workflow",
  "alice-zip",
  "bincode",
  "crc32fast",
@@ -413,6 +500,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-experiment"
+version = "0.1.0"
+
+[[package]]
+name = "alice-ffi"
+version = "0.1.0"
+
+[[package]]
+name = "alice-fincompliance"
+version = "0.1.0"
+
+[[package]]
 name = "alice-fix"
 version = "0.1.1"
 dependencies = [
@@ -424,10 +523,32 @@ name = "alice-font"
 version = "0.1.0"
 
 [[package]]
+name = "alice-geo"
+version = "0.1.0"
+dependencies = [
+ "libm",
+]
+
+[[package]]
+name = "alice-graph"
+version = "0.1.0"
+
+[[package]]
 name = "alice-history"
 version = "0.1.0"
 dependencies = [
  "rayon",
+]
+
+[[package]]
+name = "alice-i18n"
+version = "0.1.0"
+
+[[package]]
+name = "alice-image"
+version = "0.1.0"
+dependencies = [
+ "libm",
 ]
 
 [[package]]
@@ -446,6 +567,14 @@ name = "alice-legal"
 version = "0.1.0"
 
 [[package]]
+name = "alice-legal-ai"
+version = "0.1.0"
+
+[[package]]
+name = "alice-log"
+version = "0.1.0"
+
+[[package]]
 name = "alice-manga"
 version = "0.1.0"
 dependencies = [
@@ -456,15 +585,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-metrics"
+version = "0.1.0"
+
+[[package]]
+name = "alice-migrate"
+version = "0.1.0"
+
+[[package]]
 name = "alice-ml"
-version = "0.1.1"
+version = "0.2.0"
 
 [[package]]
 name = "alice-motion"
 version = "0.1.0"
+dependencies = [
+ "libm",
+]
 
 [[package]]
 name = "alice-neural"
+version = "0.1.0"
+
+[[package]]
+name = "alice-notify"
+version = "0.1.0"
+dependencies = [
+ "libm",
+]
+
+[[package]]
+name = "alice-observability"
 version = "0.1.0"
 
 [[package]]
@@ -497,6 +648,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-rate-limit"
+version = "0.1.0"
+
+[[package]]
+name = "alice-realtime"
+version = "0.1.0"
+
+[[package]]
 name = "alice-risk"
 version = "0.1.0"
 dependencies = [
@@ -505,6 +664,10 @@ dependencies = [
 
 [[package]]
 name = "alice-rtos"
+version = "0.1.0"
+
+[[package]]
+name = "alice-scheduler"
 version = "0.1.0"
 
 [[package]]
@@ -532,6 +695,10 @@ version = "0.1.0"
 
 [[package]]
 name = "alice-semantic-telemetry"
+version = "0.1.0"
+
+[[package]]
+name = "alice-serial"
 version = "0.1.0"
 
 [[package]]
@@ -563,6 +730,13 @@ name = "alice-synth"
 version = "0.1.1"
 
 [[package]]
+name = "alice-test"
+version = "0.1.0"
+dependencies = [
+ "libm",
+]
+
+[[package]]
 name = "alice-text"
 version = "1.0.0"
 dependencies = [
@@ -584,6 +758,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-text-compression"
+version = "0.1.0"
+
+[[package]]
 name = "alice-token"
 version = "1.0.0"
 dependencies = [
@@ -593,6 +771,13 @@ dependencies = [
  "rayon",
  "rustc-hash 2.1.1",
  "serde",
+]
+
+[[package]]
+name = "alice-train"
+version = "0.1.0"
+dependencies = [
+ "alice-ml",
 ]
 
 [[package]]
@@ -607,6 +792,10 @@ dependencies = [
 
 [[package]]
 name = "alice-vcs"
+version = "0.1.0"
+
+[[package]]
+name = "alice-vectordb"
 version = "0.1.0"
 
 [[package]]
@@ -647,6 +836,14 @@ dependencies = [
  "serde-big-array",
  "thiserror 1.0.69",
 ]
+
+[[package]]
+name = "alice-wasm"
+version = "0.1.0"
+
+[[package]]
+name = "alice-workflow"
+version = "0.1.0"
 
 [[package]]
 name = "alice-zip"
