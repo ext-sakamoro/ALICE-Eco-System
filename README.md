@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         ALICE Ecosystem (137 Components)                     │
+│                         ALICE Ecosystem (151 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -65,6 +65,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Font](https://github.com/ext-sakamoro/ALICE-Font) | v0.1.0 | Parametric MetaFont Renderer | 40-byte params → SDF glyphs, variable-width pen, LRU atlas, no_std | MIT |
 | [ALICE-Text-Compression](https://github.com/ext-sakamoro/ALICE-Text-Compression) | v0.1.0 | Text-Specific Compression | BWT, MTF, RLE, Huffman | MIT OR Apache-2.0 |
 | [ALICE-Image](https://github.com/ext-sakamoro/ALICE-Image) | v0.1.0 | SIMD Image Processing | Resize, filter, color space, OCR preprocessing | AGPL-3.0 |
+| [ALICE-ASR](https://github.com/ext-sakamoro/ALICE-ASR) | v1.0.0 | Automatic Speech Recognition | MFCC, HMM Viterbi decoding, beam search, VAD | MIT |
+| [ALICE-TTS](https://github.com/ext-sakamoro/ALICE-TTS) | v1.0.0 | Text-to-Speech Synthesis | Phoneme mapping, prosody model, parametric waveform, SSML | MIT |
+| [ALICE-OCR](https://github.com/ext-sakamoro/ALICE-OCR) | v1.0.0 | Optical Character Recognition | Otsu binarization, template matching, dictionary correction | MIT |
 
 ### Data & Storage
 
@@ -100,6 +103,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-VNet](https://github.com/ext-sakamoro/ALICE-VNet) | v1.0.0 | Virtual Network SDN Overlay | Law-based routing tables and packet forwarding | MIT |
 | [ALICE-MQTT](https://github.com/ext-sakamoro/ALICE-MQTT) | v1.0.0 | Lightweight PubSub Protocol | IoT messaging optimized via topic tree SDF search | MIT |
 | [ALICE-ServiceMesh](https://github.com/ext-sakamoro/ALICE-ServiceMesh) | v1.0.0 | Service Mesh | Connection topology optimization via graph theory, mTLS | MIT |
+| [ALICE-LoadBalancer](https://github.com/ext-sakamoro/ALICE-LoadBalancer) | v1.0.0 | L4/L7 Load Balancer | Round-robin, WRR, least connections, consistent hashing, health check | MIT |
+| [ALICE-Chat](https://github.com/ext-sakamoro/ALICE-Chat) | v1.0.0 | Chat/Messaging Protocol | Room management, read receipts, typing indicators, threading | MIT |
 
 ### Security & Cryptography
 
@@ -135,6 +140,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Scheduler](https://github.com/ext-sakamoro/ALICE-Scheduler) | v0.1.0 | Job Scheduling | DAG dependency resolution, Cron evaluation | AGPL-3.0 |
 | [ALICE-Hypervisor](https://github.com/ext-sakamoro/ALICE-Hypervisor) | v1.0.0 | Lightweight Hypervisor | Resource isolation described by field equations | MIT |
 | [ALICE-GameEngine](https://github.com/ext-sakamoro/ALICE-GameEngine) | v1.0.0 | Game Loop and ECS | Entity-component-system integrated in SDF space | MIT |
+| [ALICE-Render](https://github.com/ext-sakamoro/ALICE-Render) | v1.0.0 | Software Rendering Pipeline | Rasterization, ray tracing, PBR Cook-Torrance, texture mapping | MIT |
+| [ALICE-Matchmaking](https://github.com/ext-sakamoro/ALICE-Matchmaking) | v1.0.0 | Skill-Based Matchmaking | ELO, MMR, Glicko-2, team balancing, region-based | MIT |
 
 ### AI/ML
 
@@ -146,6 +153,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-RL](https://github.com/ext-sakamoro/ALICE-RL) | v1.0.0 | Reinforcement Learning | Policy as potential field gradient descent | MIT |
 | [ALICE-Diffusion](https://github.com/ext-sakamoro/ALICE-Diffusion) | v1.0.0 | Diffusion Models | Score functions as SDF gradients, data generation | MIT |
 | [ALICE-RAG](https://github.com/ext-sakamoro/ALICE-RAG) | v1.0.0 | Retrieval-Augmented Generation | Knowledge retrieval as vector field nearest neighbor search | MIT |
+| [ALICE-Recommend](https://github.com/ext-sakamoro/ALICE-Recommend) | v1.0.0 | Recommendation Engine | Collaborative/content-based filtering, ALS, hybrid recommender | MIT |
+| [ALICE-VideoAnalytics](https://github.com/ext-sakamoro/ALICE-VideoAnalytics) | v1.0.0 | Video Analytics | Optical flow, Kalman tracking, heatmap, scene change detection | MIT |
 
 ### Motion & Version Control
 
@@ -166,6 +175,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Billing](https://github.com/ext-sakamoro/ALICE-Billing) | v0.1.0 | SaaS Billing Engine | Usage metering, proration, subscription lifecycle | AGPL-3.0 |
 | [ALICE-Quant](https://github.com/ext-sakamoro/ALICE-Quant) | v1.0.0 | Quantitative Modeling | Financial derivative pricing via stochastic differential equations | MIT |
 | [ALICE-MarketData](https://github.com/ext-sakamoro/ALICE-MarketData) | v1.0.0 | Market Data Feed | Tick data as time-series SDF fields for compression | MIT |
+| [ALICE-Logistics](https://github.com/ext-sakamoro/ALICE-Logistics) | v1.0.0 | Supply Chain Optimization | EOQ, Dijkstra/A*, TSP 2-opt, VRP, demand forecasting | MIT |
 
 ### Analytics & Visualization
 
@@ -197,6 +207,10 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Genome](https://github.com/ext-sakamoro/ALICE-Genome) | v1.0.0 | Genome Sequence Analysis | Base alignment via FM-Index and SDF distance spaces | MIT |
 | [ALICE-Astro](https://github.com/ext-sakamoro/ALICE-Astro) | v1.0.0 | Celestial Mechanics | N-body problem via Barnes-Hut tree and SDF gravity fields | MIT |
 | [ALICE-Robotics](https://github.com/ext-sakamoro/ALICE-Robotics) | v1.0.0 | Robotics Control | Motion planning as SDF obstacle field gradient descent | MIT |
+| [ALICE-SLAM](https://github.com/ext-sakamoro/ALICE-SLAM) | v1.0.0 | SLAM | ICP, occupancy grid, pose graph, loop closure, SDF map | MIT |
+| [ALICE-Medical](https://github.com/ext-sakamoro/ALICE-Medical) | v1.0.0 | Medical Imaging | DICOM, Hounsfield, segmentation, SDF reconstruction | MIT |
+| [ALICE-Drone](https://github.com/ext-sakamoro/ALICE-Drone) | v1.0.0 | Drone/UAV Control | PID, waypoint navigation, quaternion attitude, geofence | MIT |
+| [ALICE-Agri](https://github.com/ext-sakamoro/ALICE-Agri) | v1.0.0 | Agricultural Modeling | Crop growth, soil moisture, irrigation, pest risk, yield | MIT |
 
 ### Advanced Domain
 
@@ -264,9 +278,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 734 bridges, 125 bridge modules, 22 pipeline paths (A-V), 137 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 734 bridges, 125 bridge modules, 22 pipeline paths (A-V), 151 crates connected | MIT |
 
-**Total: 137 components** | MIT: 60 | AGPL-3.0: 43 | MIT OR Apache-2.0: 21 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
+**Total: 151 components** | MIT: 74 | AGPL-3.0: 43 | MIT OR Apache-2.0: 21 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
 ## Quick Start
 
@@ -389,7 +403,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **734 cross-crate bridges** across 125 bridge files and 22 pipeline paths (A-V), connecting 137 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **734 cross-crate bridges** across 125 bridge files and 22 pipeline paths (A-V), connecting 151 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -1269,7 +1283,7 @@ Cross-crate `path = "../ALICE-*"` dependencies are resolved in CI by creating li
     echo "" > ../ALICE-Physics/src/lib.rs
 ```
 
-This enables each crate to build independently in CI without requiring the full 137-component workspace.
+This enables each crate to build independently in CI without requiring the full 151-component workspace.
 
 ## License Strategy — 3-Layer Monetization Architecture
 
