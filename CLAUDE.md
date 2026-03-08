@@ -91,7 +91,7 @@ ALICE-KARIKARI.md「100/100品質基準」参照。clippy基準: `pedantic+nurse
 | 指標 | 値 |
 |------|-----|
 | clippy (pedantic+nursery) | 0 warnings |
-| テスト数 | 1339 |
+| テスト数 | 1329 |
 | fmt | clean |
 
 ## ALICE関連リポジトリとの連携
