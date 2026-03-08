@@ -6,31 +6,41 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          ALICE Ecosystem (99 Components)                     │
+│                         ALICE Ecosystem (137 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
-│  │ Edge   Zip  Codec │  │ DB    Cache │  │ API    CDN    │  │ Auth      │ │
-│  │ Voice  Text  SDF  │  │ Queue Search│  │ DNS  Streaming│  │ Crypto    │ │
-│  │ Synth  Font       │  │            │  │ Sync Cloud-GW │  │           │ │
-│  │                    │  │            │  │ Bridge        │  │           │ │
-│  └───────────────────┘  └────────────┘  └───────────────┘  └───────────┘ │
+│  │ Edge   Zip  Codec │  │ DB    Cache │  │ API    CDN    │  │ Auth AuthZ│ │
+│  │ Voice  Text  SDF  │  │ Queue Search│  │ DNS  Streaming│  │ Crypto PKI│ │
+│  │ Synth  Font       │  │ ETL  CDC   │  │ Sync Cloud-GW │  │ SIEM Vault│ │
+│  │                    │  │ Lakehouse  │  │ Bridge VNet   │  │           │ │
+│  └───────────────────┘  │ StreamProc │  │ MQTT SvcMesh  │  └───────────┘ │
+│                          └────────────┘  └───────────────┘                  │
 │                                                                             │
 │  ┌──── Compute ──────┐  ┌─── Analytics ──┐  ┌─── Application ────────┐  │
 │  │ Container  ML     │  │ Analytics      │  │ Browser  Print         │  │
-│  │ Physics    TRT    │  │ View           │  │ Animation  Manga       │  │
-│  │ RTOS              │  └────────────────┘  │ Eco-System             │  │
+│  │ Physics   TRT     │  │ View TimeSeries│  │ Animation  Manga       │  │
+│  │ RTOS  GameEngine  │  └────────────────┘  │ Form Email Payment     │  │
+│  │ Hypervisor        │                       │ Eco-System             │  │
 │  └───────────────────┘                       └────────────────────────┘  │
 │                                                                             │
-│  ┌──── Motion & VCS ─┐  ┌─── Financial ───┐  ┌─── Science ──────────┐  │
-│  │ Motion  VCS      │  │ Ledger   Risk   │  │ Bio    Legal  Energy │  │
-│  │ Kinematics       │  │ FIX   Settlement│  │ Space  Neural Climate│  │
-│  └───────────────────┘  └────────────────┘  └──────────────────────┘  │
-│                                                                             │
-│  ┌──── Advanced ─────┐                                                     │
-│  │ History  Atoms    │  Inverse entropy, molecular compilation,            │
-│  │ Presence          │  cryptographic presence protocol                    │
-│  └───────────────────┘                                                     │
+│  ┌──── AI/ML ────────┐  ┌─── Financial ───┐  ┌─── Science ──────────┐  │
+│  │ NLP  Vision  RAG  │  │ Ledger   Risk   │  │ Bio  Legal  Energy   │  │
+│  │ Embedding  RL     │  │ FIX   Settlement│  │ Space Neural Climate │  │
+│  │ Diffusion         │  │ Quant MarketData│  │ Fluid Quantum Genome │  │
+│  └───────────────────┘  └────────────────┘  │ Astro  Robotics      │  │
+│                                               └──────────────────────┘  │
+│  ┌── Motion & VCS ───┐  ┌── Media ───────┐  ┌─── DevTools ─────────┐  │
+│  │ Motion  VCS       │  │ AR   Haptic    │  │ CI  Debug  Lint      │  │
+│  │ Kinematics        │  │ PointCloud     │  │ Sandbox  PkgRegistry │  │
+│  └───────────────────┘  │ Subtitle       │  └──────────────────────┘  │
+│                          └────────────────┘                              │
+│  ┌──── Advanced ─────┐  ┌── Cross-cutting ┐                             │
+│  │ History  Atoms    │  │ Map  Identity   │                             │
+│  │ Presence          │  │ Blockchain      │                             │
+│  └───────────────────┘  │ Accessibility   │                             │
+│                          │ Sensor          │                             │
+│                          └─────────────────┘                             │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -66,6 +76,10 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Queue](https://github.com/ext-sakamoro/ALICE-Queue) | v0.1.0 | Deterministic Zero-Copy Message Log | Lock-free SPSC, mmap WAL, Vector Clock | AGPL-3.0 |
 | [ALICE-Search](https://github.com/ext-sakamoro/ALICE-Search) | v0.1.0 | FM-Index Full-Text Search | Wavelet Matrix, backward search, ~1.0x size | AGPL-3.0 |
 | [ALICE-VectorDB](https://github.com/ext-sakamoro/ALICE-VectorDB) | v0.1.0 | Vector Similarity Search | HNSW and brute-force ANN | MIT OR Apache-2.0 |
+| [ALICE-ETL](https://github.com/ext-sakamoro/ALICE-ETL) | v1.0.0 | Law-Transform Pipeline | Data transformation rules as declarative formulas | MIT |
+| [ALICE-StreamProc](https://github.com/ext-sakamoro/ALICE-StreamProc) | v1.0.0 | Event Stream Processing | Complex event processing as time-window convolution | MIT |
+| [ALICE-Lakehouse](https://github.com/ext-sakamoro/ALICE-Lakehouse) | v1.0.0 | Columnar Data Lakehouse | SDF-indexed schema evolution for analytical workloads | MIT |
+| [ALICE-CDC](https://github.com/ext-sakamoro/ALICE-CDC) | v1.0.0 | Change Data Capture | Propagate law-based diffs from DB transaction logs | MIT |
 
 ### Networking & Infrastructure
 
@@ -83,6 +97,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Realtime](https://github.com/ext-sakamoro/ALICE-Realtime) | v0.1.0 | Real-Time Engine | WebSocket/SSE pub/sub, presence, backpressure | AGPL-3.0 |
 | [ALICE-Serial](https://github.com/ext-sakamoro/ALICE-Serial) | v0.1.0 | Serialization Formats | MessagePack, CBOR-like, binary encoding | MIT OR Apache-2.0 |
 | [ALICE-RateLimit](https://github.com/ext-sakamoro/ALICE-RateLimit) | v0.1.0 | High-Performance Rate Limiting | Token Bucket, Sliding Window, GCRA | AGPL-3.0 |
+| [ALICE-VNet](https://github.com/ext-sakamoro/ALICE-VNet) | v1.0.0 | Virtual Network SDN Overlay | Law-based routing tables and packet forwarding | MIT |
+| [ALICE-MQTT](https://github.com/ext-sakamoro/ALICE-MQTT) | v1.0.0 | Lightweight PubSub Protocol | IoT messaging optimized via topic tree SDF search | MIT |
+| [ALICE-ServiceMesh](https://github.com/ext-sakamoro/ALICE-ServiceMesh) | v1.0.0 | Service Mesh | Connection topology optimization via graph theory, mTLS | MIT |
 
 ### Security & Cryptography
 
@@ -94,6 +111,10 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-DataShield](https://github.com/ext-sakamoro/ALICE-DataShield) | v0.1.0 | Data Protection | Data masking, anonymization, differential privacy | MIT OR Apache-2.0 |
 | [ALICE-Compliance](https://github.com/ext-sakamoro/ALICE-Compliance) | v0.1.0 | Regulatory Compliance | GDPR, SOX, HIPAA compliance checking engine | MIT OR Apache-2.0 |
 | [ALICE-FinCompliance](https://github.com/ext-sakamoro/ALICE-FinCompliance) | v0.1.0 | Financial Compliance | MiFID II, Basel III, AML regulatory compliance | MIT OR Apache-2.0 |
+| [ALICE-AuthZ](https://github.com/ext-sakamoro/ALICE-AuthZ) | v1.0.0 | Policy-Based Authorization | Access rules evaluated via predicate logic inference | MIT |
+| [ALICE-PKI](https://github.com/ext-sakamoro/ALICE-PKI) | v1.0.0 | Certificate Lifecycle Management | Trust chains verified via graph theory | MIT |
+| [ALICE-SIEM](https://github.com/ext-sakamoro/ALICE-SIEM) | v1.0.0 | Security Event Correlation | Anomaly detection described by information entropy | MIT |
+| [ALICE-SecretVault](https://github.com/ext-sakamoro/ALICE-SecretVault) | v1.0.0 | Secret Management | Dynamic credential issuance via Shamir threshold sharing | MIT |
 
 ### Compute & Runtime
 
@@ -112,6 +133,19 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Circuit](https://github.com/ext-sakamoro/ALICE-Circuit) | v0.1.0 | Fault Tolerance Patterns | Circuit breaker, bulkhead, retry | MIT OR Apache-2.0 |
 | [ALICE-Consensus](https://github.com/ext-sakamoro/ALICE-Consensus) | v0.1.0 | Distributed Consensus | Raft state machine, leader election | MIT OR Apache-2.0 |
 | [ALICE-Scheduler](https://github.com/ext-sakamoro/ALICE-Scheduler) | v0.1.0 | Job Scheduling | DAG dependency resolution, Cron evaluation | AGPL-3.0 |
+| [ALICE-Hypervisor](https://github.com/ext-sakamoro/ALICE-Hypervisor) | v1.0.0 | Lightweight Hypervisor | Resource isolation described by field equations | MIT |
+| [ALICE-GameEngine](https://github.com/ext-sakamoro/ALICE-GameEngine) | v1.0.0 | Game Loop and ECS | Entity-component-system integrated in SDF space | MIT |
+
+### AI/ML
+
+| Component | Version | Description | Feature | License |
+|-----------|---------|-------------|---------|---------|
+| [ALICE-NLP](https://github.com/ext-sakamoro/ALICE-NLP) | v1.0.0 | Natural Language Processing | Syntax trees as SDF distance spaces, semantic proximity | MIT |
+| [ALICE-Vision](https://github.com/ext-sakamoro/ALICE-Vision) | v1.0.0 | Computer Vision | Image features as SDF gradient fields, object detection | MIT |
+| [ALICE-Embedding](https://github.com/ext-sakamoro/ALICE-Embedding) | v1.0.0 | Embedding Vector Generation | High-to-low dimensional projection preserving geodesic distance | MIT |
+| [ALICE-RL](https://github.com/ext-sakamoro/ALICE-RL) | v1.0.0 | Reinforcement Learning | Policy as potential field gradient descent | MIT |
+| [ALICE-Diffusion](https://github.com/ext-sakamoro/ALICE-Diffusion) | v1.0.0 | Diffusion Models | Score functions as SDF gradients, data generation | MIT |
+| [ALICE-RAG](https://github.com/ext-sakamoro/ALICE-RAG) | v1.0.0 | Retrieval-Augmented Generation | Knowledge retrieval as vector field nearest neighbor search | MIT |
 
 ### Motion & Version Control
 
@@ -130,6 +164,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-FIX](https://github.com/ext-sakamoro/ALICE-FIX) | v0.1.0 | FIX Protocol 4.4/5.0 Engine | SOH parser, checksum validation, session sequence tracking, Ledger type conversion | MIT |
 | [ALICE-Settlement](https://github.com/ext-sakamoro/ALICE-Settlement) | v0.1.0 | Post-Trade Settlement Engine | Bilateral netting, clearing house, margin checks, append-only journal, i128 net payments | AGPL-3.0 |
 | [ALICE-Billing](https://github.com/ext-sakamoro/ALICE-Billing) | v0.1.0 | SaaS Billing Engine | Usage metering, proration, subscription lifecycle | AGPL-3.0 |
+| [ALICE-Quant](https://github.com/ext-sakamoro/ALICE-Quant) | v1.0.0 | Quantitative Modeling | Financial derivative pricing via stochastic differential equations | MIT |
+| [ALICE-MarketData](https://github.com/ext-sakamoro/ALICE-MarketData) | v1.0.0 | Market Data Feed | Tick data as time-series SDF fields for compression | MIT |
 
 ### Analytics & Visualization
 
@@ -142,6 +178,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Observability](https://github.com/ext-sakamoro/ALICE-Observability) | v0.1.0 | Distributed Tracing | Metrics aggregation, alerting | MIT OR Apache-2.0 |
 | [ALICE-Experiment](https://github.com/ext-sakamoro/ALICE-Experiment) | v0.1.0 | A/B Testing | Feature flag distribution, experiment analysis | MIT OR Apache-2.0 |
 | [ALICE-Test](https://github.com/ext-sakamoro/ALICE-Test) | v0.1.0 | Testing Framework | Property-based testing, fuzzing, benchmark automation | AGPL-3.0 |
+| [ALICE-TimeSeries](https://github.com/ext-sakamoro/ALICE-TimeSeries) | v1.0.0 | Time-Series Database | Temporal data via wavelet compression and SDF distance fields | MIT |
 
 ### Science & Domain-Specific
 
@@ -155,6 +192,11 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Climate](https://github.com/ext-sakamoro/ALICE-Climate) | v0.1.0 | Planetary Climate Modeling | Weather stations, IDW interpolation, Clausius-Clapeyron, climate anomaly detection | AGPL-3.0 |
 | [ALICE-Legal-AI](https://github.com/ext-sakamoro/ALICE-Legal-AI) | v0.1.0 | Legal Document Analysis | Clause extraction, risk scoring | MIT OR Apache-2.0 |
 | [ALICE-Digital-Twin](https://github.com/ext-sakamoro/ALICE-Digital-Twin) | v0.1.0 | Digital Twin Engine | State management and simulation | MIT OR Apache-2.0 |
+| [ALICE-Fluid](https://github.com/ext-sakamoro/ALICE-Fluid) | v1.0.0 | Fluid Dynamics | Navier-Stokes equations solved with SDF boundary conditions | MIT |
+| [ALICE-Quantum](https://github.com/ext-sakamoro/ALICE-Quantum) | v1.0.0 | Quantum Circuit Simulation | Quantum gates as unitary transformation laws | MIT |
+| [ALICE-Genome](https://github.com/ext-sakamoro/ALICE-Genome) | v1.0.0 | Genome Sequence Analysis | Base alignment via FM-Index and SDF distance spaces | MIT |
+| [ALICE-Astro](https://github.com/ext-sakamoro/ALICE-Astro) | v1.0.0 | Celestial Mechanics | N-body problem via Barnes-Hut tree and SDF gravity fields | MIT |
+| [ALICE-Robotics](https://github.com/ext-sakamoro/ALICE-Robotics) | v1.0.0 | Robotics Control | Motion planning as SDF obstacle field gradient descent | MIT |
 
 ### Advanced Domain
 
@@ -179,6 +221,13 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Notify](https://github.com/ext-sakamoro/ALICE-Notify) | v0.1.0 | Notification Dispatch | Webhook, Push, Email with delivery guarantee | AGPL-3.0 |
 | [ALICE-Collab](https://github.com/ext-sakamoro/ALICE-Collab) | v0.1.0 | Collaborative Editing | CRDT and Operational Transform | MIT OR Apache-2.0 |
 | [ALICE-Workflow](https://github.com/ext-sakamoro/ALICE-Workflow) | v0.1.0 | Workflow Engine | State machines, DAG execution | MIT OR Apache-2.0 |
+| [ALICE-Form](https://github.com/ext-sakamoro/ALICE-Form) | v1.0.0 | Declarative Form Validation | Input constraints proven via ADT type system | MIT |
+| [ALICE-Email](https://github.com/ext-sakamoro/ALICE-Email) | v1.0.0 | Email Send/Receive & MIME | RFC-compliant protocols as state machines | MIT |
+| [ALICE-Payment](https://github.com/ext-sakamoro/ALICE-Payment) | v1.0.0 | Payment Gateway | Transaction state transitions via finite automaton | MIT |
+| [ALICE-AR](https://github.com/ext-sakamoro/ALICE-AR) | v1.0.0 | AR Spatial Composition | Rigid body transform between real and SDF virtual coordinates | MIT |
+| [ALICE-Haptic](https://github.com/ext-sakamoro/ALICE-Haptic) | v1.0.0 | Haptic Feedback | Force vectors derived in real-time from SDF distance fields | MIT |
+| [ALICE-PointCloud](https://github.com/ext-sakamoro/ALICE-PointCloud) | v1.0.0 | Point Cloud Processing | Reconstruction from discrete points to continuous SDF fields | MIT |
+| [ALICE-Subtitle](https://github.com/ext-sakamoro/ALICE-Subtitle) | v1.0.0 | Subtitle & Caption Engine | Timeline synchronization as event streams | MIT |
 
 ### Infrastructure
 
@@ -188,14 +237,36 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Config](https://github.com/ext-sakamoro/ALICE-Config) | v0.1.0 | Dynamic Configuration | Feature flags, remote config, hot reload | AGPL-3.0 |
 | [ALICE-Migrate](https://github.com/ext-sakamoro/ALICE-Migrate) | v0.1.0 | Schema Migration | Version-controlled DDL, rollback, drift detection | AGPL-3.0 |
 | [ALICE-Backup](https://github.com/ext-sakamoro/ALICE-Backup) | v0.1.0 | Incremental Backup | Snapshot-based, generation management | MIT OR Apache-2.0 |
+| [ALICE-Storage](https://github.com/ext-sakamoro/ALICE-Storage) | v1.0.0 | SDF Gradient-Based Object Storage | Data placement optimized by distance fields | MIT |
+| [ALICE-OTA](https://github.com/ext-sakamoro/ALICE-OTA) | v1.0.0 | OTA Firmware Update | Delta updates as AST diff compressed delivery | MIT |
+| [ALICE-Sensor](https://github.com/ext-sakamoro/ALICE-Sensor) | v1.0.0 | Sensor Fusion | Multi-sensor data integration via Kalman filter state-space law | MIT |
+
+### DevTools
+
+| Component | Version | Description | Feature | License |
+|-----------|---------|-------------|---------|---------|
+| [ALICE-CI](https://github.com/ext-sakamoro/ALICE-CI) | v1.0.0 | CI/CD Pipeline | Build DAG optimization via topological sort | MIT |
+| [ALICE-Debug](https://github.com/ext-sakamoro/ALICE-Debug) | v1.0.0 | Debug & Profiling | Execution traces visualized in SDF time-space | MIT |
+| [ALICE-Sandbox](https://github.com/ext-sakamoro/ALICE-Sandbox) | v1.0.0 | Safe Execution Sandbox | Process isolation via capability model | MIT |
+| [ALICE-Lint](https://github.com/ext-sakamoro/ALICE-Lint) | v1.0.0 | Static Analysis | AST pattern matching via law-based rule engine | MIT |
+| [ALICE-PackageRegistry](https://github.com/ext-sakamoro/ALICE-PackageRegistry) | v1.0.0 | Package Registry | Dependency resolution via DAG law verification | MIT |
+
+### Cross-cutting
+
+| Component | Version | Description | Feature | License |
+|-----------|---------|-------------|---------|---------|
+| [ALICE-Map](https://github.com/ext-sakamoro/ALICE-Map) | v1.0.0 | Map Tile Engine | Geographic data as SDF contour fields | MIT |
+| [ALICE-Identity](https://github.com/ext-sakamoro/ALICE-Identity) | v1.0.0 | Decentralized Identity (DID) | Self-sovereign identity as DAG trust graphs | MIT |
+| [ALICE-Blockchain](https://github.com/ext-sakamoro/ALICE-Blockchain) | v1.0.0 | Distributed Ledger | Blockchain as Merkle tree plus consensus law | MIT |
+| [ALICE-Accessibility](https://github.com/ext-sakamoro/ALICE-Accessibility) | v1.0.0 | Accessibility | UI semantics as structural tree law for screen readers | MIT |
 
 ### Integration
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 734 bridges, 125 bridge modules, 22 pipeline paths (A-V), 99 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 734 bridges, 125 bridge modules, 22 pipeline paths (A-V), 137 crates connected | MIT |
 
-**Total: 99 components** | AGPL-3.0: 43 | MIT: 14 | MIT OR Apache-2.0: 21 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
+**Total: 137 components** | MIT: 60 | AGPL-3.0: 43 | MIT OR Apache-2.0: 21 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
 ## Quick Start
 
@@ -318,7 +389,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **734 cross-crate bridges** across 125 bridge files and 22 pipeline paths (A-V), connecting 99 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **734 cross-crate bridges** across 125 bridge files and 22 pipeline paths (A-V), connecting 137 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -1116,6 +1187,15 @@ Cross-crate bridges (15 total):
 │  ║  │ Frag. restore │ │ Genetic algo  │ │ 18-byte event │                  ║   │
 │  ║  │ AGPL-3.0      │ │ Proprietary   │ │ MIT           │                  ║   │
 │  ║  └───────────────┘ └───────────────┘ └───────────────┘                  ║   │
+│  ║                                                                          ║   │
+│  ║  LAYER 1e: AI/ML + DevTools + Cross-cutting (46 new crates)            ║   │
+│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌─────────────┐  ║   │
+│  ║  │  ALICE-NLP    │ │ ALICE-Vision  │ │ALICE-Embedding│ │ ALICE-RL    │  ║   │
+│  ║  │  ALICE-RAG    │ │ALICE-Diffusion│ │ALICE-GameEng  │ │ALICE-Robotics│ ║   │
+│  ║  │  ALICE-Fluid  │ │ALICE-Quantum  │ │ ALICE-Genome  │ │ ALICE-Astro │  ║   │
+│  ║  │  ALICE-CI     │ │ ALICE-Debug   │ │ ALICE-Lint    │ │ ALICE-Map   │  ║   │
+│  ║  │  + 32 more    │ │ MIT license   │ │ v1.0.0 each   │ │ Pure Rust   │  ║   │
+│  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
 │  ╚══════════════════════════════════════════════════════════════════════════╝   │
 │                                                                                  │
 │  All components: Rust | no_std compatible | Zero allocation | Deterministic      │
@@ -1189,7 +1269,7 @@ Cross-crate `path = "../ALICE-*"` dependencies are resolved in CI by creating li
     echo "" > ../ALICE-Physics/src/lib.rs
 ```
 
-This enables each crate to build independently in CI without requiring the full 86-component workspace.
+This enables each crate to build independently in CI without requiring the full 137-component workspace.
 
 ## License Strategy — 3-Layer Monetization Architecture
 
