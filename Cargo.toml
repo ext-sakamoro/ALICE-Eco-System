@@ -3,7 +3,7 @@ name = "alice-eco-system"
 version = "0.3.2"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
-description = "ALICE Ecosystem Integration Hub - 1190 bridges, 22 pipeline paths (A-V), 218 bridge modules, 182 crates, 146 SaaS services"
+description = "ALICE Ecosystem Integration Hub - 1195 bridges, 22 pipeline paths (A-V), 219 bridge modules, 183 crates, 146 SaaS services"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
@@ -293,6 +293,7 @@ alice-robotics = { path = "../ALICE-Robotics", default-features = false }
 # 2026-03 batch 2: IoT extended
 alice-sensor = { path = "../ALICE-Sensor", default-features = false }
 alice-ota = { path = "../ALICE-OTA", default-features = false }
+alice-iot = { path = "../ALICE-IoT", default-features = false }
 
 # 2026-03 batch 2: Cross-cutting
 alice-blockchain = { path = "../ALICE-Blockchain", default-features = false }
