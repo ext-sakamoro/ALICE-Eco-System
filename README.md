@@ -332,7 +332,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1195 bridges, 219 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1205 bridges, 221 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
 
 **Total: 185 components** | MIT: 61 | AGPL-3.0: 68 | MIT OR Apache-2.0: 43 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
@@ -457,7 +457,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **1,195 cross-crate bridges** across 219 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **1,205 cross-crate bridges** across 221 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
