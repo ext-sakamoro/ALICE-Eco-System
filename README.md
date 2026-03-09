@@ -65,17 +65,17 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Font](https://github.com/ext-sakamoro/ALICE-Font) | v0.1.0 | Parametric MetaFont Renderer | 40-byte params → SDF glyphs, variable-width pen, LRU atlas, no_std | MIT |
 | [ALICE-Text-Compression](https://github.com/ext-sakamoro/ALICE-Text-Compression) | v0.1.0 | Text-Specific Compression | BWT, MTF, RLE, Huffman | MIT OR Apache-2.0 |
 | [ALICE-Image](https://github.com/ext-sakamoro/ALICE-Image) | v0.1.0 | SIMD Image Processing | Resize, filter, color space, OCR preprocessing | AGPL-3.0 |
-| [ALICE-ASR](https://github.com/ext-sakamoro/ALICE-ASR) | v1.0.0 | Automatic Speech Recognition | MFCC, HMM Viterbi decoding, beam search, VAD | MIT |
-| [ALICE-TTS](https://github.com/ext-sakamoro/ALICE-TTS) | v1.0.0 | Text-to-Speech Synthesis | Phoneme mapping, prosody model, parametric waveform, SSML | MIT |
-| [ALICE-OCR](https://github.com/ext-sakamoro/ALICE-OCR) | v1.0.0 | Optical Character Recognition | Otsu binarization, template matching, dictionary correction | MIT |
+| [ALICE-ASR](https://github.com/ext-sakamoro/ALICE-ASR) | v1.0.0 | Automatic Speech Recognition | MFCC, HMM Viterbi decoding, beam search, VAD | AGPL-3.0 |
+| [ALICE-TTS](https://github.com/ext-sakamoro/ALICE-TTS) | v1.0.0 | Text-to-Speech Synthesis | Phoneme mapping, prosody model, parametric waveform, SSML | AGPL-3.0 |
+| [ALICE-OCR](https://github.com/ext-sakamoro/ALICE-OCR) | v1.0.0 | Optical Character Recognition | Otsu binarization, template matching, dictionary correction | AGPL-3.0 |
 
 ### Compiler/Language
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Compiler](https://github.com/ext-sakamoro/ALICE-Compiler) | v1.0.0 | DSL/JIT Compiler | AST, IR, code generation, optimization passes | MIT |
-| [ALICE-VM](https://github.com/ext-sakamoro/ALICE-VM) | v1.0.0 | Bytecode VM | Stack/register machine, heap allocator | MIT |
-| [ALICE-Parser](https://github.com/ext-sakamoro/ALICE-Parser) | v1.0.0 | Parser Combinators | PEG, Pratt parsing, error recovery | MIT |
+| [ALICE-Compiler](https://github.com/ext-sakamoro/ALICE-Compiler) | v1.0.0 | DSL/JIT Compiler | AST, IR, code generation, optimization passes | MIT OR Apache-2.0 |
+| [ALICE-VM](https://github.com/ext-sakamoro/ALICE-VM) | v1.0.0 | Bytecode VM | Stack/register machine, heap allocator | MIT OR Apache-2.0 |
+| [ALICE-Parser](https://github.com/ext-sakamoro/ALICE-Parser) | v1.0.0 | Parser Combinators | PEG, Pratt parsing, error recovery | MIT OR Apache-2.0 |
 
 ### Data & Storage
 
@@ -91,8 +91,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-StreamProc](https://github.com/ext-sakamoro/ALICE-StreamProc) | v1.0.0 | Event Stream Processing | Complex event processing as time-window convolution | MIT |
 | [ALICE-Lakehouse](https://github.com/ext-sakamoro/ALICE-Lakehouse) | v1.0.0 | Columnar Data Lakehouse | SDF-indexed schema evolution for analytical workloads | MIT |
 | [ALICE-CDC](https://github.com/ext-sakamoro/ALICE-CDC) | v1.0.0 | Change Data Capture | Propagate law-based diffs from DB transaction logs | MIT |
-| [ALICE-FileSystem](https://github.com/ext-sakamoro/ALICE-FileSystem) | v1.0.0 | Virtual File System | Inodes, permissions, symlinks, mount | MIT |
-| [ALICE-ObjectStore](https://github.com/ext-sakamoro/ALICE-ObjectStore) | v1.0.0 | S3-Compatible Object Store | Buckets, multipart upload, versioning | MIT |
+| [ALICE-FileSystem](https://github.com/ext-sakamoro/ALICE-FileSystem) | v1.0.0 | Virtual File System | Inodes, permissions, symlinks, mount | AGPL-3.0 |
+| [ALICE-ObjectStore](https://github.com/ext-sakamoro/ALICE-ObjectStore) | v1.0.0 | S3-Compatible Object Store | Buckets, multipart upload, versioning | AGPL-3.0 |
 
 ### Networking & Infrastructure
 
@@ -113,15 +113,15 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-VNet](https://github.com/ext-sakamoro/ALICE-VNet) | v1.0.0 | Virtual Network SDN Overlay | Law-based routing tables and packet forwarding | MIT |
 | [ALICE-MQTT](https://github.com/ext-sakamoro/ALICE-MQTT) | v1.0.0 | Lightweight PubSub Protocol | IoT messaging optimized via topic tree SDF search | MIT |
 | [ALICE-ServiceMesh](https://github.com/ext-sakamoro/ALICE-ServiceMesh) | v1.0.0 | Service Mesh | Connection topology optimization via graph theory, mTLS | MIT |
-| [ALICE-LoadBalancer](https://github.com/ext-sakamoro/ALICE-LoadBalancer) | v1.0.0 | L4/L7 Load Balancer | Round-robin, WRR, least connections, consistent hashing, health check | MIT |
-| [ALICE-Chat](https://github.com/ext-sakamoro/ALICE-Chat) | v1.0.0 | Chat/Messaging Protocol | Room management, read receipts, typing indicators, threading | MIT |
-| [ALICE-Proxy](https://github.com/ext-sakamoro/ALICE-Proxy) | v1.0.0 | L7 Reverse Proxy | Routing, header rewriting, circuit breaker | MIT |
-| [ALICE-WebSocket](https://github.com/ext-sakamoro/ALICE-WebSocket) | v1.0.0 | WebSocket Protocol | Frame parsing, masking, handshake | MIT |
-| [ALICE-gRPC](https://github.com/ext-sakamoro/ALICE-gRPC) | v1.0.0 | gRPC Framework | Protobuf, streaming RPC | MIT |
-| [ALICE-HTTP](https://github.com/ext-sakamoro/ALICE-HTTP) | v1.0.0 | HTTP/1.1+2 Parser | Chunked encoding, cookies, HPACK | MIT |
-| [ALICE-BLE](https://github.com/ext-sakamoro/ALICE-BLE) | v1.0.0 | BLE Protocol | GATT, advertising, pairing | MIT |
-| [ALICE-LoRa](https://github.com/ext-sakamoro/ALICE-LoRa) | v1.0.0 | LoRaWAN | Chirp modulation, ADR, OTAA/ABP | MIT |
-| [ALICE-NFC](https://github.com/ext-sakamoro/ALICE-NFC) | v1.0.0 | NFC Protocol | NDEF, tag read/write, APDU, card emulation | MIT |
+| [ALICE-LoadBalancer](https://github.com/ext-sakamoro/ALICE-LoadBalancer) | v1.0.0 | L4/L7 Load Balancer | Round-robin, WRR, least connections, consistent hashing, health check | AGPL-3.0 |
+| [ALICE-Chat](https://github.com/ext-sakamoro/ALICE-Chat) | v1.0.0 | Chat/Messaging Protocol | Room management, read receipts, typing indicators, threading | AGPL-3.0 |
+| [ALICE-Proxy](https://github.com/ext-sakamoro/ALICE-Proxy) | v1.0.0 | L7 Reverse Proxy | Routing, header rewriting, circuit breaker | AGPL-3.0 |
+| [ALICE-WebSocket](https://github.com/ext-sakamoro/ALICE-WebSocket) | v1.0.0 | WebSocket Protocol | Frame parsing, masking, handshake | AGPL-3.0 |
+| [ALICE-gRPC](https://github.com/ext-sakamoro/ALICE-gRPC) | v1.0.0 | gRPC Framework | Protobuf, streaming RPC | AGPL-3.0 |
+| [ALICE-HTTP](https://github.com/ext-sakamoro/ALICE-HTTP) | v1.0.0 | HTTP/1.1+2 Parser | Chunked encoding, cookies, HPACK | AGPL-3.0 |
+| [ALICE-BLE](https://github.com/ext-sakamoro/ALICE-BLE) | v1.0.0 | BLE Protocol | GATT, advertising, pairing | MIT OR Apache-2.0 |
+| [ALICE-LoRa](https://github.com/ext-sakamoro/ALICE-LoRa) | v1.0.0 | LoRaWAN | Chirp modulation, ADR, OTAA/ABP | MIT OR Apache-2.0 |
+| [ALICE-NFC](https://github.com/ext-sakamoro/ALICE-NFC) | v1.0.0 | NFC Protocol | NDEF, tag read/write, APDU, card emulation | MIT OR Apache-2.0 |
 
 ### Security & Cryptography
 
@@ -137,9 +137,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-PKI](https://github.com/ext-sakamoro/ALICE-PKI) | v1.0.0 | Certificate Lifecycle Management | Trust chains verified via graph theory | MIT |
 | [ALICE-SIEM](https://github.com/ext-sakamoro/ALICE-SIEM) | v1.0.0 | Security Event Correlation | Anomaly detection described by information entropy | MIT |
 | [ALICE-SecretVault](https://github.com/ext-sakamoro/ALICE-SecretVault) | v1.0.0 | Secret Management | Dynamic credential issuance via Shamir threshold sharing | MIT |
-| [ALICE-WAF](https://github.com/ext-sakamoro/ALICE-WAF) | v1.0.0 | WAF Rule Engine | SQLi/XSS detection, rate limiting | MIT |
-| [ALICE-DLP](https://github.com/ext-sakamoro/ALICE-DLP) | v1.0.0 | Data Loss Prevention | PII detection, masking, policy | MIT |
-| [ALICE-Audit](https://github.com/ext-sakamoro/ALICE-Audit) | v1.0.0 | Audit Trail | Hash chain tamper detection, compliance | MIT |
+| [ALICE-WAF](https://github.com/ext-sakamoro/ALICE-WAF) | v1.0.0 | WAF Rule Engine | SQLi/XSS detection, rate limiting | AGPL-3.0 |
+| [ALICE-DLP](https://github.com/ext-sakamoro/ALICE-DLP) | v1.0.0 | Data Loss Prevention | PII detection, masking, policy | AGPL-3.0 |
+| [ALICE-Audit](https://github.com/ext-sakamoro/ALICE-Audit) | v1.0.0 | Audit Trail | Hash chain tamper detection, compliance | AGPL-3.0 |
 
 ### Compute & Runtime
 
@@ -160,8 +160,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Scheduler](https://github.com/ext-sakamoro/ALICE-Scheduler) | v0.1.0 | Job Scheduling | DAG dependency resolution, Cron evaluation | AGPL-3.0 |
 | [ALICE-Hypervisor](https://github.com/ext-sakamoro/ALICE-Hypervisor) | v1.0.0 | Lightweight Hypervisor | Resource isolation described by field equations | MIT |
 | [ALICE-GameEngine](https://github.com/ext-sakamoro/ALICE-GameEngine) | v1.0.0 | Game Loop and ECS | Entity-component-system integrated in SDF space | MIT |
-| [ALICE-Render](https://github.com/ext-sakamoro/ALICE-Render) | v1.0.0 | Software Rendering Pipeline | Rasterization, ray tracing, PBR Cook-Torrance, texture mapping | MIT |
-| [ALICE-Matchmaking](https://github.com/ext-sakamoro/ALICE-Matchmaking) | v1.0.0 | Skill-Based Matchmaking | ELO, MMR, Glicko-2, team balancing, region-based | MIT |
+| [ALICE-Render](https://github.com/ext-sakamoro/ALICE-Render) | v1.0.0 | Software Rendering Pipeline | Rasterization, ray tracing, PBR Cook-Torrance, texture mapping | MIT OR Apache-2.0 |
+| [ALICE-Matchmaking](https://github.com/ext-sakamoro/ALICE-Matchmaking) | v1.0.0 | Skill-Based Matchmaking | ELO, MMR, Glicko-2, team balancing, region-based | MIT OR Apache-2.0 |
 
 ### AI/ML
 
@@ -173,11 +173,11 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-RL](https://github.com/ext-sakamoro/ALICE-RL) | v1.0.0 | Reinforcement Learning | Policy as potential field gradient descent | MIT |
 | [ALICE-Diffusion](https://github.com/ext-sakamoro/ALICE-Diffusion) | v1.0.0 | Diffusion Models | Score functions as SDF gradients, data generation | MIT |
 | [ALICE-RAG](https://github.com/ext-sakamoro/ALICE-RAG) | v1.0.0 | Retrieval-Augmented Generation | Knowledge retrieval as vector field nearest neighbor search | MIT |
-| [ALICE-Recommend](https://github.com/ext-sakamoro/ALICE-Recommend) | v1.0.0 | Recommendation Engine | Collaborative/content-based filtering, ALS, hybrid recommender | MIT |
-| [ALICE-VideoAnalytics](https://github.com/ext-sakamoro/ALICE-VideoAnalytics) | v1.0.0 | Video Analytics | Optical flow, Kalman tracking, heatmap, scene change detection | MIT |
-| [ALICE-LLM](https://github.com/ext-sakamoro/ALICE-LLM) | v1.0.0 | LLM Inference | BPE tokenizer, KV cache, attention, quantization | MIT |
-| [ALICE-GAN](https://github.com/ext-sakamoro/ALICE-GAN) | v1.0.0 | GAN Framework | Generator/discriminator, Wasserstein, spectral norm | MIT |
-| [ALICE-AutoML](https://github.com/ext-sakamoro/ALICE-AutoML) | v1.0.0 | AutoML | Hyperparameter search, Bayesian optimization, NAS | MIT |
+| [ALICE-Recommend](https://github.com/ext-sakamoro/ALICE-Recommend) | v1.0.0 | Recommendation Engine | Collaborative/content-based filtering, ALS, hybrid recommender | AGPL-3.0 |
+| [ALICE-VideoAnalytics](https://github.com/ext-sakamoro/ALICE-VideoAnalytics) | v1.0.0 | Video Analytics | Optical flow, Kalman tracking, heatmap, scene change detection | AGPL-3.0 |
+| [ALICE-LLM](https://github.com/ext-sakamoro/ALICE-LLM) | v1.0.0 | LLM Inference | BPE tokenizer, KV cache, attention, quantization | MIT OR Apache-2.0 |
+| [ALICE-GAN](https://github.com/ext-sakamoro/ALICE-GAN) | v1.0.0 | GAN Framework | Generator/discriminator, Wasserstein, spectral norm | MIT OR Apache-2.0 |
+| [ALICE-AutoML](https://github.com/ext-sakamoro/ALICE-AutoML) | v1.0.0 | AutoML | Hyperparameter search, Bayesian optimization, NAS | MIT OR Apache-2.0 |
 
 ### Motion & Version Control
 
@@ -198,7 +198,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Billing](https://github.com/ext-sakamoro/ALICE-Billing) | v0.1.0 | SaaS Billing Engine | Usage metering, proration, subscription lifecycle | AGPL-3.0 |
 | [ALICE-Quant](https://github.com/ext-sakamoro/ALICE-Quant) | v1.0.0 | Quantitative Modeling | Financial derivative pricing via stochastic differential equations | MIT |
 | [ALICE-MarketData](https://github.com/ext-sakamoro/ALICE-MarketData) | v1.0.0 | Market Data Feed | Tick data as time-series SDF fields for compression | MIT |
-| [ALICE-Logistics](https://github.com/ext-sakamoro/ALICE-Logistics) | v1.0.0 | Supply Chain Optimization | EOQ, Dijkstra/A*, TSP 2-opt, VRP, demand forecasting | MIT |
+| [ALICE-Logistics](https://github.com/ext-sakamoro/ALICE-Logistics) | v1.0.0 | Supply Chain Optimization | EOQ, Dijkstra/A*, TSP 2-opt, VRP, demand forecasting | AGPL-3.0 |
 
 ### Analytics & Visualization
 
@@ -230,15 +230,15 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Genome](https://github.com/ext-sakamoro/ALICE-Genome) | v1.0.0 | Genome Sequence Analysis | Base alignment via FM-Index and SDF distance spaces | MIT |
 | [ALICE-Astro](https://github.com/ext-sakamoro/ALICE-Astro) | v1.0.0 | Celestial Mechanics | N-body problem via Barnes-Hut tree and SDF gravity fields | MIT |
 | [ALICE-Robotics](https://github.com/ext-sakamoro/ALICE-Robotics) | v1.0.0 | Robotics Control | Motion planning as SDF obstacle field gradient descent | MIT |
-| [ALICE-Swarm](https://github.com/ext-sakamoro/ALICE-Swarm) | v1.0.0 | Swarm Intelligence | Boids, formation control, consensus, task allocation | MIT |
-| [ALICE-Navigation](https://github.com/ext-sakamoro/ALICE-Navigation) | v1.0.0 | Path Planning | RRT, PRM, potential field, nav mesh, dynamic replan | MIT |
-| [ALICE-SLAM](https://github.com/ext-sakamoro/ALICE-SLAM) | v1.0.0 | SLAM | ICP, occupancy grid, pose graph, loop closure, SDF map | MIT |
-| [ALICE-Medical](https://github.com/ext-sakamoro/ALICE-Medical) | v1.0.0 | Medical Imaging | DICOM, Hounsfield, segmentation, SDF reconstruction | MIT |
-| [ALICE-Drone](https://github.com/ext-sakamoro/ALICE-Drone) | v1.0.0 | Drone/UAV Control | PID, waypoint navigation, quaternion attitude, geofence | MIT |
-| [ALICE-Agri](https://github.com/ext-sakamoro/ALICE-Agri) | v1.0.0 | Agricultural Modeling | Crop growth, soil moisture, irrigation, pest risk, yield | MIT |
-| [ALICE-Chemistry](https://github.com/ext-sakamoro/ALICE-Chemistry) | v1.0.0 | Molecular Dynamics | Lennard-Jones, Arrhenius, thermodynamics | MIT |
-| [ALICE-Optics](https://github.com/ext-sakamoro/ALICE-Optics) | v1.0.0 | Lens Systems | Diffraction, polarization, thin film, fiber | MIT |
-| [ALICE-Signal](https://github.com/ext-sakamoro/ALICE-Signal) | v1.0.0 | Digital Signal Processing | FFT, FIR/IIR, wavelet, window functions | MIT |
+| [ALICE-Swarm](https://github.com/ext-sakamoro/ALICE-Swarm) | v1.0.0 | Swarm Intelligence | Boids, formation control, consensus, task allocation | MIT OR Apache-2.0 |
+| [ALICE-Navigation](https://github.com/ext-sakamoro/ALICE-Navigation) | v1.0.0 | Path Planning | RRT, PRM, potential field, nav mesh, dynamic replan | MIT OR Apache-2.0 |
+| [ALICE-SLAM](https://github.com/ext-sakamoro/ALICE-SLAM) | v1.0.0 | SLAM | ICP, occupancy grid, pose graph, loop closure, SDF map | AGPL-3.0 |
+| [ALICE-Medical](https://github.com/ext-sakamoro/ALICE-Medical) | v1.0.0 | Medical Imaging | DICOM, Hounsfield, segmentation, SDF reconstruction | AGPL-3.0 |
+| [ALICE-Drone](https://github.com/ext-sakamoro/ALICE-Drone) | v1.0.0 | Drone/UAV Control | PID, waypoint navigation, quaternion attitude, geofence | AGPL-3.0 |
+| [ALICE-Agri](https://github.com/ext-sakamoro/ALICE-Agri) | v1.0.0 | Agricultural Modeling | Crop growth, soil moisture, irrigation, pest risk, yield | MIT OR Apache-2.0 |
+| [ALICE-Chemistry](https://github.com/ext-sakamoro/ALICE-Chemistry) | v1.0.0 | Molecular Dynamics | Lennard-Jones, Arrhenius, thermodynamics | MIT OR Apache-2.0 |
+| [ALICE-Optics](https://github.com/ext-sakamoro/ALICE-Optics) | v1.0.0 | Lens Systems | Diffraction, polarization, thin film, fiber | MIT OR Apache-2.0 |
+| [ALICE-Signal](https://github.com/ext-sakamoro/ALICE-Signal) | v1.0.0 | Digital Signal Processing | FFT, FIR/IIR, wavelet, window functions | MIT OR Apache-2.0 |
 
 ### Advanced Domain
 
@@ -252,9 +252,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Audio](https://github.com/ext-sakamoro/ALICE-Audio) | v1.0.0 | Audio Processing | FFT, FIR/IIR filters, mixer, effects, ADSR | MIT |
-| [ALICE-Video](https://github.com/ext-sakamoro/ALICE-Video) | v1.0.0 | Video Codec | I/P/B frames, DCT, motion compensation | MIT |
-| [ALICE-Camera](https://github.com/ext-sakamoro/ALICE-Camera) | v1.0.0 | Image Signal Processor | White balance, demosaicing, HDR, lens correction | MIT |
+| [ALICE-Audio](https://github.com/ext-sakamoro/ALICE-Audio) | v1.0.0 | Audio Processing | FFT, FIR/IIR filters, mixer, effects, ADSR | MIT OR Apache-2.0 |
+| [ALICE-Video](https://github.com/ext-sakamoro/ALICE-Video) | v1.0.0 | Video Codec | I/P/B frames, DCT, motion compensation | MIT OR Apache-2.0 |
+| [ALICE-Camera](https://github.com/ext-sakamoro/ALICE-Camera) | v1.0.0 | Image Signal Processor | White balance, demosaicing, HDR, lens correction | MIT OR Apache-2.0 |
 
 ### Application
 
@@ -300,8 +300,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Sandbox](https://github.com/ext-sakamoro/ALICE-Sandbox) | v1.0.0 | Safe Execution Sandbox | Process isolation via capability model | MIT |
 | [ALICE-Lint](https://github.com/ext-sakamoro/ALICE-Lint) | v1.0.0 | Static Analysis | AST pattern matching via law-based rule engine | MIT |
 | [ALICE-PackageRegistry](https://github.com/ext-sakamoro/ALICE-PackageRegistry) | v1.0.0 | Package Registry | Dependency resolution via DAG law verification | MIT |
-| [ALICE-Terraform](https://github.com/ext-sakamoro/ALICE-Terraform) | v1.0.0 | IaC Engine | Resource graph, state management, diff/apply | MIT |
-| [ALICE-Monitor](https://github.com/ext-sakamoro/ALICE-Monitor) | v1.0.0 | Health Monitoring | Health checks, alerts, SLA tracking, incident management | MIT |
+| [ALICE-Terraform](https://github.com/ext-sakamoro/ALICE-Terraform) | v1.0.0 | IaC Engine | Resource graph, state management, diff/apply | AGPL-3.0 |
+| [ALICE-Monitor](https://github.com/ext-sakamoro/ALICE-Monitor) | v1.0.0 | Health Monitoring | Health checks, alerts, SLA tracking, incident management | AGPL-3.0 |
 
 ### Cross-cutting
 
@@ -316,16 +316,16 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-CRM](https://github.com/ext-sakamoro/ALICE-CRM) | v1.0.0 | Customer Management | Pipeline, lead scoring, RFM | MIT |
-| [ALICE-ERP](https://github.com/ext-sakamoro/ALICE-ERP) | v1.0.0 | Enterprise Resource Planning | Inventory, BOM, MRP, production scheduling, cost accounting | MIT |
-| [ALICE-HRM](https://github.com/ext-sakamoro/ALICE-HRM) | v1.0.0 | Human Resource Management | Attendance, payroll, leave management, shift, evaluation | MIT |
-| [ALICE-LMS](https://github.com/ext-sakamoro/ALICE-LMS) | v1.0.0 | Learning Management System | Course management, quiz engine, grading, certificates | MIT |
+| [ALICE-CRM](https://github.com/ext-sakamoro/ALICE-CRM) | v1.0.0 | Customer Management | Pipeline, lead scoring, RFM | AGPL-3.0 |
+| [ALICE-ERP](https://github.com/ext-sakamoro/ALICE-ERP) | v1.0.0 | Enterprise Resource Planning | Inventory, BOM, MRP, production scheduling, cost accounting | AGPL-3.0 |
+| [ALICE-HRM](https://github.com/ext-sakamoro/ALICE-HRM) | v1.0.0 | Human Resource Management | Attendance, payroll, leave management, shift, evaluation | AGPL-3.0 |
+| [ALICE-LMS](https://github.com/ext-sakamoro/ALICE-LMS) | v1.0.0 | Learning Management System | Course management, quiz engine, grading, certificates | MIT OR Apache-2.0 |
 
 ### XR
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-VR](https://github.com/ext-sakamoro/ALICE-VR) | v1.0.0 | VR Runtime | Head tracking, lens distortion, stereo rendering | MIT |
+| [ALICE-VR](https://github.com/ext-sakamoro/ALICE-VR) | v1.0.0 | VR Runtime | Head tracking, lens distortion, stereo rendering | MIT OR Apache-2.0 |
 
 ### Integration
 
@@ -333,7 +333,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 734 bridges, 125 bridge modules, 22 pipeline paths (A-V), 184 crates connected | MIT |
 
-**Total: 184 components** | MIT: 107 | AGPL-3.0: 43 | MIT OR Apache-2.0: 21 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
+**Total: 184 components** | MIT: 60 | AGPL-3.0: 68 | MIT OR Apache-2.0: 43 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
 ## Quick Start
 
