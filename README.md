@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         ALICE Ecosystem (184 Components)                     │
+│                         ALICE Ecosystem (185 Components)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
@@ -39,7 +39,7 @@
 │  │ History  Atoms    │  │ Map  Identity   │                             │
 │  │ Presence          │  │ Blockchain      │                             │
 │  └───────────────────┘  │ Accessibility   │                             │
-│                          │ Sensor          │                             │
+│                          │ Sensor  IoT     │                             │
 │                          └─────────────────┘                             │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -290,6 +290,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Storage](https://github.com/ext-sakamoro/ALICE-Storage) | v1.0.0 | SDF Gradient-Based Object Storage | Data placement optimized by distance fields | MIT |
 | [ALICE-OTA](https://github.com/ext-sakamoro/ALICE-OTA) | v1.0.0 | OTA Firmware Update | Delta updates as AST diff compressed delivery | MIT |
 | [ALICE-Sensor](https://github.com/ext-sakamoro/ALICE-Sensor) | v1.0.0 | Sensor Fusion | Multi-sensor data integration via Kalman filter state-space law | MIT |
+| [ALICE-IoT](https://github.com/ext-sakamoro/ALICE-IoT) | v0.1.0 | SwitchBot & Home Assistant Integration | IoT device control, sensor telemetry, BLE, REST/WebSocket, Raspberry Pi daemon | MIT |
 
 ### DevTools
 
@@ -331,9 +332,9 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 734 bridges, 125 bridge modules, 22 pipeline paths (A-V), 184 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1195 bridges, 219 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
 
-**Total: 184 components** | MIT: 60 | AGPL-3.0: 68 | MIT OR Apache-2.0: 43 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
+**Total: 185 components** | MIT: 61 | AGPL-3.0: 68 | MIT OR Apache-2.0: 43 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
 ## Quick Start
 
@@ -456,7 +457,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **734 cross-crate bridges** across 125 bridge files and 22 pipeline paths (A-V), connecting 184 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **1,195 cross-crate bridges** across 219 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
