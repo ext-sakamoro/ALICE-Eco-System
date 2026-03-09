@@ -30,7 +30,7 @@
 
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 86 ALICE crates into unified pipelines with 719 cross-crate bridges across 122 bridge modules.
+//! Connects 184 ALICE crates into unified pipelines with 954 cross-crate bridges across 172 bridge modules.
 //! Powers 52 `SaaS` services (AGPL-3.0-or-later) via the MIT Core + AGPL `SaaS` Shell pattern.
 //!
 //! ```text
@@ -252,6 +252,81 @@ pub mod bridge_vectordb;
 pub mod bridge_vectordb_cross;
 pub mod bridge_wasm;
 pub mod bridge_wasm_cross;
+
+// 2026-03 batch: Media bridges
+pub mod bridge_asr;
+pub mod bridge_audio;
+pub mod bridge_camera;
+pub mod bridge_ocr;
+pub mod bridge_tts;
+pub mod bridge_video;
+
+// 2026-03 batch: Spatial bridges
+pub mod bridge_drone;
+pub mod bridge_medical;
+pub mod bridge_navigation;
+pub mod bridge_render;
+pub mod bridge_slam;
+
+// 2026-03 batch: Optimization bridges
+pub mod bridge_agri;
+pub mod bridge_logistics;
+pub mod bridge_matchmaking;
+pub mod bridge_recommend;
+
+// 2026-03 batch: Real-time bridges
+pub mod bridge_chat;
+pub mod bridge_loadbalancer;
+pub mod bridge_videoanalytics;
+
+// 2026-03 batch: Compiler/Language bridges
+pub mod bridge_compiler;
+pub mod bridge_parser;
+pub mod bridge_vm;
+
+// 2026-03 batch: Networking bridges
+pub mod bridge_grpc;
+pub mod bridge_http;
+pub mod bridge_proxy;
+pub mod bridge_websocket;
+
+// 2026-03 batch: Storage bridges
+pub mod bridge_filesystem;
+pub mod bridge_objectstore;
+
+// 2026-03 batch: Security bridges
+pub mod bridge_audit;
+pub mod bridge_dlp;
+pub mod bridge_waf;
+
+// 2026-03 batch: AI/ML bridges
+pub mod bridge_automl;
+pub mod bridge_gan;
+pub mod bridge_llm;
+
+// 2026-03 batch: Swarm/IoT bridges
+pub mod bridge_ble;
+pub mod bridge_lora;
+pub mod bridge_nfc;
+pub mod bridge_swarm;
+
+// 2026-03 batch: Infrastructure bridges
+pub mod bridge_monitor;
+pub mod bridge_terraform;
+
+// 2026-03 batch: Science bridges
+pub mod bridge_chemistry;
+pub mod bridge_optics;
+pub mod bridge_signal;
+
+// 2026-03 batch: Business bridges
+pub mod bridge_crm;
+pub mod bridge_erp;
+pub mod bridge_hrm;
+pub mod bridge_lms;
+
+// 2026-03 batch: XR bridges
+pub mod bridge_vr;
 
 pub mod hash;
 pub mod pipeline;

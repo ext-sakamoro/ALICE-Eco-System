@@ -152,6 +152,81 @@ alice-db-enterprise = { path = "../ALICE-DB-Enterprise", default-features = fals
 alice-simd = { path = "../ALICE-SIMD", default-features = false, features = ["std"] }
 alice-voice-commercial = { path = "../ALICE-Voice-Commercial", package = "alice-voice-semantic", optional = true, default-features = false }
 
+# Media bridges (2026-03 batch)
+alice-asr = { path = "../ALICE-ASR", default-features = false }
+alice-tts = { path = "../ALICE-TTS", default-features = false }
+alice-ocr = { path = "../ALICE-OCR", default-features = false }
+alice-audio = { path = "../ALICE-Audio", default-features = false }
+alice-video = { path = "../ALICE-Video", default-features = false }
+alice-camera = { path = "../ALICE-Camera", default-features = false }
+
+# Spatial bridges (2026-03 batch)
+alice-slam = { path = "../ALICE-SLAM", default-features = false }
+alice-medical = { path = "../ALICE-Medical", default-features = false }
+alice-drone = { path = "../ALICE-Drone", default-features = false }
+alice-render = { path = "../ALICE-Render", default-features = false }
+alice-navigation = { path = "../ALICE-Navigation", default-features = false }
+
+# Optimization bridges (2026-03 batch)
+alice-recommend = { path = "../ALICE-Recommend", default-features = false }
+alice-logistics = { path = "../ALICE-Logistics", default-features = false }
+alice-matchmaking = { path = "../ALICE-Matchmaking", default-features = false }
+alice-agri = { path = "../ALICE-Agri", default-features = false }
+
+# Real-time bridges (2026-03 batch)
+alice-loadbalancer = { path = "../ALICE-LoadBalancer", default-features = false }
+alice-chat = { path = "../ALICE-Chat", default-features = false }
+alice-videoanalytics = { path = "../ALICE-VideoAnalytics", default-features = false }
+
+# Compiler/Language bridges (2026-03 batch)
+alice-compiler = { path = "../ALICE-Compiler", default-features = false }
+alice-vm = { path = "../ALICE-VM", default-features = false }
+alice-parser = { path = "../ALICE-Parser", default-features = false }
+
+# Networking bridges (2026-03 batch)
+alice-proxy = { path = "../ALICE-Proxy", default-features = false }
+alice-websocket = { path = "../ALICE-WebSocket", default-features = false }
+alice-grpc = { path = "../ALICE-gRPC", default-features = false }
+alice-http = { path = "../ALICE-HTTP", default-features = false }
+
+# Storage bridges (2026-03 batch)
+alice-filesystem = { path = "../ALICE-FileSystem", default-features = false }
+alice-objectstore = { path = "../ALICE-ObjectStore", default-features = false }
+
+# Security bridges (2026-03 batch)
+alice-waf = { path = "../ALICE-WAF", default-features = false }
+alice-dlp = { path = "../ALICE-DLP", default-features = false }
+alice-audit = { path = "../ALICE-Audit", default-features = false }
+
+# AI/ML bridges (2026-03 batch)
+alice-llm = { path = "../ALICE-LLM", default-features = false }
+alice-gan = { path = "../ALICE-GAN", default-features = false }
+alice-automl = { path = "../ALICE-AutoML", default-features = false }
+
+# Swarm/IoT bridges (2026-03 batch)
+alice-swarm = { path = "../ALICE-Swarm", default-features = false }
+alice-ble = { path = "../ALICE-BLE", default-features = false }
+alice-lora = { path = "../ALICE-LoRa", default-features = false }
+alice-nfc = { path = "../ALICE-NFC", default-features = false }
+
+# Infrastructure bridges (2026-03 batch)
+alice-terraform = { path = "../ALICE-Terraform", default-features = false }
+alice-monitor = { path = "../ALICE-Monitor", default-features = false }
+
+# Science bridges (2026-03 batch)
+alice-chemistry = { path = "../ALICE-Chemistry", default-features = false }
+alice-optics = { path = "../ALICE-Optics", default-features = false }
+alice-signal = { path = "../ALICE-Signal", default-features = false }
+
+# Business bridges (2026-03 batch)
+alice-crm = { path = "../ALICE-CRM", default-features = false }
+alice-erp = { path = "../ALICE-ERP", default-features = false }
+alice-hrm = { path = "../ALICE-HRM", default-features = false }
+alice-lms = { path = "../ALICE-LMS", default-features = false }
+
+# XR bridges (2026-03 batch)
+alice-vr = { path = "../ALICE-VR", default-features = false }
+
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"
 crc32fast = "1"
