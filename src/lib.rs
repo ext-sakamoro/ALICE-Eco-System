@@ -328,6 +328,76 @@ pub mod bridge_lms;
 // 2026-03 batch: XR bridges
 pub mod bridge_vr;
 
+// 2026-03 batch 2: AI/ML extended bridges
+pub mod bridge_diffusion;
+pub mod bridge_embedding;
+pub mod bridge_nlp;
+pub mod bridge_rag;
+pub mod bridge_rl;
+pub mod bridge_vision;
+
+// 2026-03 batch 2: Science extended bridges
+pub mod bridge_astro;
+pub mod bridge_fluid;
+pub mod bridge_genome;
+pub mod bridge_quantum;
+
+// 2026-03 batch 2: Financial extended bridges
+pub mod bridge_market_data;
+pub mod bridge_payment;
+pub mod bridge_quant;
+
+// 2026-03 batch 2: Media extended bridges
+pub mod bridge_ar;
+pub mod bridge_haptic;
+pub mod bridge_point_cloud;
+pub mod bridge_subtitle;
+
+// 2026-03 batch 2: Security extended bridges
+pub mod bridge_authz;
+pub mod bridge_pki;
+pub mod bridge_secret_vault;
+pub mod bridge_siem;
+
+// 2026-03 batch 2: Networking extended bridges
+pub mod bridge_mqtt;
+pub mod bridge_service_mesh;
+pub mod bridge_vnet;
+
+// 2026-03 batch 2: Data pipeline bridges
+pub mod bridge_cdc;
+pub mod bridge_etl;
+pub mod bridge_lakehouse;
+pub mod bridge_storage;
+pub mod bridge_stream_proc;
+pub mod bridge_time_series;
+
+// 2026-03 batch 2: DevTools bridges
+pub mod bridge_ci;
+pub mod bridge_debug;
+pub mod bridge_lint;
+pub mod bridge_package_registry;
+pub mod bridge_sandbox;
+
+// 2026-03 batch 2: Application bridges
+pub mod bridge_accessibility;
+pub mod bridge_email;
+pub mod bridge_form;
+pub mod bridge_identity;
+pub mod bridge_map;
+
+// 2026-03 batch 2: Compute extended bridges
+pub mod bridge_game_engine;
+pub mod bridge_hypervisor;
+pub mod bridge_robotics;
+
+// 2026-03 batch 2: IoT extended bridges
+pub mod bridge_ota;
+pub mod bridge_sensor;
+
+// 2026-03 batch 2: Cross-cutting bridges
+pub mod bridge_blockchain;
+
 pub mod hash;
 pub mod pipeline;
 

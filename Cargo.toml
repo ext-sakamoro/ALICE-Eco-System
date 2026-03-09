@@ -227,6 +227,76 @@ alice-lms = { path = "../ALICE-LMS", default-features = false }
 # XR bridges (2026-03 batch)
 alice-vr = { path = "../ALICE-VR", default-features = false }
 
+# 2026-03 batch 2: AI/ML extended
+alice-nlp = { path = "../ALICE-NLP", default-features = false }
+alice-vision = { path = "../ALICE-Vision", default-features = false }
+alice-embedding = { path = "../ALICE-Embedding", default-features = false }
+alice-diffusion = { path = "../ALICE-Diffusion", default-features = false }
+alice-rag = { path = "../ALICE-RAG", default-features = false }
+alice-rl = { path = "../ALICE-RL", default-features = false }
+
+# 2026-03 batch 2: Science extended
+alice-fluid = { path = "../ALICE-Fluid", default-features = false }
+alice-quantum = { path = "../ALICE-Quantum", default-features = false }
+alice-genome = { path = "../ALICE-Genome", default-features = false }
+alice-astro = { path = "../ALICE-Astro", default-features = false }
+
+# 2026-03 batch 2: Financial extended
+alice-quant = { path = "../ALICE-Quant", default-features = false }
+alice-market-data = { path = "../ALICE-MarketData", default-features = false }
+alice-payment = { path = "../ALICE-Payment", default-features = false }
+
+# 2026-03 batch 2: Media extended
+alice-ar = { path = "../ALICE-AR", default-features = false }
+alice-haptic = { path = "../ALICE-Haptic", default-features = false }
+alice-point-cloud = { path = "../ALICE-PointCloud", default-features = false }
+alice-subtitle = { path = "../ALICE-Subtitle", default-features = false }
+
+# 2026-03 batch 2: Security extended
+alice-authz = { path = "../ALICE-AuthZ", default-features = false }
+alice-pki = { path = "../ALICE-PKI", default-features = false }
+alice-siem = { path = "../ALICE-SIEM", default-features = false }
+alice-secret-vault = { path = "../ALICE-SecretVault", default-features = false }
+
+# 2026-03 batch 2: Networking extended
+alice-mqtt = { path = "../ALICE-MQTT", default-features = false }
+alice-service-mesh = { path = "../ALICE-ServiceMesh", default-features = false }
+alice-vnet = { path = "../ALICE-VNet", default-features = false }
+
+# 2026-03 batch 2: Data pipeline
+alice-etl = { path = "../ALICE-ETL", default-features = false }
+alice-cdc = { path = "../ALICE-CDC", default-features = false }
+alice-lakehouse = { path = "../ALICE-Lakehouse", default-features = false }
+alice-stream-proc = { path = "../ALICE-StreamProc", default-features = false }
+alice-storage = { path = "../ALICE-Storage", default-features = false }
+alice-time-series = { path = "../ALICE-TimeSeries", default-features = false }
+
+# 2026-03 batch 2: DevTools
+alice-ci = { path = "../ALICE-CI", default-features = false }
+alice-debug = { path = "../ALICE-Debug", default-features = false }
+alice-lint = { path = "../ALICE-Lint", default-features = false }
+alice-sandbox = { path = "../ALICE-Sandbox", default-features = false }
+alice-package-registry = { path = "../ALICE-PackageRegistry", default-features = false }
+
+# 2026-03 batch 2: Application
+alice-email = { path = "../ALICE-Email", default-features = false }
+alice-form = { path = "../ALICE-Form", default-features = false }
+alice-identity = { path = "../ALICE-Identity", default-features = false }
+alice-map = { path = "../ALICE-Map", default-features = false }
+alice-accessibility = { path = "../ALICE-Accessibility", default-features = false }
+
+# 2026-03 batch 2: Compute extended
+alice-game-engine = { path = "../ALICE-GameEngine", default-features = false }
+alice-hypervisor = { path = "../ALICE-Hypervisor", default-features = false }
+alice-robotics = { path = "../ALICE-Robotics", default-features = false }
+
+# 2026-03 batch 2: IoT extended
+alice-sensor = { path = "../ALICE-Sensor", default-features = false }
+alice-ota = { path = "../ALICE-OTA", default-features = false }
+
+# 2026-03 batch 2: Cross-cutting
+alice-blockchain = { path = "../ALICE-Blockchain", default-features = false }
+
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"
 crc32fast = "1"
