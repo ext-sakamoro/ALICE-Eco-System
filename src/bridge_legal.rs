@@ -345,4 +345,28 @@ mod tests {
         let r2 = legal_audit_to_db(entry);
         assert_eq!(r1.content_hash, r2.content_hash);
     }
+
+    // ── 追加テスト ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_statute_analytics_determinism() {
+        // 同一 StatuteTree で2回呼び出すと content_hash が一致すること。
+        let mut statute = StatuteTree::new(2, "Privacy Act");
+        statute.add_clause(ClauseKind::Obligation, "Data protection required", None, 0);
+        let ev1 = legal_statute_to_analytics(&statute);
+        let ev2 = legal_statute_to_analytics(&statute);
+        assert_eq!(ev1.content_hash, ev2.content_hash);
+        assert_eq!(ev1.title_hash, ev2.title_hash);
+    }
+
+    #[test]
+    fn test_contract_db_determinism() {
+        // 同一 Contract で2回呼び出すと content_hash が一致すること。
+        let contract = Contract::new(99, &[1, 2, 3], 1_000);
+        let r1 = legal_contract_to_db(&contract);
+        let r2 = legal_contract_to_db(&contract);
+        assert_eq!(r1.content_hash, r2.content_hash);
+        assert_eq!(r1.party_count, 3);
+        assert_eq!(r1.contract_id, 99);
+    }
 }

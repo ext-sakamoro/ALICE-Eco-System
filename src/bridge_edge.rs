@@ -379,4 +379,50 @@ mod tests {
             "value <= threshold should not be an upper crossing"
         );
     }
+
+    // ── 追加テスト ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_edge_pipeline_metrics_determinism() {
+        // 同一データで2回呼び出すと content_hash が一致すること（決定性確認）。
+        let data = linear_data();
+        let m1 = edge_to_analytics_pipeline_metrics(&data, 1 << 30);
+        let m2 = edge_to_analytics_pipeline_metrics(&data, 1 << 30);
+        assert_eq!(m1.content_hash, m2.content_hash);
+        assert_eq!(m1.samples_per_sec, m2.samples_per_sec);
+    }
+
+    #[test]
+    fn test_edge_db_single_sample_record() {
+        // 1サンプルでもパニックせず sample_count=1 を返すこと。
+        let data: [i32; 1] = [42];
+        let rec = edge_to_db_reading_record(&data);
+        assert_eq!(rec.sample_count, 1);
+        assert_ne!(rec.content_hash, 0);
+    }
+
+    #[test]
+    fn test_edge_db_reading_record_sample_count() {
+        // sample_count がスライス長に一致すること。
+        let data: [i32; 5] = [10, 20, 30, 40, 50];
+        let rec = edge_to_db_reading_record(&data);
+        assert_eq!(rec.sample_count, 5);
+    }
+
+    #[test]
+    fn test_edge_threshold_event_determinism() {
+        // 同一引数で2回呼び出すと content_hash が一致すること。
+        let ev1 = edge_to_semantic_threshold_event(99, 200, 150, true, 9_999_999);
+        let ev2 = edge_to_semantic_threshold_event(99, 200, 150, true, 9_999_999);
+        assert_eq!(ev1.content_hash, ev2.content_hash);
+    }
+
+    #[test]
+    fn test_edge_threshold_event_lower_crossing_payload() {
+        // 下限越えイベントの payload・payload2 フィールドが正しく設定されること。
+        let ev = edge_to_semantic_threshold_event(5, 10, 50, false, 500);
+        assert_eq!(ev.semantic_event.payload, 10u64);
+        assert_eq!(ev.semantic_event.payload2, 50u64);
+        assert_eq!(ev.semantic_event.timestamp_ns, 500);
+    }
 }

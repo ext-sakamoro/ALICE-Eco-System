@@ -158,6 +158,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-accessibility"
+version = "1.0.0"
+
+[[package]]
+name = "alice-agri"
+version = "1.0.0"
+
+[[package]]
 name = "alice-analytics"
 version = "0.1.0"
 
@@ -181,11 +189,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-ar"
+version = "1.0.0"
+
+[[package]]
+name = "alice-asr"
+version = "1.0.0"
+
+[[package]]
+name = "alice-astro"
+version = "1.0.0"
+
+[[package]]
 name = "alice-atoms"
 version = "0.2.0"
 dependencies = [
  "rayon",
 ]
+
+[[package]]
+name = "alice-audio"
+version = "1.0.0"
+
+[[package]]
+name = "alice-audit"
+version = "1.0.0"
 
 [[package]]
 name = "alice-auth"
@@ -196,6 +224,14 @@ dependencies = [
  "subtle",
  "zeroize",
 ]
+
+[[package]]
+name = "alice-authz"
+version = "1.0.0"
+
+[[package]]
+name = "alice-automl"
+version = "1.0.0"
 
 [[package]]
 name = "alice-backup"
@@ -214,6 +250,14 @@ version = "0.1.0"
 dependencies = [
  "rayon",
 ]
+
+[[package]]
+name = "alice-ble"
+version = "1.0.0"
+
+[[package]]
+name = "alice-blockchain"
+version = "1.0.0"
 
 [[package]]
 name = "alice-bridge"
@@ -259,8 +303,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-camera"
+version = "1.0.0"
+
+[[package]]
+name = "alice-cdc"
+version = "1.0.0"
+
+[[package]]
 name = "alice-cdn"
 version = "0.2.0"
+
+[[package]]
+name = "alice-chat"
+version = "1.0.0"
+
+[[package]]
+name = "alice-chemistry"
+version = "1.0.0"
+
+[[package]]
+name = "alice-ci"
+version = "1.0.0"
 
 [[package]]
 name = "alice-circuit"
@@ -302,6 +366,10 @@ name = "alice-collab"
 version = "0.1.0"
 
 [[package]]
+name = "alice-compiler"
+version = "1.0.0"
+
+[[package]]
 name = "alice-compliance"
 version = "0.1.0"
 
@@ -322,6 +390,10 @@ version = "0.2.1"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "alice-crm"
+version = "1.0.0"
 
 [[package]]
 name = "alice-crypto"
@@ -380,8 +452,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-debug"
+version = "1.0.0"
+
+[[package]]
+name = "alice-diffusion"
+version = "1.0.0"
+
+[[package]]
 name = "alice-digital-twin"
 version = "0.1.0"
+
+[[package]]
+name = "alice-dlp"
+version = "1.0.0"
 
 [[package]]
 name = "alice-dns"
@@ -398,95 +482,192 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-drone"
+version = "1.0.0"
+
+[[package]]
 name = "alice-eco-system"
 version = "0.3.2"
 dependencies = [
+ "alice-accessibility",
+ "alice-agri",
  "alice-analytics",
  "alice-animation",
  "alice-api",
+ "alice-ar",
+ "alice-asr",
+ "alice-astro",
  "alice-atoms",
+ "alice-audio",
+ "alice-audit",
  "alice-auth",
+ "alice-authz",
+ "alice-automl",
  "alice-backup",
  "alice-billing",
  "alice-bio",
+ "alice-ble",
+ "alice-blockchain",
  "alice-bridge",
  "alice-browser",
  "alice-browser-secure",
  "alice-cache",
+ "alice-camera",
+ "alice-cdc",
  "alice-cdn",
+ "alice-chat",
+ "alice-chemistry",
+ "alice-ci",
  "alice-circuit",
  "alice-climate",
  "alice-cloud-gateway",
  "alice-codec",
  "alice-collab",
+ "alice-compiler",
  "alice-compliance",
  "alice-config",
  "alice-consensus",
  "alice-container",
+ "alice-crm",
  "alice-crypto",
  "alice-datashield",
  "alice-db",
  "alice-db-enterprise",
+ "alice-debug",
+ "alice-diffusion",
  "alice-digital-twin",
+ "alice-dlp",
  "alice-dns",
  "alice-document",
+ "alice-drone",
  "alice-edge",
  "alice-edge-enterprise",
  "alice-edge-firewall",
+ "alice-email",
+ "alice-embedding",
  "alice-energy",
+ "alice-erp",
+ "alice-etl",
  "alice-experiment",
  "alice-ffi",
+ "alice-filesystem",
  "alice-fincompliance",
  "alice-fix",
+ "alice-fluid",
  "alice-font",
+ "alice-form",
+ "alice-game-engine",
+ "alice-gan",
+ "alice-genome",
  "alice-geo",
  "alice-graph",
+ "alice-grpc",
+ "alice-haptic",
  "alice-history",
+ "alice-hrm",
+ "alice-http",
+ "alice-hypervisor",
  "alice-i18n",
+ "alice-identity",
  "alice-image",
  "alice-kinematics",
+ "alice-lakehouse",
  "alice-ledger",
  "alice-legal",
  "alice-legal-ai",
+ "alice-lint",
+ "alice-llm",
+ "alice-lms",
+ "alice-loadbalancer",
  "alice-log",
+ "alice-logistics",
+ "alice-lora",
  "alice-manga",
+ "alice-map",
+ "alice-market-data",
+ "alice-matchmaking",
+ "alice-medical",
  "alice-metrics",
  "alice-migrate",
  "alice-ml",
+ "alice-monitor",
  "alice-motion",
+ "alice-mqtt",
+ "alice-navigation",
  "alice-neural",
+ "alice-nfc",
+ "alice-nlp",
  "alice-notify",
+ "alice-objectstore",
  "alice-observability",
+ "alice-ocr",
+ "alice-optics",
+ "alice-ota",
+ "alice-package-registry",
+ "alice-parser",
+ "alice-payment",
  "alice-physics",
+ "alice-pki",
+ "alice-point-cloud",
  "alice-presence",
  "alice-print",
+ "alice-proxy",
+ "alice-quant",
+ "alice-quantum",
  "alice-queue",
+ "alice-rag",
  "alice-rate-limit",
  "alice-realtime",
+ "alice-recommend",
+ "alice-render",
  "alice-risk",
+ "alice-rl",
+ "alice-robotics",
  "alice-rtos",
+ "alice-sandbox",
  "alice-scheduler",
  "alice-sdf",
  "alice-search",
+ "alice-secret-vault",
  "alice-semantic-telemetry",
+ "alice-sensor",
  "alice-serial",
+ "alice-service-mesh",
  "alice-settlement",
+ "alice-siem",
+ "alice-signal",
  "alice-simd",
+ "alice-slam",
  "alice-space",
+ "alice-storage",
+ "alice-stream-proc",
+ "alice-subtitle",
+ "alice-swarm",
  "alice-sync",
  "alice-synth",
+ "alice-terraform",
  "alice-test",
  "alice-text",
  "alice-text-compression",
+ "alice-time-series",
  "alice-token",
  "alice-train",
  "alice-trt",
+ "alice-tts",
  "alice-vcs",
  "alice-vectordb",
+ "alice-video",
+ "alice-videoanalytics",
  "alice-view",
+ "alice-vision",
+ "alice-vm",
+ "alice-vnet",
  "alice-voice",
  "alice-voice-semantic",
+ "alice-vr",
+ "alice-waf",
  "alice-wasm",
+ "alice-websocket",
  "alice-workflow",
  "alice-zip",
  "bincode",
@@ -518,11 +699,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-email"
+version = "1.0.0"
+
+[[package]]
+name = "alice-embedding"
+version = "1.0.0"
+
+[[package]]
 name = "alice-energy"
 version = "0.1.0"
 dependencies = [
  "rayon",
 ]
+
+[[package]]
+name = "alice-erp"
+version = "1.0.0"
+
+[[package]]
+name = "alice-etl"
+version = "1.0.0"
 
 [[package]]
 name = "alice-experiment"
@@ -531,6 +728,10 @@ version = "0.1.0"
 [[package]]
 name = "alice-ffi"
 version = "0.1.0"
+
+[[package]]
+name = "alice-filesystem"
+version = "1.0.0"
 
 [[package]]
 name = "alice-fincompliance"
@@ -544,8 +745,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-fluid"
+version = "1.0.0"
+
+[[package]]
 name = "alice-font"
 version = "0.1.0"
+
+[[package]]
+name = "alice-form"
+version = "1.0.0"
+
+[[package]]
+name = "alice-game-engine"
+version = "1.0.0"
+
+[[package]]
+name = "alice-gan"
+version = "1.0.0"
+
+[[package]]
+name = "alice-genome"
+version = "1.0.0"
 
 [[package]]
 name = "alice-geo"
@@ -559,6 +780,14 @@ name = "alice-graph"
 version = "0.1.0"
 
 [[package]]
+name = "alice-grpc"
+version = "1.0.0"
+
+[[package]]
+name = "alice-haptic"
+version = "1.0.0"
+
+[[package]]
 name = "alice-history"
 version = "0.1.0"
 dependencies = [
@@ -566,8 +795,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-hrm"
+version = "1.0.0"
+
+[[package]]
+name = "alice-http"
+version = "1.0.0"
+
+[[package]]
+name = "alice-hypervisor"
+version = "1.0.0"
+
+[[package]]
 name = "alice-i18n"
 version = "0.1.0"
+
+[[package]]
+name = "alice-identity"
+version = "1.0.0"
 
 [[package]]
 name = "alice-image"
@@ -579,6 +824,10 @@ dependencies = [
 [[package]]
 name = "alice-kinematics"
 version = "0.1.0"
+
+[[package]]
+name = "alice-lakehouse"
+version = "1.0.0"
 
 [[package]]
 name = "alice-ledger"
@@ -596,8 +845,32 @@ name = "alice-legal-ai"
 version = "0.1.0"
 
 [[package]]
+name = "alice-lint"
+version = "1.0.0"
+
+[[package]]
+name = "alice-llm"
+version = "1.0.0"
+
+[[package]]
+name = "alice-lms"
+version = "1.0.0"
+
+[[package]]
+name = "alice-loadbalancer"
+version = "1.0.0"
+
+[[package]]
 name = "alice-log"
 version = "0.1.0"
+
+[[package]]
+name = "alice-logistics"
+version = "1.0.0"
+
+[[package]]
+name = "alice-lora"
+version = "1.0.0"
 
 [[package]]
 name = "alice-manga"
@@ -608,6 +881,22 @@ dependencies = [
  "glam",
  "serde",
 ]
+
+[[package]]
+name = "alice-map"
+version = "1.0.0"
+
+[[package]]
+name = "alice-market-data"
+version = "1.0.0"
+
+[[package]]
+name = "alice-matchmaking"
+version = "1.0.0"
+
+[[package]]
+name = "alice-medical"
+version = "1.0.0"
 
 [[package]]
 name = "alice-metrics"
@@ -622,6 +911,10 @@ name = "alice-ml"
 version = "0.2.0"
 
 [[package]]
+name = "alice-monitor"
+version = "1.0.0"
+
+[[package]]
 name = "alice-motion"
 version = "0.1.0"
 dependencies = [
@@ -629,8 +922,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-mqtt"
+version = "1.0.0"
+
+[[package]]
+name = "alice-navigation"
+version = "1.0.0"
+
+[[package]]
 name = "alice-neural"
 version = "0.1.0"
+
+[[package]]
+name = "alice-nfc"
+version = "1.0.0"
+
+[[package]]
+name = "alice-nlp"
+version = "1.0.0"
 
 [[package]]
 name = "alice-notify"
@@ -640,8 +949,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-objectstore"
+version = "1.0.0"
+
+[[package]]
 name = "alice-observability"
 version = "0.1.0"
+
+[[package]]
+name = "alice-ocr"
+version = "1.0.0"
+
+[[package]]
+name = "alice-optics"
+version = "1.0.0"
+
+[[package]]
+name = "alice-ota"
+version = "1.0.0"
+
+[[package]]
+name = "alice-package-registry"
+version = "1.0.0"
+
+[[package]]
+name = "alice-parser"
+version = "1.0.0"
+
+[[package]]
+name = "alice-payment"
+version = "1.0.0"
 
 [[package]]
 name = "alice-physics"
@@ -649,6 +986,14 @@ version = "0.6.0"
 dependencies = [
  "alice-db",
 ]
+
+[[package]]
+name = "alice-pki"
+version = "1.0.0"
+
+[[package]]
+name = "alice-point-cloud"
+version = "1.0.0"
 
 [[package]]
 name = "alice-presence"
@@ -665,12 +1010,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-proxy"
+version = "1.0.0"
+
+[[package]]
+name = "alice-quant"
+version = "1.0.0"
+
+[[package]]
+name = "alice-quantum"
+version = "1.0.0"
+
+[[package]]
 name = "alice-queue"
 version = "0.1.0"
 dependencies = [
  "blake3",
  "memmap2",
 ]
+
+[[package]]
+name = "alice-rag"
+version = "1.0.0"
 
 [[package]]
 name = "alice-rate-limit"
@@ -681,6 +1042,14 @@ name = "alice-realtime"
 version = "0.1.0"
 
 [[package]]
+name = "alice-recommend"
+version = "1.0.0"
+
+[[package]]
+name = "alice-render"
+version = "1.0.0"
+
+[[package]]
 name = "alice-risk"
 version = "0.1.0"
 dependencies = [
@@ -688,8 +1057,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-rl"
+version = "1.0.0"
+
+[[package]]
+name = "alice-robotics"
+version = "1.0.0"
+
+[[package]]
 name = "alice-rtos"
 version = "0.1.0"
+
+[[package]]
+name = "alice-sandbox"
+version = "1.0.0"
 
 [[package]]
 name = "alice-scheduler"
@@ -719,12 +1100,24 @@ name = "alice-search"
 version = "0.1.0"
 
 [[package]]
+name = "alice-secret-vault"
+version = "1.0.0"
+
+[[package]]
 name = "alice-semantic-telemetry"
 version = "0.1.0"
 
 [[package]]
+name = "alice-sensor"
+version = "1.0.0"
+
+[[package]]
 name = "alice-serial"
 version = "0.1.0"
+
+[[package]]
+name = "alice-service-mesh"
+version = "1.0.0"
 
 [[package]]
 name = "alice-settlement"
@@ -734,12 +1127,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-siem"
+version = "1.0.0"
+
+[[package]]
+name = "alice-signal"
+version = "1.0.0"
+
+[[package]]
 name = "alice-simd"
+version = "1.0.0"
+
+[[package]]
+name = "alice-slam"
 version = "1.0.0"
 
 [[package]]
 name = "alice-space"
 version = "0.1.0"
+
+[[package]]
+name = "alice-storage"
+version = "1.0.0"
+
+[[package]]
+name = "alice-stream-proc"
+version = "1.0.0"
+
+[[package]]
+name = "alice-subtitle"
+version = "1.0.0"
+
+[[package]]
+name = "alice-swarm"
+version = "1.0.0"
 
 [[package]]
 name = "alice-sync"
@@ -757,6 +1178,10 @@ dependencies = [
 [[package]]
 name = "alice-synth"
 version = "0.1.1"
+
+[[package]]
+name = "alice-terraform"
+version = "1.0.0"
 
 [[package]]
 name = "alice-test"
@@ -791,6 +1216,10 @@ name = "alice-text-compression"
 version = "0.1.0"
 
 [[package]]
+name = "alice-time-series"
+version = "1.0.0"
+
+[[package]]
 name = "alice-token"
 version = "1.0.0"
 dependencies = [
@@ -820,12 +1249,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-tts"
+version = "1.0.0"
+
+[[package]]
 name = "alice-vcs"
 version = "0.1.0"
 
 [[package]]
 name = "alice-vectordb"
 version = "0.1.0"
+
+[[package]]
+name = "alice-video"
+version = "1.0.0"
+
+[[package]]
+name = "alice-videoanalytics"
+version = "1.0.0"
 
 [[package]]
 name = "alice-view"
@@ -857,6 +1298,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-vision"
+version = "1.0.0"
+
+[[package]]
+name = "alice-vm"
+version = "1.0.0"
+
+[[package]]
+name = "alice-vnet"
+version = "1.0.0"
+
+[[package]]
 name = "alice-voice"
 version = "0.1.0"
 dependencies = [
@@ -876,8 +1329,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-vr"
+version = "1.0.0"
+
+[[package]]
+name = "alice-waf"
+version = "1.0.0"
+
+[[package]]
 name = "alice-wasm"
 version = "0.1.0"
+
+[[package]]
+name = "alice-websocket"
+version = "1.0.0"
 
 [[package]]
 name = "alice-workflow"

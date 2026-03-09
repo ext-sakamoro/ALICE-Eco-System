@@ -262,4 +262,14 @@ mod tests {
         assert_eq!(meta.threshold, 3);
         assert_eq!(meta.original_bytes, 12);
     }
+
+    #[test]
+    fn test_crypto_hash_determinism() {
+        let data = b"deterministic input";
+        let rec1 = crypto_to_db_record(data);
+        let rec2 = crypto_to_db_record(data);
+        assert_eq!(rec1.hash, rec2.hash);
+        assert_eq!(rec1.content_hash, rec2.content_hash);
+        assert_ne!(rec1.content_hash, 0);
+    }
 }

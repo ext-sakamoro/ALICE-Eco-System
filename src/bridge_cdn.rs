@@ -314,4 +314,66 @@ mod tests {
             over.predicted_rtt_ms
         );
     }
+
+    // ── 追加テスト ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_cdn_routing_metrics_determinism() {
+        // 同一入力で2回呼び出すと content_hash・avg_latency_ms が一致すること。
+        let nodes: Vec<NodeId> = (1..=6).collect();
+        let maglev = MaglevHash::new(nodes);
+        let rtt_samples: &[u64] = &[5, 10, 15];
+        let m1 = cdn_to_routing_metrics(0x1234_5678, rtt_samples, 50, 100, &maglev);
+        let m2 = cdn_to_routing_metrics(0x1234_5678, rtt_samples, 50, 100, &maglev);
+        assert_eq!(m1.content_hash, m2.content_hash);
+        assert_eq!(m1.avg_latency_ms, m2.avg_latency_ms);
+        assert_eq!(m1.cache_hit_rate_permille, m2.cache_hit_rate_permille);
+    }
+
+    #[test]
+    fn test_cdn_routing_metrics_zero_hit_rate() {
+        // hits=0, total=100 の場合 cache_hit_rate_permille は 0 になること。
+        let nodes: Vec<NodeId> = (1..=4).collect();
+        let maglev = MaglevHash::new(nodes);
+        let m = cdn_to_routing_metrics(0xDEAD, &[10, 20], 0, 100, &maglev);
+        assert_eq!(m.cache_hit_rate_permille, 0);
+    }
+
+    #[test]
+    fn test_cdn_db_node_health_slot_count_nonzero() {
+        // 複数ノードを登録した Maglev では slot_count が 0 より大きいこと。
+        let nodes: Vec<NodeId> = (1..=8).collect();
+        let maglev = MaglevHash::new(nodes);
+        let rec = cdn_to_db_node_health(5, 30, 100, &maglev);
+        assert!(
+            rec.slot_count > 0,
+            "slot_count should be non-zero for multi-node Maglev"
+        );
+    }
+
+    #[test]
+    fn test_cdn_db_node_health_different_inputs_differ() {
+        // (node_id, rtt_ms) が異なれば content_hash も異なること。
+        let nodes: Vec<NodeId> = (1..=4).collect();
+        let maglev = MaglevHash::new(nodes);
+        let a = cdn_to_db_node_health(1, 10, 100, &maglev);
+        let b = cdn_to_db_node_health(2, 10, 100, &maglev);
+        let c = cdn_to_db_node_health(1, 20, 100, &maglev);
+        assert_ne!(a.content_hash, b.content_hash);
+        assert_ne!(a.content_hash, c.content_hash);
+    }
+
+    #[test]
+    fn test_cdn_auth_access_meta_determinism() {
+        // 同一入力で2回呼び出すと content_hash・assigned_node_id が一致すること。
+        let nodes: Vec<(NodeId, VivaldiCoord)> = vec![
+            (1, VivaldiCoord::at(5.0, 0.0, 0.0, 1.0)),
+            (2, VivaldiCoord::at(1.0, 0.0, 0.0, 1.0)),
+        ];
+        let local = VivaldiCoord::at(0.0, 0.0, 0.0, 1.0);
+        let m1 = cdn_to_auth_access_meta(0xCAFE, &local, &nodes, 50);
+        let m2 = cdn_to_auth_access_meta(0xCAFE, &local, &nodes, 50);
+        assert_eq!(m1.content_hash, m2.content_hash);
+        assert_eq!(m1.assigned_node_id, m2.assigned_node_id);
+    }
 }

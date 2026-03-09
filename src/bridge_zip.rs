@@ -286,4 +286,35 @@ mod tests {
         let bad = zip_cache_entry("tiny", 100, 80);
         assert!(!bad.cache_worthy);
     }
+
+    // ── 追加テスト ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_zip_db_residual_determinism() {
+        // 同一入力で2回呼び出すと content_hash が一致すること（決定性確認）。
+        let residual: Vec<f32> = (0..100).map(|i| i as f32 * 0.01).collect();
+        let r1 = zip_db_compress_residual(&residual);
+        let r2 = zip_db_compress_residual(&residual);
+        assert_eq!(r1.content_hash, r2.content_hash);
+        assert_eq!(r1.compressed_bytes, r2.compressed_bytes);
+    }
+
+    #[test]
+    fn test_zip_crypto_payload_original_bytes() {
+        // original_bytes が残差スライスの実際のバイト数（len * 4）と一致すること。
+        let residual: Vec<f32> = vec![0.1, 0.2, 0.3, 0.4, 0.5];
+        let payload = zip_to_crypto_payload(&residual);
+        assert_eq!(payload.original_bytes, 5 * 4);
+        assert_ne!(payload.content_hash, 0);
+    }
+
+    #[test]
+    fn test_zip_cache_entry_zero_compressed() {
+        // compressed_bytes=0 の場合 compression_ratio=0.0 でパニックしないこと。
+        // original(100) > compressed(0) なので cache_worthy=true になる。
+        let entry = zip_cache_entry("empty", 0, 100);
+        assert!((entry.compression_ratio - 0.0).abs() < 0.01);
+        assert!(entry.cache_worthy);
+        assert_ne!(entry.content_hash, 0);
+    }
 }

@@ -212,4 +212,38 @@ mod tests {
         assert!((m.hit_ratio - 1.0).abs() < 0.01);
         assert_ne!(m.pattern_hash, 0);
     }
+
+    // ── 追加テスト ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_search_db_query_missing_pattern() {
+        // 存在しないパターンは found=false・occurrence_count=0 を返すこと。
+        let text = b"hello world";
+        let index = AliceIndex::build(text, 1);
+        let result = search_db_query(&index, b"xyz");
+        assert!(!result.found);
+        assert_eq!(result.occurrence_count, 0);
+        assert_eq!(result.pattern_len, 3);
+    }
+
+    #[test]
+    fn test_search_vcs_no_match() {
+        // 一致しないパターンでは match_count=0・positions が空になること。
+        let commits = "fix: resolve bug\nfeat: add feature";
+        let result = search_vcs_commits(commits, "ZZZNOMATCH");
+        assert_eq!(result.match_count, 0);
+        assert!(result.positions.is_empty());
+        assert_eq!(result.pattern_len, 10);
+    }
+
+    #[test]
+    fn test_search_analytics_metrics_not_found_ratio() {
+        // 一致しない場合 hit_ratio は 0.0 になること。
+        let text = b"the quick brown fox";
+        let index = AliceIndex::build(text, 4);
+        let m = search_to_analytics_metrics(&index, b"NOTFOUND");
+        assert_eq!(m.match_count, 0);
+        assert!((m.hit_ratio - 0.0).abs() < 0.01);
+        assert_ne!(m.pattern_hash, 0);
+    }
 }

@@ -299,4 +299,13 @@ mod tests {
         let e2 = space_link_to_analytics(&link);
         assert_eq!(e1.content_hash, e2.content_hash);
     }
+
+    #[test]
+    fn test_link_to_cache_content_hash() {
+        let link = CommLink::new(10, 20, 384400.0, 9600.0);
+        let entry = space_link_to_cache(&link);
+        assert_ne!(entry.content_hash, 0);
+        assert_eq!(entry.source_id, 10);
+        assert_eq!(entry.target_id, 20);
+    }
 }

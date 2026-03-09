@@ -319,4 +319,26 @@ mod tests {
         assert!(entry.voiced);
         assert!(entry.payload_bytes > 0);
     }
+
+    // ── 追加テスト ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_voice_db_record_determinism() {
+        // 同一 ParametricParams で2回呼び出すと content_hash が一致すること。
+        let p = test_params();
+        let r1 = voice_to_db_record(&p);
+        let r2 = voice_to_db_record(&p);
+        assert_eq!(r1.content_hash, r2.content_hash);
+        assert_eq!(r1.sample_rate, 16000);
+    }
+
+    #[test]
+    fn test_voice_cache_entry_determinism() {
+        // 同一 ParametricParams で2回呼び出すと content_hash・pitch_hz が一致すること。
+        let p = test_params();
+        let e1 = voice_to_cache_entry(&p);
+        let e2 = voice_to_cache_entry(&p);
+        assert_eq!(e1.content_hash, e2.content_hash);
+        assert!((e1.pitch_hz - 220.0).abs() < 0.01);
+    }
 }

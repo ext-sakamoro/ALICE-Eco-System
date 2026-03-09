@@ -295,4 +295,13 @@ mod tests {
         let s2 = bio_sdf_eval(&protein, [1.0, 2.0, 3.0]);
         assert_eq!(s1.content_hash, s2.content_hash);
     }
+
+    #[test]
+    fn test_bio_bounds_determinism() {
+        let protein = make_protein();
+        let ev1 = bio_bounds_to_analytics(&protein);
+        let ev2 = bio_bounds_to_analytics(&protein);
+        assert_eq!(ev1.content_hash, ev2.content_hash);
+        assert_ne!(ev1.content_hash, 0);
+    }
 }

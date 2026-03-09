@@ -424,4 +424,58 @@ mod tests {
         assert_eq!(zero_metrics.min_rtt_ms, 0);
         assert_eq!(zero_metrics.sample_count, 0);
     }
+
+    // ── 追加テスト ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_cdn_cache_entry_content_id_preserved() {
+        // content_id フィールドが入力値そのまま保持されること。
+        let nodes: Vec<NodeId> = (1..=4).collect();
+        let maglev = MaglevHash::new(nodes);
+        let entry = cdn_to_cache_entry(0xABCD_1234_5678_9ABC, &maglev, 10, 60);
+        assert_eq!(entry.content_id, 0xABCD_1234_5678_9ABC);
+        assert_ne!(entry.cache_key, 0);
+    }
+
+    #[test]
+    fn test_cdn_analytics_metrics_determinism() {
+        // 同一入力で2回呼び出すと content_hash が一致すること（決定性確認）。
+        let nodes: Vec<NodeId> = (1..=3).collect();
+        let maglev = MaglevHash::new(nodes);
+        let samples: &[u64] = &[20, 40, 60];
+        let m1 = cdn_to_analytics_metrics(0x1111, 3, 10, samples, &maglev);
+        let m2 = cdn_to_analytics_metrics(0x1111, 3, 10, samples, &maglev);
+        assert_eq!(m1.content_hash, m2.content_hash);
+        assert_eq!(m1.mean_rtt_ms, m2.mean_rtt_ms);
+    }
+
+    #[test]
+    fn test_cdn_physics_route_content_hash_determinism() {
+        // 同一引数で2回呼び出すと content_hash・server_node_id が一致すること。
+        let servers: Vec<(NodeId, VivaldiCoord)> = vec![
+            (1, VivaldiCoord::at(3.0, 0.0, 0.0, 1.0)),
+            (2, VivaldiCoord::at(0.5, 0.0, 0.0, 1.0)),
+        ];
+        let local = VivaldiCoord::at(0.0, 0.0, 0.0, 1.0);
+        let r1 = cdn_to_physics_route(0xBEEF, &local, &servers);
+        let r2 = cdn_to_physics_route(0xBEEF, &local, &servers);
+        assert_eq!(r1.content_hash, r2.content_hash);
+        assert_eq!(r1.server_node_id, r2.server_node_id);
+    }
+
+    #[test]
+    fn test_cdn_asp_route_i_packet_tag() {
+        // I-Packet は packet_type_tag = 0 にマップされること。
+        use libasp::{AspPacket, IPacketPayload};
+        let nodes: Vec<NodeId> = (1..=4).collect();
+        let maglev = MaglevHash::new(nodes);
+        let payload = IPacketPayload::new(800, 600, 30.0);
+        let packet =
+            AspPacket::create_i_packet(1, payload).expect("I-Packet creation must succeed");
+        let local = VivaldiCoord::at(0.0, 0.0, 0.0, 1.0);
+        let remote = VivaldiCoord::at(5.0, 0.0, 0.0, 1.0);
+        let route = cdn_to_asp_route(0xCAFE_BABE, &packet, &local, &remote, &maglev);
+        assert_eq!(route.packet_type_tag, 0, "I-Packet should map to tag 0");
+        assert_ne!(route.content_hash, 0);
+    }
 }

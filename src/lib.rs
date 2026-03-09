@@ -30,8 +30,8 @@
 
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 184 ALICE crates into unified pipelines with 954 cross-crate bridges across 172 bridge modules.
-//! Powers 52 `SaaS` services (AGPL-3.0-or-later) via the MIT Core + AGPL `SaaS` Shell pattern.
+//! Connects 182 ALICE crates into unified pipelines with 1,190 cross-crate bridges across 218 bridge modules.
+//! Powers 146 `SaaS` services (AGPL-3.0-or-later) via the MIT Core + AGPL `SaaS` Shell pattern.
 //!
 //! ```text
 //! Path A (IoT/Sensor):

@@ -345,4 +345,12 @@ mod tests {
         assert_eq!(task.deadline_us, 8_000);
         assert_eq!(task.wcet_us, 500);
     }
+
+    #[test]
+    fn test_container_hash_determinism() {
+        let rec1 = container_to_db_record(0xdeadbeef_cafebabe, 100_000, 512 * 1024 * 1024, 1);
+        let rec2 = container_to_db_record(0xdeadbeef_cafebabe, 100_000, 512 * 1024 * 1024, 1);
+        assert_eq!(rec1.content_hash, rec2.content_hash);
+        assert_ne!(rec1.content_hash, 0);
+    }
 }

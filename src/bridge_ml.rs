@@ -355,4 +355,13 @@ mod tests {
         let desc2 = ml_to_trt_descriptor(&weights);
         assert_eq!(desc.content_hash, desc2.content_hash);
     }
+
+    #[test]
+    fn test_ml_cache_entry_determinism() {
+        let weights = test_weights(4, 8);
+        let e1 = ml_to_cache_entry(&weights);
+        let e2 = ml_to_cache_entry(&weights);
+        assert_eq!(e1.content_hash, e2.content_hash);
+        assert_ne!(e1.content_hash, 0);
+    }
 }

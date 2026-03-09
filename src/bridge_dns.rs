@@ -245,4 +245,15 @@ mod tests {
         assert_eq!(a.content_hash, b.content_hash);
         assert_eq!(a.resolved_ip_hash, b.resolved_ip_hash);
     }
+
+    #[test]
+    fn test_dns_cache_hint_ttl() {
+        let hint_allow = dns_to_cache_hint("example.com", DnsAction::Allow);
+        assert_eq!(hint_allow.ttl_secs, 300);
+        assert!(hint_allow.should_cache);
+
+        let hint_spoof = dns_to_cache_hint("spoof.com", DnsAction::Spoof);
+        assert_eq!(hint_spoof.ttl_secs, 300);
+        assert!(!hint_spoof.should_cache);
+    }
 }
