@@ -175,7 +175,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-RAG](https://github.com/ext-sakamoro/ALICE-RAG) | v1.0.0 | Retrieval-Augmented Generation | Knowledge retrieval as vector field nearest neighbor search | MIT |
 | [ALICE-Recommend](https://github.com/ext-sakamoro/ALICE-Recommend) | v1.0.0 | Recommendation Engine | Collaborative/content-based filtering, ALS, hybrid recommender | AGPL-3.0 |
 | [ALICE-VideoAnalytics](https://github.com/ext-sakamoro/ALICE-VideoAnalytics) | v1.0.0 | Video Analytics | Optical flow, Kalman tracking, heatmap, scene change detection | AGPL-3.0 |
-| [ALICE-LLM](https://github.com/ext-sakamoro/ALICE-LLM) | v1.0.0 | LLM Inference | BPE tokenizer, KV cache, attention, quantization | MIT OR Apache-2.0 |
+| [ALICE-LLM](https://github.com/ext-sakamoro/ALICE-LLM) | v1.0.0 | LLM Inference Engine | GGUF Q4_K/Q6_K, dual-model speculative decoding (1B→8B), tied embeddings, RoPE freq scaling, 20 tok/s 1B / 5.7 tok/s 8B | MIT OR Apache-2.0 |
 | [ALICE-GAN](https://github.com/ext-sakamoro/ALICE-GAN) | v1.0.0 | GAN Framework | Generator/discriminator, Wasserstein, spectral norm | MIT OR Apache-2.0 |
 | [ALICE-AutoML](https://github.com/ext-sakamoro/ALICE-AutoML) | v1.0.0 | AutoML | Hyperparameter search, Bayesian optimization, NAS | MIT OR Apache-2.0 |
 
@@ -332,7 +332,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1205 bridges, 221 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1235 bridges, 227 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
 
 **Total: 185 components** | MIT: 61 | AGPL-3.0: 68 | MIT OR Apache-2.0: 43 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
@@ -457,7 +457,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **1,205 cross-crate bridges** across 221 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **1,235 cross-crate bridges** across 227 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -471,6 +471,7 @@ The ALICE ecosystem contains **1,205 cross-crate bridges** across 221 bridge fil
 | **Search & Analytics** | Text→Search, Browser→Search, Browser→Analytics, Print→Analytics | Indexing and telemetry |
 | **Orchestration** | Cloud-Gateway→Queue, Cloud-Gateway→Container | Message routing and deploy |
 | **Font Bridges** | Font→View, Font→Browser, Font→SDF, Font→Manga, Font→Animation, Font→CDN, Font→Print + 7 more (14 total) | Parametric font rendering & glyph delivery |
+| **LLM Inference** | LLM→DB, LLM→Cache, LLM→Analytics, LLM→API, LLM→Monitor, LLM→Edge, LLM→SIMD, LLM→Streaming, LLM→Voice, LLM→Speculative, LLM→Neural, LLM→ML, LLM→Embedding, LLM→RAG, LLM→NLP, LLM→TRT, LLM→Queue, LLM→Auth, LLM→Crypto, LLM→Container, LLM→Chat, ASR→LLM, LLM→TTS, LLM→Codec, LLM→Diffusion, LLM→Text, LLM→Search, LLM→CDN, LLM→VectorDB, LLM→Telemetry, LLM→SDF, LLM→PointCloud, LLM→Render, LLM→Vision, LLM→Image (35 total) | LLM inference pipeline — dual-model speculative decoding, edge deployment, multimodal |
 | **Synth Bridges** | Synth→ASP, Synth→Animation, Synth→Codec, Synth→DB, Synth→View + 6 more (11 total) | Procedural audio to ecosystem |
 | **Kinematics Bridges** | Kinematics→Sync, Kinematics→Edge, Kinematics→Physics, Kinematics→Animation, Kinematics→ASP, Kinematics→DB + 3 more (9 total) | Motion intent compression & IK |
 | **Motion Bridges** | Motion→Physics, Motion→Print, Motion→Animation, Motion→Edge, Motion→SDF | NURBS/Bezier trajectory control |
