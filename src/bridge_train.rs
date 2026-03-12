@@ -203,6 +203,9 @@ mod tests {
             epochs: 10,
             batch_size: 32,
             log_interval: 1,
+            gradient_accumulation_steps: 1,
+            checkpoint_interval: None,
+            checkpoint_dir: None,
         };
         let entry = train_config_to_cache(&config);
         assert_ne!(entry.content_hash, 0);
@@ -219,6 +222,9 @@ mod tests {
             epochs: 10,
             batch_size: 32,
             log_interval: 1,
+            gradient_accumulation_steps: 1,
+            checkpoint_interval: None,
+            checkpoint_dir: None,
         };
         let e1 = train_config_to_cache(&config);
         let e2 = train_config_to_cache(&config);

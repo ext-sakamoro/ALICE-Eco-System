@@ -100,6 +100,14 @@
 //!
 //! Path V (Tokenization Pipeline):
 //!   [ALICE-Token] → [ALICE-Text] / [ALICE-ML] / [ALICE-Search] / [ALICE-DB] / [ALICE-Cache] / [ALICE-Analytics]
+//!
+//! Path W (Cognitive Agent Pipeline — Project-ALICE V3):
+//!   [ALICE-Factory] → [ALICE-Core] → [ALICE-Cognitive] → [ALICE-Autonomy] → [ALICE-Consciousness]
+//!   → [ALICE-Analytics] / [ALICE-DB] / [ALICE-Cache] / [ALICE-Compliance] / [ALICE-Log]
+//!
+//! Path X (Swarm Intelligence Pipeline — Project-ALICE V3):
+//!   [ALICE-Factory] → [ALICE-Swarm(V3)] → [ALICE-Innovation]
+//!   → [ALICE-Analytics] / [ALICE-DB] / [ALICE-Cache] / [ALICE-ML] / [ALICE-Search]
 //! ```
 
 pub mod bridge_analytics;
@@ -411,6 +419,14 @@ pub mod bridge_blockchain;
 // 2026-03: Cross-domain integration bridges (no dedicated crate required)
 pub mod bridge_feature_store_cross;
 pub mod bridge_graphql_cross;
+
+// Project-ALICE V3 cognitive agent bridges
+pub mod bridge_autonomy;
+pub mod bridge_cognitive;
+pub mod bridge_cognitive_swarm;
+pub mod bridge_consciousness;
+pub mod bridge_factory;
+pub mod bridge_innovation;
 
 pub mod hash;
 pub mod pipeline;
