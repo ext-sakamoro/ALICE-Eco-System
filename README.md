@@ -152,7 +152,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-RTOS](https://github.com/ext-sakamoro/ALICE-RTOS) | v0.1.0 | Math-First Real-Time OS | RMS scheduler, Liu-Layland analysis, SPSC ring, < 2KB kernel | AGPL-3.0 |
 | [ALICE-SIMD](https://github.com/ext-sakamoro/ALICE-SIMD) | v1.0.0 | Shared SIMD & Fast-Math Primitives | AlignedVec, BitMask64, branchless ops, fast reciprocal/rsqrt, FNV-1a, Bloom filter, no_std | MIT |
 | [ALICE-Token](https://github.com/ext-sakamoro/ALICE-Token) | v1.0.0 | Ultra-Fast BPE Tokenizer | Byte-pair encoding, vocab training, O(n) encode/decode, no_std | MIT |
-| [ALICE-Train](https://github.com/ext-sakamoro/ALICE-Train) | v0.1.0 | Backpropagation Training Framework | STE for ternary weights, ReLU/SiLU/GELU backward, BitLinear backward | AGPL-3.0 |
+| [ALICE-Train](https://github.com/ext-sakamoro/ALICE-Train) | v0.1.0 | Backpropagation Training Framework | STE for ternary weights, ReLU/SiLU/GELU backward, BitLinear backward, QAT (FakeQuantize/CalibrationStats), Knowledge Distillation | AGPL-3.0 |
 | [ALICE-WASM](https://github.com/ext-sakamoro/ALICE-WASM) | v0.1.0 | WebAssembly Runtime | Bytecode validation, stack VM, sandbox | MIT OR Apache-2.0 |
 | [ALICE-FFI](https://github.com/ext-sakamoro/ALICE-FFI) | v0.1.0 | Foreign Function Interface | C ABI types, buffer management, error codes | MIT OR Apache-2.0 |
 | [ALICE-Circuit](https://github.com/ext-sakamoro/ALICE-Circuit) | v0.1.0 | Fault Tolerance Patterns | Circuit breaker, bulkhead, retry | MIT OR Apache-2.0 |
@@ -332,7 +332,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1245 bridges, 229 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1250 bridges, 230 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
 
 **Total: 185 components** | MIT: 61 | AGPL-3.0: 68 | MIT OR Apache-2.0: 43 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
@@ -457,7 +457,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **1,245 cross-crate bridges** across 229 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **1,250 cross-crate bridges** across 230 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -485,6 +485,7 @@ The ALICE ecosystem contains **1,245 cross-crate bridges** across 229 bridge fil
 | **DNS/API Bridges** | DNS→Browser, DNS→Cache, API→Auth, API→CDN, API→Queue, API→Analytics, API→DB | DNS ad-blocking + API gateway |
 | **Search Bridges** | Search→DB, Search→Browser, Search→VCS | FM-Index full-text search |
 | **Train Bridges** | Train→DB, Train→Cache, Train→Analytics, Train→Edge, Train→ML (5 total) | Backpropagation training to ecosystem |
+| **Train-QAT Bridges** | QAT→LLM, QAT→Edge, QAT→ML, QAT→Analytics, QAT→Monitor (5 total) | Quantization-aware training to inference & observability |
 | **Zip Bridges** | Zip→Edge, Zip→DB, Zip→Crypto, Zip→ML, Zip→Cache | Procedural compression + storage |
 | **Auth Bridges** | Auth→DB, Auth→Cache, Auth→Crypto, Auth→API, Auth→CDN, Auth→Edge, Auth→DNS, Auth→Sync | Ed25519 ZKP identity to ecosystem |
 | **Crypto Bridges** | Crypto→DB, Crypto→Cache, Crypto→CDN, Crypto→VCS, Crypto→Edge, Crypto→Sync, Crypto→Zip | BLAKE3 + XChaCha20 + SSS to ecosystem |
