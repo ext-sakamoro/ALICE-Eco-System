@@ -332,7 +332,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1235 bridges, 227 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
+| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.2 | Ecosystem Integration Hub | 1245 bridges, 229 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT |
 
 **Total: 185 components** | MIT: 61 | AGPL-3.0: 68 | MIT OR Apache-2.0: 43 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
 
@@ -457,7 +457,7 @@ cargo run --example game_pipeline
 
 ### Cross-Crate Bridge Matrix
 
-The ALICE ecosystem contains **1,235 cross-crate bridges** across 227 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
+The ALICE ecosystem contains **1,245 cross-crate bridges** across 229 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
 
 | Category | Bridges | Description |
 |----------|---------|-------------|
@@ -471,7 +471,7 @@ The ALICE ecosystem contains **1,235 cross-crate bridges** across 227 bridge fil
 | **Search & Analytics** | Text→Search, Browser→Search, Browser→Analytics, Print→Analytics | Indexing and telemetry |
 | **Orchestration** | Cloud-Gateway→Queue, Cloud-Gateway→Container | Message routing and deploy |
 | **Font Bridges** | Font→View, Font→Browser, Font→SDF, Font→Manga, Font→Animation, Font→CDN, Font→Print + 7 more (14 total) | Parametric font rendering & glyph delivery |
-| **LLM Inference** | LLM→DB, LLM→Cache, LLM→Analytics, LLM→API, LLM→Monitor, LLM→Edge, LLM→SIMD, LLM→Streaming, LLM→Voice, LLM→Speculative, LLM→Neural, LLM→ML, LLM→Embedding, LLM→RAG, LLM→NLP, LLM→TRT, LLM→Queue, LLM→Auth, LLM→Crypto, LLM→Container, LLM→Chat, ASR→LLM, LLM→TTS, LLM→Codec, LLM→Diffusion, LLM→Text, LLM→Search, LLM→CDN, LLM→VectorDB, LLM→Telemetry, LLM→SDF, LLM→PointCloud, LLM→Render, LLM→Vision, LLM→Image (35 total) | LLM inference pipeline — dual-model speculative decoding, edge deployment, multimodal |
+| **LLM Inference** | LLM→DB, LLM→Cache, LLM→Analytics, LLM→API, LLM→Monitor, LLM→Edge, LLM→SIMD, LLM→Streaming, LLM→Voice, LLM→Speculative, LLM→Neural, LLM→ML, LLM→Embedding, LLM→RAG, LLM→NLP, LLM→TRT, LLM→Queue, LLM→Auth, LLM→Crypto, LLM→Container, LLM→Chat, ASR→LLM, LLM→TTS, LLM→Codec, LLM→Diffusion, LLM→Text, LLM→Search, LLM→CDN, LLM→VectorDB, LLM→Telemetry, LLM→SDF, LLM→PointCloud, LLM→Render, LLM→Vision, LLM→Image, LLM→Document, LLM→Legal-AI, LLM→Ledger, LLM→Settlement, LLM→Cloud-Gateway, LLM→Bio, LLM→Kinematics, LLM→Quant, LLM→Graph, LLM→Geo (45 total) | LLM inference pipeline — dual-model speculative decoding, wgpu GPU inference, edge deployment, domain & science bridges |
 | **Synth Bridges** | Synth→ASP, Synth→Animation, Synth→Codec, Synth→DB, Synth→View + 6 more (11 total) | Procedural audio to ecosystem |
 | **Kinematics Bridges** | Kinematics→Sync, Kinematics→Edge, Kinematics→Physics, Kinematics→Animation, Kinematics→ASP, Kinematics→DB + 3 more (9 total) | Motion intent compression & IK |
 | **Motion Bridges** | Motion→Physics, Motion→Print, Motion→Animation, Motion→Edge, Motion→SDF | NURBS/Bezier trajectory control |

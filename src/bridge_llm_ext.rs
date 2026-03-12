@@ -217,15 +217,22 @@ pub struct LlmSpeculativeConfig {
     pub verify_layers: u32,
     /// Speculation depth K.
     pub spec_k: u8,
+    /// Batch size for verification pass (e.g. 4 for batch-4 verify).
+    pub batch_k: u8,
     /// Accept rate from last run (0.0–1.0).
     pub accept_rate: f32,
     /// Draft model size in bytes.
     pub draft_size_bytes: u64,
     /// Size ratio (verifier / draft).
     pub size_ratio: f32,
+    /// Whether draft and verifier share a GPU engine (Arc\<GpuEngine\>).
+    pub gpu_shared_engine: bool,
 }
 
 /// Build a speculative decoding config from dual-model parameters.
+///
+/// `batch_k` = spec_k + 1 (current token + K draft tokens verified in one batch pass).
+/// `gpu_shared_engine` = true when both models share a single `Arc<GpuEngine>`.
 #[inline]
 #[must_use]
 pub fn llm_to_speculative_config(
@@ -235,12 +242,15 @@ pub fn llm_to_speculative_config(
     accept_rate: f32,
     draft_size_bytes: u64,
     verify_size_bytes: u64,
+    gpu_shared_engine: bool,
 ) -> LlmSpeculativeConfig {
-    let mut buf = [0u8; 17];
+    let mut buf = [0u8; 19];
     buf[0..4].copy_from_slice(&draft_layers.to_le_bytes());
     buf[4..8].copy_from_slice(&verify_layers.to_le_bytes());
     buf[8] = spec_k;
     buf[9..17].copy_from_slice(&draft_size_bytes.to_le_bytes());
+    buf[17] = spec_k + 1; // batch_k
+    buf[18] = gpu_shared_engine as u8;
     let size_ratio = if draft_size_bytes > 0 {
         verify_size_bytes as f32 / draft_size_bytes as f32
     } else {
@@ -251,9 +261,11 @@ pub fn llm_to_speculative_config(
         draft_layers,
         verify_layers,
         spec_k,
+        batch_k: spec_k + 1,
         accept_rate,
         draft_size_bytes,
         size_ratio,
+        gpu_shared_engine,
     }
 }
 
@@ -321,20 +333,29 @@ mod tests {
 
     #[test]
     fn test_speculative_config_ratio() {
-        // 1B draft (770MB) → 8B verify (5GB)
-        let cfg = llm_to_speculative_config(16, 32, 4, 0.63, 770_000_000, 5_000_000_000);
+        // 1B draft (770MB) → 8B verify (5GB), shared GPU engine
+        let cfg = llm_to_speculative_config(16, 32, 3, 0.90, 770_000_000, 5_000_000_000, true);
         assert_ne!(cfg.content_hash, 0);
         assert_eq!(cfg.draft_layers, 16);
         assert_eq!(cfg.verify_layers, 32);
-        assert_eq!(cfg.spec_k, 4);
-        assert!((cfg.accept_rate - 0.63).abs() < 0.01);
+        assert_eq!(cfg.spec_k, 3);
+        assert_eq!(cfg.batch_k, 4); // spec_k + 1
+        assert!((cfg.accept_rate - 0.90).abs() < 0.01);
         assert!((cfg.size_ratio - 6.49).abs() < 0.1);
+        assert!(cfg.gpu_shared_engine);
+    }
+
+    #[test]
+    fn test_speculative_config_no_shared_engine() {
+        let cfg = llm_to_speculative_config(16, 32, 3, 0.63, 770_000_000, 5_000_000_000, false);
+        assert!(!cfg.gpu_shared_engine);
+        assert_eq!(cfg.batch_k, 4);
     }
 
     #[test]
     fn test_speculative_config_hash_determinism() {
-        let a = llm_to_speculative_config(16, 32, 4, 0.63, 770_000_000, 5_000_000_000);
-        let b = llm_to_speculative_config(16, 32, 4, 0.63, 770_000_000, 5_000_000_000);
+        let a = llm_to_speculative_config(16, 32, 3, 0.63, 770_000_000, 5_000_000_000, true);
+        let b = llm_to_speculative_config(16, 32, 3, 0.63, 770_000_000, 5_000_000_000, true);
         assert_eq!(a.content_hash, b.content_hash);
     }
 }

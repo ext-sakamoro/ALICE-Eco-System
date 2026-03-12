@@ -200,11 +200,15 @@ pub struct LlmMonitorHealth {
     pub error_count: u64,
     /// GPU memory utilisation in the range [0.0, 1.0].
     pub gpu_mem_utilisation: f32,
+    /// GPU inference throughput in tokens per second (0.0 if CPU-only).
+    pub gpu_inference_tps: f32,
     /// Whether the serving instance is considered healthy.
     pub is_healthy: bool,
 }
 
 /// Build a monitor health snapshot from LLM serving metrics.
+///
+/// `gpu_inference_tps`: GPU-accelerated inference throughput (0.0 if CPU-only).
 #[inline]
 #[must_use]
 pub fn llm_to_monitor_health(
@@ -212,12 +216,14 @@ pub fn llm_to_monitor_health(
     avg_latency_us: f64,
     error_count: u64,
     gpu_mem_utilisation: f32,
+    gpu_inference_tps: f32,
 ) -> LlmMonitorHealth {
-    let mut buf = [0u8; 28];
+    let mut buf = [0u8; 32];
     buf[0..8].copy_from_slice(&throughput_tps.to_bits().to_le_bytes());
     buf[8..16].copy_from_slice(&avg_latency_us.to_bits().to_le_bytes());
     buf[16..24].copy_from_slice(&error_count.to_le_bytes());
     buf[24..28].copy_from_slice(&gpu_mem_utilisation.to_bits().to_le_bytes());
+    buf[28..32].copy_from_slice(&gpu_inference_tps.to_bits().to_le_bytes());
     let is_healthy = error_count == 0 && gpu_mem_utilisation < 0.95;
     LlmMonitorHealth {
         content_hash: fnv1a(&buf),
@@ -225,6 +231,7 @@ pub fn llm_to_monitor_health(
         avg_latency_us,
         error_count,
         gpu_mem_utilisation,
+        gpu_inference_tps,
         is_healthy,
     }
 }
@@ -293,9 +300,17 @@ mod tests {
 
     #[test]
     fn test_llm_to_monitor_health_unhealthy() {
-        let h = llm_to_monitor_health(10.0, 500_000.0, 5, 0.98);
+        let h = llm_to_monitor_health(10.0, 500_000.0, 5, 0.98, 0.0);
         assert_ne!(h.content_hash, 0);
         assert!(!h.is_healthy);
         assert_eq!(h.error_count, 5);
+        assert!((h.gpu_inference_tps - 0.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_llm_to_monitor_health_gpu_inference() {
+        let h = llm_to_monitor_health(12.5, 80_000.0, 0, 0.45, 12.5);
+        assert!(h.is_healthy);
+        assert!((h.gpu_inference_tps - 12.5).abs() < 0.01);
     }
 }

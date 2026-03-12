@@ -28,11 +28,14 @@ pub struct LlmTrtProfile {
     pub precision: u8,
     /// Estimated speedup over CPU inference.
     pub estimated_speedup: f32,
+    /// Whether wgpu-native GPU inference is available (ALICE-LLM built-in).
+    pub wgpu_native: bool,
 }
 
 /// Build a TRT optimization profile from LLM model config.
 ///
 /// Speedup estimate: FP32=2x, FP16=8x, INT8=16x, INT4=24x (rough GPU vs CPU).
+/// `wgpu_native`: true when ALICE-LLM's built-in wgpu GPU engine is available.
 #[inline]
 #[must_use]
 pub fn llm_to_trt_profile(
@@ -40,12 +43,14 @@ pub fn llm_to_trt_profile(
     hidden_dim: u32,
     max_batch_size: u32,
     precision: u8,
+    wgpu_native: bool,
 ) -> LlmTrtProfile {
-    let mut buf = [0u8; 13];
+    let mut buf = [0u8; 14];
     buf[0..4].copy_from_slice(&num_layers.to_le_bytes());
     buf[4..8].copy_from_slice(&hidden_dim.to_le_bytes());
     buf[8..12].copy_from_slice(&max_batch_size.to_le_bytes());
     buf[12] = precision;
+    buf[13] = wgpu_native as u8;
     let estimated_speedup = match precision {
         0 => 2.0,
         1 => 8.0,
@@ -60,6 +65,7 @@ pub fn llm_to_trt_profile(
         max_batch_size,
         precision,
         estimated_speedup,
+        wgpu_native,
     }
 }
 
@@ -252,16 +258,24 @@ mod tests {
 
     #[test]
     fn test_trt_profile_int8() {
-        let p = llm_to_trt_profile(32, 4096, 8, 2);
+        let p = llm_to_trt_profile(32, 4096, 8, 2, false);
         assert_ne!(p.content_hash, 0);
         assert_eq!(p.precision, 2);
         assert!((p.estimated_speedup - 16.0).abs() < 0.01);
+        assert!(!p.wgpu_native);
+    }
+
+    #[test]
+    fn test_trt_profile_wgpu_native() {
+        let p = llm_to_trt_profile(16, 2048, 4, 3, true);
+        assert!(p.wgpu_native);
+        assert!((p.estimated_speedup - 24.0).abs() < 0.01);
     }
 
     #[test]
     fn test_trt_profile_determinism() {
-        let a = llm_to_trt_profile(16, 2048, 1, 3);
-        let b = llm_to_trt_profile(16, 2048, 1, 3);
+        let a = llm_to_trt_profile(16, 2048, 1, 3, true);
+        let b = llm_to_trt_profile(16, 2048, 1, 3, true);
         assert_eq!(a.content_hash, b.content_hash);
     }
 
