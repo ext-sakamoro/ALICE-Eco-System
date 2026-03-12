@@ -76,6 +76,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Compiler](https://github.com/ext-sakamoro/ALICE-Compiler) | v1.0.0 | DSL/JIT Compiler | AST, IR, code generation, optimization passes | MIT OR Apache-2.0 |
 | [ALICE-VM](https://github.com/ext-sakamoro/ALICE-VM) | v1.0.0 | Bytecode VM | Stack/register machine, heap allocator | MIT OR Apache-2.0 |
 | [ALICE-Parser](https://github.com/ext-sakamoro/ALICE-Parser) | v1.0.0 | Parser Combinators | PEG, Pratt parsing, error recovery | MIT OR Apache-2.0 |
+| [ALICE-LOL](https://github.com/ext-sakamoro/ALICE-LOL) | v0.1.0 | Law-Oriented Language | SDF DSL proc_macro, 76 constructs, GLSL/WGSL/HLSL transpile, law constraints, spatial pruning, autodiff | MIT OR Apache-2.0 |
 
 ### Data & Storage
 
