@@ -153,7 +153,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-RTOS](https://github.com/ext-sakamoro/ALICE-RTOS) | v0.1.0 | Math-First Real-Time OS | RMS scheduler, Liu-Layland analysis, SPSC ring, < 2KB kernel | AGPL-3.0 |
 | [ALICE-SIMD](https://github.com/ext-sakamoro/ALICE-SIMD) | v1.0.0 | Shared SIMD & Fast-Math Primitives | AlignedVec, BitMask64, branchless ops, fast reciprocal/rsqrt, FNV-1a, Bloom filter, no_std | MIT |
 | [ALICE-Token](https://github.com/ext-sakamoro/ALICE-Token) | v1.0.0 | Ultra-Fast BPE Tokenizer | Byte-pair encoding, vocab training, O(n) encode/decode, no_std | MIT |
-| [ALICE-Train](https://github.com/ext-sakamoro/ALICE-Train) | v0.1.0 | Backpropagation Training Framework | STE for ternary weights, ReLU/SiLU/GELU backward, BitLinear backward, QAT (FakeQuantize/CalibrationStats), Knowledge Distillation | AGPL-3.0 |
+| [ALICE-Train](https://github.com/ext-sakamoro/ALICE-Train) | v0.2.0 | Backpropagation Training Framework | STE, QAT pipeline, GPU backward (wgpu compute shader), ZeRO-Offload (AdamW CPU RAM), Llama-3 70B QAT binary, knowledge distillation, Spot auto-resume | AGPL-3.0 |
 | [ALICE-WASM](https://github.com/ext-sakamoro/ALICE-WASM) | v0.1.0 | WebAssembly Runtime | Bytecode validation, stack VM, sandbox | MIT OR Apache-2.0 |
 | [ALICE-FFI](https://github.com/ext-sakamoro/ALICE-FFI) | v0.1.0 | Foreign Function Interface | C ABI types, buffer management, error codes | MIT OR Apache-2.0 |
 | [ALICE-Circuit](https://github.com/ext-sakamoro/ALICE-Circuit) | v0.1.0 | Fault Tolerance Patterns | Circuit breaker, bulkhead, retry | MIT OR Apache-2.0 |
