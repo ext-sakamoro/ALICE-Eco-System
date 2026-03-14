@@ -53,8 +53,9 @@
 //! Path F (3D Print Optimization):
 //!   [ALICE-SDF] → [ALICE-Motion] (S-curve) → [ALICE-Print] → .3mf
 //!
-//! Path G (AI Inference):
+//! Path G (AI Inference → 3D):
 //!   [ALICE-ML] → [ALICE-TRT] → [ALICE-SDF] / [ALICE-Physics] / [ALICE-View]
+//!   [LLM] → [ALICE-LOL] → [ALICE-SDF] → [ALICE-View] / [ALICE-Print] / [ALICE-Physics]
 //!
 //! Path H (Voice Delivery):
 //!   [ALICE-Voice] → [ALICE-Synth] → [ALICE-Codec] → [ALICE-CDN] → [ALICE-Cache]
@@ -182,6 +183,7 @@ pub mod bridge_reverse;
 pub mod bridge_risk;
 pub mod bridge_risk_ext;
 pub mod bridge_rtos;
+pub mod bridge_lol;
 pub mod bridge_sdf;
 pub mod bridge_sdf_destruction;
 pub mod bridge_sdf_material;
