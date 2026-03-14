@@ -184,7 +184,7 @@ pub fn llm_to_settlement_request(
     let r0 = (confidence >= 0.9) as u8; // auto_approve
     let r1 = (confidence >= 0.7) as u8; // manual_review
     let r2 = (confidence >= 0.5) as u8; // escalate
-    // 3 - r0 - r1 - r2: 3=reject, 2=escalate, 1=manual, 0=auto
+                                        // 3 - r0 - r1 - r2: 3=reject, 2=escalate, 1=manual, 0=auto
     let resolution_type = 3 - r0 - r1 - r2;
     LlmSettlementRequest {
         content_hash: fnv1a(&buf),

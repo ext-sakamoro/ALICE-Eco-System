@@ -35,12 +35,7 @@ pub struct LlmBioSequence {
 /// Token estimate: protein ~3 chars/token, nucleotide ~6 chars/token.
 #[inline]
 #[must_use]
-pub fn llm_to_bio_sequence(
-    seq_len: u64,
-    seq_type: u8,
-    embed_dim: u32,
-    mode: u8,
-) -> LlmBioSequence {
+pub fn llm_to_bio_sequence(seq_len: u64, seq_type: u8, embed_dim: u32, mode: u8) -> LlmBioSequence {
     let mut buf = [0u8; 14];
     buf[0..8].copy_from_slice(&seq_len.to_le_bytes());
     buf[8] = seq_type;
@@ -183,8 +178,16 @@ pub fn llm_to_graph_query(
     buf[8..16].copy_from_slice(&edge_count.to_le_bytes());
     buf[16] = query_type;
     buf[17..21].copy_from_slice(&query_tokens.to_le_bytes());
-    let log_n = if node_count > 1 { (node_count as f64).log2() } else { 1.0 };
-    let log_e = if edge_count > 1 { (edge_count as f64).log2() } else { 1.0 };
+    let log_n = if node_count > 1 {
+        (node_count as f64).log2()
+    } else {
+        1.0
+    };
+    let log_e = if edge_count > 1 {
+        (edge_count as f64).log2()
+    } else {
+        1.0
+    };
     let complexity_score = (log_n * log_e) as f32;
     LlmGraphQuery {
         content_hash: fnv1a(&buf),

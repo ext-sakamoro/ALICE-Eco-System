@@ -173,11 +173,7 @@ pub struct LlmVisionInput {
 /// Patch count: (width/patch_size) * (height/patch_size) where patch_size=14 (ViT standard).
 #[inline]
 #[must_use]
-pub fn llm_to_vision_input(
-    width: u32,
-    height: u32,
-    patch_dim: u32,
-) -> LlmVisionInput {
+pub fn llm_to_vision_input(width: u32, height: u32, patch_dim: u32) -> LlmVisionInput {
     let patch_size = 14u32;
     let mut buf = [0u8; 12];
     buf[0..4].copy_from_slice(&width.to_le_bytes());

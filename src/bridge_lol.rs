@@ -166,19 +166,29 @@ pub fn lol_to_analytics(
     if lol_text.contains("sphere") || lol_text.contains("box3d") || lol_text.contains("cylinder") {
         cats |= 1;
     }
-    if lol_text.contains("union") || lol_text.contains("subtract") || lol_text.contains("intersection") {
+    if lol_text.contains("union")
+        || lol_text.contains("subtract")
+        || lol_text.contains("intersection")
+    {
         cats |= 2;
     }
     if lol_text.contains("translate") || lol_text.contains("rotate") || lol_text.contains("scale") {
         cats |= 4;
     }
-    if lol_text.contains("twist") || lol_text.contains("bend") || lol_text.contains("mirror") || lol_text.contains("round") {
+    if lol_text.contains("twist")
+        || lol_text.contains("bend")
+        || lol_text.contains("mirror")
+        || lol_text.contains("round")
+    {
         cats |= 8;
     }
     if lol_text.contains("animate") || lol_text.contains("morph") {
         cats |= 16;
     }
-    if lol_text.contains("NonOverlap") || lol_text.contains("Containment") || lol_text.contains("MinThickness") {
+    if lol_text.contains("NonOverlap")
+        || lol_text.contains("Containment")
+        || lol_text.contains("MinThickness")
+    {
         cats |= 32;
     }
     LolToAnalyticsBridge {

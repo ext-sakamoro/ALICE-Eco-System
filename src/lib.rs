@@ -162,6 +162,7 @@ pub mod bridge_kinematics;
 pub mod bridge_ledger;
 pub mod bridge_legal;
 pub mod bridge_legal_cross;
+pub mod bridge_lol;
 #[cfg(feature = "manga")]
 pub mod bridge_manga;
 pub mod bridge_ml;
@@ -183,7 +184,6 @@ pub mod bridge_reverse;
 pub mod bridge_risk;
 pub mod bridge_risk_ext;
 pub mod bridge_rtos;
-pub mod bridge_lol;
 pub mod bridge_sdf;
 pub mod bridge_sdf_destruction;
 pub mod bridge_sdf_material;

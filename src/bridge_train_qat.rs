@@ -55,7 +55,7 @@ pub fn qat_to_llm_delivery(
     let r0 = (cosine_similarity >= 0.99) as u8; // Q4_K
     let r1 = (cosine_similarity >= 0.97) as u8; // Q6_K
     let r2 = (cosine_similarity >= 0.95) as u8; // Q8_0
-    // 3 - r0 - r1 - r2: 3=F16, 2=Q8_0, 1=Q6_K, 0=Q4_K
+                                                // 3 - r0 - r1 - r2: 3=F16, 2=Q8_0, 1=Q6_K, 0=Q4_K
     let recommended_gguf = 3 - r0 - r1 - r2;
     QatLlmDelivery {
         content_hash: fnv1a(&buf),
