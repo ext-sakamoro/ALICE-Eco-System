@@ -409,6 +409,7 @@ pub mod bridge_map;
 pub mod bridge_game_engine;
 pub mod bridge_hypervisor;
 pub mod bridge_robotics;
+pub mod bridge_shader;
 
 // 2026-03 batch 2: IoT extended bridges
 pub mod bridge_iot;

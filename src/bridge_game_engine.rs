@@ -1,8 +1,7 @@
-//! GameEngine bridges — ALICE-GameEngine ↔ DB, Cache, Analytics, Physics, Render
+//! GameEngine bridges — ALICE-GameEngine ↔ DB, Cache, Analytics, Physics, Render, Network, MCP, LLM, Skeleton, Scene IO
 //!
-//! 5 bridges connecting game engine scene and frame data (extracted as
-//! primitives) to the ALICE ecosystem. No external crate types are imported;
-//! all fields use primitive types derived from serialised game engine state.
+//! 10 bridges connecting game engine (47 modules, v0.5.0) to the ALICE ecosystem.
+//! No external crate types are imported; all fields use primitive types.
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -215,6 +214,172 @@ pub fn game_engine_to_render_frame(
     }
 }
 
+// ── Bridge 6: GameEngine → Network (multiplayer metrics) ────────────────
+
+/// ネットワークセッション状態の記録。
+pub struct GameEngineNetworkRecord {
+    pub content_hash: u64,
+    pub peer_count: u64,
+    pub packets_sent: u64,
+    pub packets_received: u64,
+    pub latency_avg_ms: u64,
+    pub bytes_per_sec: u64,
+}
+
+/// ネットワーク状態をブリッジレコードに変換。
+#[inline]
+#[must_use]
+pub fn game_engine_to_network_record(
+    peer_count: u64,
+    packets_sent: u64,
+    packets_received: u64,
+    latency_avg_ms: u64,
+    bytes_per_sec: u64,
+) -> GameEngineNetworkRecord {
+    let mut buf = [0u8; 16];
+    buf[0..8].copy_from_slice(&peer_count.to_le_bytes());
+    buf[8..16].copy_from_slice(&packets_sent.to_le_bytes());
+    GameEngineNetworkRecord {
+        content_hash: fnv1a(&buf),
+        peer_count,
+        packets_sent,
+        packets_received,
+        latency_avg_ms,
+        bytes_per_sec,
+    }
+}
+
+// ── Bridge 7: GameEngine → Skeleton (skeletal animation metrics) ────────
+
+/// スケルタルアニメーション状態の記録。
+pub struct GameEngineSkeletonRecord {
+    pub content_hash: u64,
+    pub bone_count: u64,
+    pub active_animations: u64,
+    pub skin_matrix_bytes: u64,
+    pub timestamp_ms: u64,
+}
+
+/// スケルトン状態をブリッジレコードに変換。
+#[inline]
+#[must_use]
+pub fn game_engine_to_skeleton_record(
+    bone_count: u64,
+    active_animations: u64,
+    skin_matrix_bytes: u64,
+    timestamp_ms: u64,
+) -> GameEngineSkeletonRecord {
+    let mut buf = [0u8; 16];
+    buf[0..8].copy_from_slice(&bone_count.to_le_bytes());
+    buf[8..16].copy_from_slice(&active_animations.to_le_bytes());
+    GameEngineSkeletonRecord {
+        content_hash: fnv1a(&buf),
+        bone_count,
+        active_animations,
+        skin_matrix_bytes,
+        timestamp_ms,
+    }
+}
+
+// ── Bridge 8: GameEngine → MCP (AI agent control metrics) ──────────────
+
+/// MCP操作ログの記録。
+pub struct GameEngineMcpRecord {
+    pub content_hash: u64,
+    pub tool_calls: u64,
+    pub nodes_created: u64,
+    pub nodes_removed: u64,
+    pub physics_steps: u64,
+    pub session_duration_ms: u64,
+}
+
+/// MCP操作をブリッジレコードに変換。
+#[inline]
+#[must_use]
+pub fn game_engine_to_mcp_record(
+    tool_calls: u64,
+    nodes_created: u64,
+    nodes_removed: u64,
+    physics_steps: u64,
+    session_duration_ms: u64,
+) -> GameEngineMcpRecord {
+    let mut buf = [0u8; 16];
+    buf[0..8].copy_from_slice(&tool_calls.to_le_bytes());
+    buf[8..16].copy_from_slice(&session_duration_ms.to_le_bytes());
+    GameEngineMcpRecord {
+        content_hash: fnv1a(&buf),
+        tool_calls,
+        nodes_created,
+        nodes_removed,
+        physics_steps,
+        session_duration_ms,
+    }
+}
+
+// ── Bridge 9: GameEngine → LLM (NPC AI metrics) ────────────────────────
+
+/// LLM NPC対話の記録。
+pub struct GameEngineLlmRecord {
+    pub content_hash: u64,
+    pub npc_count: u64,
+    pub total_conversations: u64,
+    pub tokens_generated: u64,
+    pub avg_latency_ms: u64,
+}
+
+/// LLM NPC状態をブリッジレコードに変換。
+#[inline]
+#[must_use]
+pub fn game_engine_to_llm_record(
+    npc_count: u64,
+    total_conversations: u64,
+    tokens_generated: u64,
+    avg_latency_ms: u64,
+) -> GameEngineLlmRecord {
+    let mut buf = [0u8; 16];
+    buf[0..8].copy_from_slice(&npc_count.to_le_bytes());
+    buf[8..16].copy_from_slice(&tokens_generated.to_le_bytes());
+    GameEngineLlmRecord {
+        content_hash: fnv1a(&buf),
+        npc_count,
+        total_conversations,
+        tokens_generated,
+        avg_latency_ms,
+    }
+}
+
+// ── Bridge 10: GameEngine → Scene IO (save/load metrics) ───────────────
+
+/// シーン保存/読み込みの記録。
+pub struct GameEngineSceneIoRecord {
+    pub content_hash: u64,
+    pub node_count: u64,
+    pub json_bytes: u64,
+    pub save_duration_us: u64,
+    pub load_duration_us: u64,
+}
+
+/// シーンIO操作をブリッジレコードに変換。
+#[inline]
+#[must_use]
+pub fn game_engine_to_scene_io_record(
+    node_count: u64,
+    json_bytes: u64,
+    save_duration_us: u64,
+    load_duration_us: u64,
+) -> GameEngineSceneIoRecord {
+    let mut buf = [0u8; 16];
+    buf[0..8].copy_from_slice(&node_count.to_le_bytes());
+    buf[8..16].copy_from_slice(&json_bytes.to_le_bytes());
+    GameEngineSceneIoRecord {
+        content_hash: fnv1a(&buf),
+        node_count,
+        json_bytes,
+        save_duration_us,
+        load_duration_us,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -306,5 +471,60 @@ mod tests {
         let a = game_engine_to_db_record(0x01, 1, 1, 1, 1);
         let b = game_engine_to_db_record(0x02, 1, 1, 1, 1);
         assert_ne!(a.content_hash, b.content_hash);
+    }
+
+    // ── Network record tests ─────────────────────────────────────────────
+
+    #[test]
+    fn network_record_hash_nonzero() {
+        let rec = game_engine_to_network_record(4, 1000, 950, 25, 65536);
+        assert_ne!(rec.content_hash, 0);
+        assert_eq!(rec.peer_count, 4);
+    }
+
+    #[test]
+    fn network_record_deterministic() {
+        let a = game_engine_to_network_record(2, 100, 90, 10, 1024);
+        let b = game_engine_to_network_record(2, 100, 90, 10, 1024);
+        assert_eq!(a.content_hash, b.content_hash);
+    }
+
+    // ── Skeleton record tests ────────────────────────────────────────────
+
+    #[test]
+    fn skeleton_record_fields() {
+        let rec = game_engine_to_skeleton_record(65, 3, 4160, 5000);
+        assert_eq!(rec.bone_count, 65);
+        assert_ne!(rec.content_hash, 0);
+    }
+
+    // ── MCP record tests ─────────────────────────────────────────────────
+
+    #[test]
+    fn mcp_record_fields() {
+        let rec = game_engine_to_mcp_record(42, 10, 3, 600, 120_000);
+        assert_eq!(rec.tool_calls, 42);
+        assert_eq!(rec.nodes_created, 10);
+        assert_ne!(rec.content_hash, 0);
+    }
+
+    // ── LLM record tests ─────────────────────────────────────────────────
+
+    #[test]
+    fn llm_record_fields() {
+        let rec = game_engine_to_llm_record(5, 20, 2048, 150);
+        assert_eq!(rec.npc_count, 5);
+        assert_eq!(rec.tokens_generated, 2048);
+        assert_ne!(rec.content_hash, 0);
+    }
+
+    // ── Scene IO record tests ────────────────────────────────────────────
+
+    #[test]
+    fn scene_io_record_fields() {
+        let rec = game_engine_to_scene_io_record(100, 8192, 500, 800);
+        assert_eq!(rec.node_count, 100);
+        assert_eq!(rec.json_bytes, 8192);
+        assert_ne!(rec.content_hash, 0);
     }
 }
