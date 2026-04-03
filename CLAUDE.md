@@ -11,8 +11,8 @@
 | ブランチ | `main` |
 | バージョン | v0.3.2 |
 | ライセンス | MIT |
-| ブリッジ数 | 1330 (238モジュール, 185クレート + ALICE-GameEngine + ALICE-Shader) |
-| テスト数 | 2491 |
+| ブリッジ数 | 1350 (242モジュール, 186クレート + ALICE-GameEngine + ALICE-Shader) |
+| テスト数 | 2412 |
 
 ## コーディングルール
 
@@ -91,7 +91,7 @@ ALICE-KARIKARI.md「100/100品質基準」参照。clippy基準: `pedantic+nurse
 | 指標 | 値 |
 |------|-----|
 | clippy (pedantic+nursery) | 0 warnings |
-| テスト数 | 2295 |
+| テスト数 | 2412 |
 | fmt | clean |
 
 ## ALICE関連リポジトリとの連携
