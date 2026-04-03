@@ -116,6 +116,7 @@
 //! ```
 
 pub mod bridge_agent;
+pub mod bridge_agent_llm;
 pub mod bridge_analytics;
 #[cfg(feature = "animation")]
 pub mod bridge_animation;
@@ -204,6 +205,7 @@ pub mod bridge_telemetry_hooks;
 pub mod bridge_text;
 pub mod bridge_token;
 pub mod bridge_train;
+pub mod bridge_train_ml_weight;
 pub mod bridge_train_qat;
 pub mod bridge_trt;
 pub mod bridge_vcs;
@@ -292,6 +294,7 @@ pub mod bridge_recommend;
 
 // 2026-03 batch: Real-time bridges
 pub mod bridge_chat;
+pub mod bridge_chat_llm;
 pub mod bridge_loadbalancer;
 pub mod bridge_videoanalytics;
 
