@@ -284,7 +284,8 @@ mod tests {
     fn make_session() -> Session {
         let mut s = Session::new("/tmp", "test-model");
         s.messages.push(make_agent_message(Role::User, "hello"));
-        s.messages.push(make_agent_message(Role::Assistant, "world"));
+        s.messages
+            .push(make_agent_message(Role::Assistant, "world"));
         s
     }
 

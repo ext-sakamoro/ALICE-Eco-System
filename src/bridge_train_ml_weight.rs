@@ -233,8 +233,8 @@ pub fn alice_model_meta_to_ml(meta: &AliceModelMeta) -> AliceModelMlFeatures {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_train::{AliceModelMeta, ExportStats, LayerScales};
     use alice_train::qwen35::Qwen35Config;
+    use alice_train::{AliceModelMeta, ExportStats, LayerScales};
 
     fn make_qwen35_config() -> Qwen35Config {
         Qwen35Config::qwen35_9b()
@@ -398,8 +398,16 @@ mod tests {
     fn test_model_meta_to_ml_layer_count() {
         let mut meta = make_model_meta(100, 2.0);
         meta.layer_scales = vec![
-            LayerScales { layer_idx: 0, layer_type: "deltanet".to_owned(), scales: Vec::new() },
-            LayerScales { layer_idx: 1, layer_type: "attention".to_owned(), scales: Vec::new() },
+            LayerScales {
+                layer_idx: 0,
+                layer_type: "deltanet".to_owned(),
+                scales: Vec::new(),
+            },
+            LayerScales {
+                layer_idx: 1,
+                layer_type: "attention".to_owned(),
+                scales: Vec::new(),
+            },
         ];
         let f = alice_model_meta_to_ml(&meta);
         assert_eq!(f.layer_count, 2);
