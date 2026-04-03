@@ -109,8 +109,13 @@
 //! Path X (Swarm Intelligence Pipeline — Project-ALICE V3):
 //!   [ALICE-Factory] → [ALICE-Swarm(V3)] → [ALICE-Innovation]
 //!   → [ALICE-Analytics] / [ALICE-DB] / [ALICE-Cache] / [ALICE-ML] / [ALICE-Search]
+//!
+//! Path Y (Coding Agent Pipeline):
+//!   [ALICE-Agent] → [ALICE-Train] (ternary inference) → [Tool Execution]
+//!   → [ALICE-Analytics] / [ALICE-DB] / [ALICE-Cache] / [ALICE-ML] / [ALICE-Edge]
 //! ```
 
+pub mod bridge_agent;
 pub mod bridge_analytics;
 #[cfg(feature = "animation")]
 pub mod bridge_animation;
