@@ -160,7 +160,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Consensus](https://github.com/ext-sakamoro/ALICE-Consensus) | v0.1.0 | Distributed Consensus | Raft state machine, leader election | MIT OR Apache-2.0 |
 | [ALICE-Scheduler](https://github.com/ext-sakamoro/ALICE-Scheduler) | v0.1.0 | Job Scheduling | DAG dependency resolution, Cron evaluation | AGPL-3.0 |
 | [ALICE-Hypervisor](https://github.com/ext-sakamoro/ALICE-Hypervisor) | v1.0.0 | Lightweight Hypervisor | Resource isolation described by field equations | MIT |
-| [ALICE-GameEngine](https://github.com/ext-sakamoro/ALICE-GameEngine) | v1.0.0 | Game Loop and ECS | Entity-component-system integrated in SDF space | MIT |
+| [ALICE-GameEngine](https://github.com/ext-sakamoro/ALICE-GameEngine) | v0.5.x | Hybrid Mesh+SDF Game Engine | wgpu deferred renderer, ECS, Verlet physics + SDF CCD, HRTF audio, **turn-based battle**, **no-code event scripting (13 EventCommands)**, `bridge::WorldProvider` for plug-in themed worlds, XR layer | MIT OR Commercial |
 | [ALICE-Render](https://github.com/ext-sakamoro/ALICE-Render) | v1.0.0 | Software Rendering Pipeline | Rasterization, ray tracing, PBR Cook-Torrance, texture mapping | MIT OR Apache-2.0 |
 | [ALICE-Matchmaking](https://github.com/ext-sakamoro/ALICE-Matchmaking) | v1.0.0 | Skill-Based Matchmaking | ELO, MMR, Glicko-2, team balancing, region-based | MIT OR Apache-2.0 |
 
@@ -428,6 +428,32 @@ ALICE-SDF + ALICE-CDN + ALICE-Cache combine to deliver 3D assets as mathematical
 | Sphere | ~15 KB | **38 bytes** | **395x** |
 | CSG (union+subtract) | ~200 KB | **58 bytes** | **3,448x** |
 | Complex scene (100 nodes) | ~2 MB | **398 bytes** | **5,025x** |
+
+## Demo: Turn-Based RPG (2 Crates)
+
+`ALICE-GameEngine` v0.5.x ships a complete turn-based RPG runtime — a
+hybrid of mesh + SDF rendering, a state-machine battle engine, and a
+13-command no-code event script. Themed worlds plug in through
+`bridge::WorldProvider`, and `bridge::TextProcessor` (e.g.
+`AliceTextProcessor` over `ALICE-Text`) provides natural-language log
+compression.
+
+```
+[ALICE-GameEngine]   battle::TurnBattleRunner + scripting::EventScript
+                          + ability::AbilitySystem
+       │  bridge::TextProcessor
+       ↓
+[ALICE-Text]         natural-language log compression (~3× ratio on
+                     repetitive battle text)
+```
+
+`templates/rpg.rs` shows the full opening-dialogue → choice → battle →
+reward flow using only `alice-game-engine`:
+
+```bash
+cd ALICE-GameEngine
+cargo run --example rpg
+```
 
 ## Demo: Full Game Engine Pipeline (6 Crates)
 
