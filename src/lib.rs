@@ -330,6 +330,7 @@ pub mod bridge_llm_infra;
 pub mod bridge_llm_media;
 pub mod bridge_llm_science;
 pub mod bridge_llm_spatial;
+pub mod bridge_lwm;
 
 // 2026-03 batch: Swarm/IoT bridges
 pub mod bridge_ble;

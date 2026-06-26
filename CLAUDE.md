@@ -9,10 +9,10 @@
 | リポジトリ | `ext-sakamoro/ALICE-Eco-System` |
 | リモート | `origin` (`git@github.com:ext-sakamoro/ALICE-Eco-System.git`) |
 | ブランチ | `main` |
-| バージョン | v0.3.2 |
+| バージョン | v0.3.3 |
 | ライセンス | MIT |
-| ブリッジ数 | 1350 (242モジュール, 186クレート + ALICE-GameEngine + ALICE-Shader) |
-| テスト数 | 2412 |
+| ブリッジ数 | 1355 (243モジュール, 186クレート + ALICE-GameEngine + ALICE-Shader) |
+| テスト数 | 2423 |
 
 ## コーディングルール
 
