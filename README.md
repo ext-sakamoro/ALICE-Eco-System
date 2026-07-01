@@ -85,8 +85,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-DB](https://github.com/ext-sakamoro/ALICE-DB) | v0.1.0 | Model-Based LSM-Tree Database | O(1) point queries, 50-1000x compression | Open Core (MIT core + BSL server) |
 | [ALICE-DB-Enterprise](https://github.com/ext-sakamoro/ALICE-DB-Enterprise) | v1.0.0 | DB Enterprise Security & Audit | Row-level encryption, RBAC authentication, append-only audit log | Proprietary |
 | [ALICE-Cache](https://github.com/ext-sakamoro/ALICE-Cache) | v0.2.0 | Predictive Distributed Cache | Slab alloc, TinyLFU, Markov prediction | AGPL-3.0 |
-| [ALICE-Queue](https://github.com/ext-sakamoro/ALICE-Queue) | v0.1.0 | Deterministic Zero-Copy Message Log | Lock-free SPSC, mmap WAL, Vector Clock | AGPL-3.0 |
-| [ALICE-Search](https://github.com/ext-sakamoro/ALICE-Search) | v0.1.0 | FM-Index Full-Text Search | Wavelet Matrix, backward search, ~1.0x size | AGPL-3.0 |
+| [ALICE-Queue](https://github.com/ext-sakamoro/ALICE-Queue) | v0.2.0 | Deterministic Zero-Copy Message Log | Lock-free SPSC + mmap WAL + signed_envelope (Ed25519 producer + DedupBuffer, MiFID-II RTS 25) | AGPL-3.0 |
+| [ALICE-Search](https://github.com/ext-sakamoro/ALICE-Search) | v0.2.0 | FM-Index Full-Text Search + PII | Wavelet Matrix + pii_redact (7 kinds Email/PAN Luhn/マイナンバー, GDPR / PCI-DSS §3.4) | AGPL-3.0 |
 | [ALICE-VectorDB](https://github.com/ext-sakamoro/ALICE-VectorDB) | v0.1.0 | Vector Similarity Search | HNSW and brute-force ANN | MIT OR Apache-2.0 |
 | [ALICE-ETL](https://github.com/ext-sakamoro/ALICE-ETL) | v1.0.0 | Law-Transform Pipeline | Data transformation rules as declarative formulas | MIT |
 | [ALICE-StreamProc](https://github.com/ext-sakamoro/ALICE-StreamProc) | v1.0.0 | Event Stream Processing | Complex event processing as time-window convolution | MIT |
@@ -105,8 +105,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Streaming-Protocol-Commercial](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol-Commercial) | v1.0.0 | Enterprise Streaming | Commercial extensions for ASP: DRM, multi-CDN failover, SLA guarantees | Proprietary |
 | [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | v0.6.0 | P2P Synchronization via Event Diffing | 18-byte events, bit-exact determinism, Lockstep/Rollback, PyO3 | AGPL-3.0 |
 | [ALICE-Cloud-Gateway](https://github.com/ext-sakamoro/ALICE-Cloud-Gateway) | v0.1.0 | Edge-to-Cloud SDF Ingest Gateway | ASP decrypt, BLAKE3 KDF, DDSketch/HLL telemetry | AGPL-3.0 |
-| [ALICE-DNS](https://github.com/ext-sakamoro/ALICE-DNS) | v0.1.0 | Bloom Filter DNS Ad-Blocker | 453KB binary, O(1) lookup, Pi-hole replacement | AGPL-3.0 |
-| [ALICE-Edge-Firewall](https://github.com/ext-sakamoro/ALICE-Edge-Firewall) | v0.1.0 | Network Firewall (Linux nfq) | Stateful packet inspection, nfqueue integration, edge-native rule engine | AGPL-3.0 |
+| [ALICE-DNS](https://github.com/ext-sakamoro/ALICE-DNS) | v0.2.0 | DNS Ad-Blocker + DNSSEC | Bloom filter O(1) + dnssec_verify (RFC 4034/8080 Ed25519 RRSIG) | AGPL-3.0 |
+| [ALICE-Edge-Firewall](https://github.com/ext-sakamoro/ALICE-Edge-Firewall) | v0.2.0 | Semantic Stream Firewall + Audit | nfqueue + Ternary classifier + firewall_audit (PCI-DSS §10.2, NIS2, Ed25519) | AGPL-3.0 |
 | [ALICE-Bridge](https://github.com/ext-sakamoro/ALICE-Bridge) | v0.1.0 | Universal Hardware Bridge | 5 protocol adapters (Buttplug/MQTT/REST/OSC/WS), 750+ devices, safety layer | AGPL-3.0 |
 | [ALICE-Realtime](https://github.com/ext-sakamoro/ALICE-Realtime) | v0.1.0 | Real-Time Engine | WebSocket/SSE pub/sub, presence, backpressure | AGPL-3.0 |
 | [ALICE-Serial](https://github.com/ext-sakamoro/ALICE-Serial) | v0.1.0 | Serialization Formats | MessagePack, CBOR-like, binary encoding | MIT OR Apache-2.0 |
@@ -132,15 +132,15 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Crypto](https://github.com/ext-sakamoro/ALICE-Crypto) | v0.1.0 | Information-Theoretic Security | Shamir SSS, BLAKE3, XChaCha20-Poly1305 | AGPL-3.0 |
 | [ALICE-Browser-Secure](https://github.com/ext-sakamoro/ALICE-Browser-Secure) | v0.1.0 | Secure Browsing | CSP, sandboxing, XSS prevention, URL validation | MIT OR Apache-2.0 |
 | [ALICE-DataShield](https://github.com/ext-sakamoro/ALICE-DataShield) | v0.1.0 | Data Protection | Data masking, anonymization, differential privacy | MIT OR Apache-2.0 |
-| [ALICE-Compliance](https://github.com/ext-sakamoro/ALICE-Compliance) | v0.1.0 | Regulatory Compliance | GDPR, SOX, HIPAA compliance checking engine | MIT OR Apache-2.0 |
+| [ALICE-Compliance](https://github.com/ext-sakamoro/ALICE-Compliance) | v0.2.0 | Regulatory Compliance | GDPR / SOX / HIPAA + SOC2 TSC 5-category + tamper-evident audit evidence chain | MIT OR Apache-2.0 |
 | [ALICE-FinCompliance](https://github.com/ext-sakamoro/ALICE-FinCompliance) | v0.1.0 | Financial Compliance | MiFID II, Basel III, AML regulatory compliance | MIT OR Apache-2.0 |
 | [ALICE-AuthZ](https://github.com/ext-sakamoro/ALICE-AuthZ) | v1.0.0 | Policy-Based Authorization | Access rules evaluated via predicate logic inference | MIT |
-| [ALICE-PKI](https://github.com/ext-sakamoro/ALICE-PKI) | v1.0.0 | Certificate Lifecycle Management | Trust chains verified via graph theory | MIT |
+| [ALICE-PKI](https://github.com/ext-sakamoro/ALICE-PKI) | v1.2.0 | Certificate Lifecycle Management | x509_lite + Ed25519 chain + CRL (RFC 5280) + PEM (RFC 7468) | MIT |
 | [ALICE-SIEM](https://github.com/ext-sakamoro/ALICE-SIEM) | v1.0.0 | Security Event Correlation | Anomaly detection described by information entropy | MIT |
 | [ALICE-SecretVault](https://github.com/ext-sakamoro/ALICE-SecretVault) | v1.0.0 | Secret Management | Dynamic credential issuance via Shamir threshold sharing | MIT |
 | [ALICE-WAF](https://github.com/ext-sakamoro/ALICE-WAF) | v1.0.0 | WAF Rule Engine | SQLi/XSS detection, rate limiting | AGPL-3.0 |
 | [ALICE-DLP](https://github.com/ext-sakamoro/ALICE-DLP) | v1.0.0 | Data Loss Prevention | PII detection, masking, policy | AGPL-3.0 |
-| [ALICE-Audit](https://github.com/ext-sakamoro/ALICE-Audit) | v1.0.0 | Audit Trail | Hash chain tamper detection, compliance | AGPL-3.0 |
+| [ALICE-Audit](https://github.com/ext-sakamoro/ALICE-Audit) | v1.3.0 | Audit Trail | Signed trail + Merkle + VC export + GDPR Art. 30/15/16/17/20 | AGPL-3.0 |
 
 ### Compute & Runtime
 
@@ -192,21 +192,21 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Ledger](https://github.com/ext-sakamoro/ALICE-Ledger) | v0.1.0 | Price-Time Priority Order Book | BTreeMap LOB, FIFO matching, FOK/IOC/GTC/GTD, position tracking, i128 PnL | AGPL-3.0 |
-| [ALICE-Risk](https://github.com/ext-sakamoro/ALICE-Risk) | v0.1.0 | Pre-Trade Risk Engine | Position/notional/order limits, margin calculator, circuit breaker, i128 bps | AGPL-3.0 |
-| [ALICE-FIX](https://github.com/ext-sakamoro/ALICE-FIX) | v0.1.0 | FIX Protocol 4.4/5.0 Engine | SOH parser, checksum validation, session sequence tracking, Ledger type conversion | MIT |
-| [ALICE-Settlement](https://github.com/ext-sakamoro/ALICE-Settlement) | v0.1.0 | Post-Trade Settlement Engine | Bilateral netting, clearing house, margin checks, append-only journal, i128 net payments | AGPL-3.0 |
-| [ALICE-Billing](https://github.com/ext-sakamoro/ALICE-Billing) | v0.1.0 | SaaS Billing Engine | Usage metering, proration, subscription lifecycle | AGPL-3.0 |
-| [ALICE-Quant](https://github.com/ext-sakamoro/ALICE-Quant) | v1.0.0 | Quantitative Modeling | Financial derivative pricing via stochastic differential equations | MIT |
+| [ALICE-Ledger](https://github.com/ext-sakamoro/ALICE-Ledger) | v0.3.0 | Price-Time Priority Order Book | LOB + FIFO + signed_order (MiFID-II RTS 22) + FIX 4.4 parser | AGPL-3.0 |
+| [ALICE-Risk](https://github.com/ext-sakamoro/ALICE-Risk) | v0.2.0 | Pre-Trade Risk Engine | Position / margin / circuit breaker + signed_risk_event (7 kinds, Ed25519, BCBS 239) | AGPL-3.0 |
+| [ALICE-FIX](https://github.com/ext-sakamoro/ALICE-FIX) | v0.2.0 | FIX Protocol 4.4/5.0 Engine | SOH parser + checksum + session state + gap_recovery (ResendRequest / SequenceReset) | MIT |
+| [ALICE-Settlement](https://github.com/ext-sakamoro/ALICE-Settlement) | v0.2.0 | Post-Trade Settlement Engine | Netting + clearing house + merkle_trail (6 SettlementEventKind + Ed25519 + Merkle root) | AGPL-3.0 |
+| [ALICE-Billing](https://github.com/ext-sakamoro/ALICE-Billing) | v0.2.0 | SaaS Billing Engine | Usage / proration / subscription + invoice_trail (EN-16931 + 適格請求書 + Ed25519 vendor) | AGPL-3.0 |
+| [ALICE-Quant](https://github.com/ext-sakamoro/ALICE-Quant) | v1.2.0 | Quantitative Modeling / xVA | CVA/DVA + WWR + KVA/FVA/MVA + SA-CCR (Basel III) via Gregory 2020 | MIT |
 | [ALICE-MarketData](https://github.com/ext-sakamoro/ALICE-MarketData) | v1.0.0 | Market Data Feed | Tick data as time-series SDF fields for compression | MIT |
-| [ALICE-Logistics](https://github.com/ext-sakamoro/ALICE-Logistics) | v1.0.0 | Supply Chain Optimization | EOQ, Dijkstra/A*, TSP 2-opt, VRP, demand forecasting | AGPL-3.0 |
+| [ALICE-Logistics](https://github.com/ext-sakamoro/ALICE-Logistics) | v1.1.0 | Supply Chain + WMS Audit | EOQ / TSP / VRP + signed_shipment (8 events, GS1 EPCIS 2.0, ISO 28000, Ed25519) | AGPL-3.0 |
 
 ### Analytics & Visualization
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Analytics](https://github.com/ext-sakamoro/ALICE-Analytics) | v0.1.0 | Streaming Telemetry & Statistics | HyperLogLog++, DDSketch, CMS, LDP | AGPL-3.0 |
-| [ALICE-Semantic-Telemetry](https://github.com/ext-sakamoro/ALICE-Semantic-Telemetry) | v0.1.0 | Semantic Observability | Structured span/event tracing, semantic enrichment, OTLP export | MIT |
+| [ALICE-Semantic-Telemetry](https://github.com/ext-sakamoro/ALICE-Semantic-Telemetry) | v0.2.0 | Semantic Observability + SIEM | Structured span + siem_event (5 severity, SOC2 CC7.2, ISO 27001 A.12.4, Ed25519) | MIT |
 | [ALICE-View](https://github.com/ext-sakamoro/ALICE-View) | v0.2.0 | Infinite Canvas GPU Renderer | wgpu procedural rendering, 60 FPS | MIT |
 | [ALICE-Metrics](https://github.com/ext-sakamoro/ALICE-Metrics) | v0.1.0 | Metrics Collection | Prometheus-compatible metrics collection and export | MIT OR Apache-2.0 |
 | [ALICE-Observability](https://github.com/ext-sakamoro/ALICE-Observability) | v0.1.0 | Distributed Tracing | Metrics aggregation, alerting | MIT OR Apache-2.0 |
@@ -218,28 +218,28 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
-| [ALICE-Bio](https://github.com/ext-sakamoro/ALICE-Bio) | v0.1.0 | Molecular Biology Engine | Amino acid→SDF, Lennard-Jones, CHARMM, protein folding metrics | AGPL-3.0 |
-| [ALICE-Legal](https://github.com/ext-sakamoro/ALICE-Legal) | v0.1.0 | Legal Compliance Engine | Statute tree, contract analysis, conflict detection, append-only audit log | AGPL-3.0 |
+| [ALICE-Bio](https://github.com/ext-sakamoro/ALICE-Bio) | v0.2.0 | Molecular Biology Engine | Amino acid→SDF + Lennard-Jones + CHARMM + FASTA parser + reverse complement | AGPL-3.0 |
+| [ALICE-Legal](https://github.com/ext-sakamoro/ALICE-Legal) | v0.3.0 | Legal Compliance Engine | Statute tree + contract analysis + signed_contract + RFC 3161 TSA integration | AGPL-3.0 |
 | [ALICE-Energy](https://github.com/ext-sakamoro/ALICE-Energy) | v0.1.0 | Power Grid Simulation | Bus/branch topology, Newton-Raphson power flow, battery SoC, phase correction | AGPL-3.0 |
-| [ALICE-Space](https://github.com/ext-sakamoro/ALICE-Space) | v0.1.0 | Deep-Space Communication | CommLink budget, differential telemetry (delta encoding), autonomous mission control | MIT |
+| [ALICE-Space](https://github.com/ext-sakamoro/ALICE-Space) | v0.6.0 | Satellite / GNSS Position Engine | WGS-84 + TLE + DOP + Klobuchar + Saastamoinen + SP3 + RINEX + SBAS (MOPS DO-229) | MIT |
 | [ALICE-Neural](https://github.com/ext-sakamoro/ALICE-Neural) | v0.1.0 | Brain-Computer Interface | Spike train detection, ISI analysis, firing rate, Bayesian intent classification | AGPL-3.0 |
 | [ALICE-Climate](https://github.com/ext-sakamoro/ALICE-Climate) | v0.1.0 | Planetary Climate Modeling | Weather stations, IDW interpolation, Clausius-Clapeyron, climate anomaly detection | AGPL-3.0 |
 | [ALICE-Legal-AI](https://github.com/ext-sakamoro/ALICE-Legal-AI) | v0.1.0 | Legal Document Analysis | Clause extraction, risk scoring | MIT OR Apache-2.0 |
 | [ALICE-Digital-Twin](https://github.com/ext-sakamoro/ALICE-Digital-Twin) | v0.1.0 | Digital Twin Engine | State management and simulation | MIT OR Apache-2.0 |
 | [ALICE-Fluid](https://github.com/ext-sakamoro/ALICE-Fluid) | v1.0.0 | Fluid Dynamics | Navier-Stokes equations solved with SDF boundary conditions | MIT |
 | [ALICE-Quantum](https://github.com/ext-sakamoro/ALICE-Quantum) | v1.0.0 | Quantum Circuit Simulation | Quantum gates as unitary transformation laws | MIT |
-| [ALICE-Genome](https://github.com/ext-sakamoro/ALICE-Genome) | v1.0.0 | Genome Sequence Analysis | Base alignment via FM-Index and SDF distance spaces | MIT |
+| [ALICE-Genome](https://github.com/ext-sakamoro/ALICE-Genome) | v1.1.0 | Genome Sequence Analysis | FM-Index alignment + SDF + VCF v4.3 minimal parser (bcftools / GATK / DeepVariant) | MIT |
 | [ALICE-Astro](https://github.com/ext-sakamoro/ALICE-Astro) | v1.0.0 | Celestial Mechanics | N-body problem via Barnes-Hut tree and SDF gravity fields | MIT |
 | [ALICE-Robotics](https://github.com/ext-sakamoro/ALICE-Robotics) | v1.0.0 | Robotics Control | Motion planning as SDF obstacle field gradient descent | MIT |
 | [ALICE-Swarm](https://github.com/ext-sakamoro/ALICE-Swarm) | v1.0.0 | Swarm Intelligence | Boids, formation control, consensus, task allocation | MIT OR Apache-2.0 |
 | [ALICE-Navigation](https://github.com/ext-sakamoro/ALICE-Navigation) | v1.0.0 | Path Planning | RRT, PRM, potential field, nav mesh, dynamic replan | MIT OR Apache-2.0 |
 | [ALICE-SLAM](https://github.com/ext-sakamoro/ALICE-SLAM) | v1.0.0 | SLAM | ICP, occupancy grid, pose graph, loop closure, SDF map | AGPL-3.0 |
-| [ALICE-Medical](https://github.com/ext-sakamoro/ALICE-Medical) | v1.0.0 | Medical Imaging | DICOM, Hounsfield, segmentation, SDF reconstruction | AGPL-3.0 |
+| [ALICE-Medical](https://github.com/ext-sakamoro/ALICE-Medical) | v1.1.0 | Medical Imaging | DICOM PS3.10 Explicit VR LE parser + Hounsfield + segmentation + SDF reconstruction | AGPL-3.0 |
 | [ALICE-Drone](https://github.com/ext-sakamoro/ALICE-Drone) | v1.0.0 | Drone/UAV Control | PID, waypoint navigation, quaternion attitude, geofence | AGPL-3.0 |
 | [ALICE-Agri](https://github.com/ext-sakamoro/ALICE-Agri) | v1.0.0 | Agricultural Modeling | Crop growth, soil moisture, irrigation, pest risk, yield | MIT OR Apache-2.0 |
 | [ALICE-Chemistry](https://github.com/ext-sakamoro/ALICE-Chemistry) | v1.0.0 | Molecular Dynamics | Lennard-Jones, Arrhenius, thermodynamics | MIT OR Apache-2.0 |
 | [ALICE-Optics](https://github.com/ext-sakamoro/ALICE-Optics) | v1.0.0 | Lens Systems | Diffraction, polarization, thin film, fiber | MIT OR Apache-2.0 |
-| [ALICE-Signal](https://github.com/ext-sakamoro/ALICE-Signal) | v1.0.0 | Digital Signal Processing | FFT, FIR/IIR, wavelet, window functions | MIT OR Apache-2.0 |
+| [ALICE-Signal](https://github.com/ext-sakamoro/ALICE-Signal) | v1.4.0 | Digital Signal Processing + GNSS | FFT, FIR/IIR, wavelet + PRN + C/N0 + Kalman + Costas PLL/FLL correlator | MIT OR Apache-2.0 |
 
 ### Advanced Domain
 
@@ -274,7 +274,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Workflow](https://github.com/ext-sakamoro/ALICE-Workflow) | v0.1.0 | Workflow Engine | State machines, DAG execution | MIT OR Apache-2.0 |
 | [ALICE-Form](https://github.com/ext-sakamoro/ALICE-Form) | v1.0.0 | Declarative Form Validation | Input constraints proven via ADT type system | MIT |
 | [ALICE-Email](https://github.com/ext-sakamoro/ALICE-Email) | v1.0.0 | Email Send/Receive & MIME | RFC-compliant protocols as state machines | MIT |
-| [ALICE-Payment](https://github.com/ext-sakamoro/ALICE-Payment) | v1.0.0 | Payment Gateway | Transaction state transitions via finite automaton | MIT |
+| [ALICE-Payment](https://github.com/ext-sakamoro/ALICE-Payment) | v1.1.0 | Payment Gateway + PCI-DSS | Transaction FSM + pci_dss (PAN tokenisation v4.0 §3.4.1 + Ed25519 vault) | MIT |
 | [ALICE-AR](https://github.com/ext-sakamoro/ALICE-AR) | v1.0.0 | AR Spatial Composition | Rigid body transform between real and SDF virtual coordinates | MIT |
 | [ALICE-Haptic](https://github.com/ext-sakamoro/ALICE-Haptic) | v1.0.0 | Haptic Feedback | Force vectors derived in real-time from SDF distance fields | MIT |
 | [ALICE-PointCloud](https://github.com/ext-sakamoro/ALICE-PointCloud) | v1.0.0 | Point Cloud Processing | Reconstruction from discrete points to continuous SDF fields | MIT |
@@ -310,8 +310,8 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | Component | Version | Description | Feature | License |
 |-----------|---------|-------------|---------|---------|
 | [ALICE-Map](https://github.com/ext-sakamoro/ALICE-Map) | v1.0.0 | Map Tile Engine | Geographic data as SDF contour fields | MIT |
-| [ALICE-Identity](https://github.com/ext-sakamoro/ALICE-Identity) | v1.0.0 | Decentralized Identity (DID) | Self-sovereign identity as DAG trust graphs | MIT |
-| [ALICE-Blockchain](https://github.com/ext-sakamoro/ALICE-Blockchain) | v1.0.0 | Distributed Ledger | Blockchain as Merkle tree plus consensus law | MIT |
+| [ALICE-Identity](https://github.com/ext-sakamoro/ALICE-Identity) | v1.2.0 | Decentralized Identity (DID) | W3C DID + Ed25519VerificationKey2020 + JWS (RFC 7515) + JWT (RFC 8037) | MIT |
+| [ALICE-Blockchain](https://github.com/ext-sakamoro/ALICE-Blockchain) | v1.4.0 | Distributed Ledger | Merkle + PoA + MultiSig + Ed25519 signature + RFC 3161 timestamp + W3C VC 2.0 | MIT |
 | [ALICE-Accessibility](https://github.com/ext-sakamoro/ALICE-Accessibility) | v1.0.0 | Accessibility | UI semantics as structural tree law for screen readers | MIT |
 
 ### Business
