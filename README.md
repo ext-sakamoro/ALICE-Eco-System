@@ -51,13 +51,14 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 ### Recent Milestone — 2026-07 D-split modularization
 
-**116 crates modularized to D-style module structure — 0 monoliths remaining** (F phase 65 + G phase 25 + H phase 22 + I phase 4, 2026-07-05〜06, 2 days)
+**117 crates modularized to D-style module structure — 0 monoliths remaining** (F phase 65 + G phase 25 + H phase 22 + I phase 5, 2026-07-05〜06, 2 days)
 
-- Each `lib.rs` (1,074–2,848 行 F/G phase, 1,131–1,494 行 H phase, 1,671–2,037 行 I phase partial modularized) → responsibility-based sub-modules + `integration_tests.rs` + `prelude.rs`
-- F phase (65 crates): **7,633 tests**; G phase (25 crates): **2,893 tests**; H phase (22 crates): **2,409 tests**; I phase (4 crates): **638 tests** — total **13,573 tests** across the 116 crates
+- Each `lib.rs` (1,074–2,848 行 F/G phase, 1,131–1,494 行 H phase, 1,671–2,432 行 I phase partial modularized) → responsibility-based sub-modules + `integration_tests.rs` + `prelude.rs`
+- **I phase Auth (I-01)** demonstrates feature-gated split pattern: 12 non-FFI modules + 3 FFI modules (`ffi`/`ffi_nizk`/`ffi_crypto`, each `#[cfg(feature = ...)]` gated), verified across `--no-default-features`, `--features std`, `--features "std ffi api db"`, `--all-features`
+- F phase (65 crates): **7,633 tests**; G phase (25 crates): **2,893 tests**; H phase (22 crates): **2,409 tests**; I phase (5 crates): **728 tests** — total **13,663 tests** across the 117 crates
 - All `karikari-review §10` (fmt + clippy pedantic+nursery + doc + no-default-build + tests) passing; all CI green
-- Combined with 3 flagship crates (SDF v1.7.3 / Physics v0.8.0 / TRT v1.1.0) already modularized: **grand total 15,502 tests**
-- **Final ecosystem audit (2026-07-06)**: 198 implementation crates → **147 well_modularized (≥10 files) + 46 modularized (5-9 files) + 5 intentionally thin (Streaming-Protocol-Commercial/DB-Enterprise etc.) = 194/198 (98.0%) modularized+**, 0 monoliths, 0 medium_monoliths
+- Combined with 3 flagship crates (SDF v1.7.3 / Physics v0.8.0 / TRT v1.1.0) already modularized: **grand total 15,592 tests**
+- **Final ecosystem audit (2026-07-06)**: 198 implementation crates → **148 well_modularized (≥10 files) + 45 modularized (5-9 files) + 5 intentionally thin (Streaming-Protocol-Commercial/DB-Enterprise etc.) = 195/198 (98.5%) modularized+**, 0 monoliths, 0 medium_monoliths
 - Cross-repo skill accumulated: `rust-crate-modular-design` skill (**33-罠 Pattern library**, +5 new patterns from G/H phases: Python extractor empty-imports blank / `cargo fmt` vs `clippy --fix` sequence / rustfmt silent-skip on syntax error / `grep "test result"` silent fail / `if ! then echo fi` doesn't block commit)
 
 ### Compression & Encoding
