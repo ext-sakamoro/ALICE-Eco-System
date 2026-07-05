@@ -51,12 +51,13 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 
 ### Recent Milestone — 2026-07 D-split modularization
 
-**65 monolithic crates modularized to D-style module structure** (2026-07-05〜06, 2 days)
+**90 monolithic crates modularized to D-style module structure** (F phase 65 + G phase 25, 2026-07-05〜06, 2 days)
 
 - Each `lib.rs` (1,074–2,848 行) → responsibility-based sub-modules + `integration_tests.rs` + `prelude.rs`
-- Total **7,633 tests** across the 65 crates, all `karikari-review §10` (fmt + clippy pedantic + doc + no-default-build + tests) passing
-- Combined with 3 flagship crates (SDF v1.7.3 / Physics v0.8.0 / TRT v1.1.0) already modularized: **grand total 9,562 tests, all CI green**
-- Cross-repo skill accumulated: `rust-crate-modular-design` skill (28-罠 Pattern library) for future D-split work
+- F phase (65 crates): **7,633 tests**; G phase (25 crates): **2,893 tests** — total **10,526 tests** across the 90 crates
+- All `karikari-review §10` (fmt + clippy pedantic+nursery + doc + no-default-build + tests) passing; all CI green
+- Combined with 3 flagship crates (SDF v1.7.3 / Physics v0.8.0 / TRT v1.1.0) already modularized: **grand total 12,455 tests**
+- Cross-repo skill accumulated: `rust-crate-modular-design` skill (**31-罠 Pattern library**, +3 new patterns from G phase: Python extractor empty-imports blank / `cargo fmt` vs `clippy --fix` sequence / rustfmt silent-skip on syntax error)
 
 ### Compression & Encoding
 
