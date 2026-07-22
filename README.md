@@ -188,7 +188,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-RAG](https://github.com/ext-sakamoro/ALICE-RAG) | v1.0.0 | Retrieval-Augmented Generation | Knowledge retrieval as vector field nearest neighbor search | MIT |
 | [ALICE-Recommend](https://github.com/ext-sakamoro/ALICE-Recommend) | v1.0.0 | Recommendation Engine | Collaborative/content-based filtering, ALS, hybrid recommender | AGPL-3.0 |
 | [ALICE-VideoAnalytics](https://github.com/ext-sakamoro/ALICE-VideoAnalytics) | v1.0.0 | Video Analytics | Optical flow, Kalman tracking, heatmap, scene change detection | AGPL-3.0 |
-| [ALICE-LLM](https://github.com/ext-sakamoro/ALICE-LLM) | v1.0.0 | LLM Inference Engine | GGUF Q4_K/Q6_K, dual-model speculative decoding (1B→8B), tied embeddings, RoPE freq scaling, 20 tok/s 1B / 5.7 tok/s 8B | MIT OR Apache-2.0 |
+| [ALICE-LLM](https://github.com/ext-sakamoro/ALICE-LLM) | v1.2.1 | LLM Inference Engine | GGUF Q2_K–Q8_0, DeltaNet + Full Attention hybrid (Qwen 3.5), batch-4 speculative (5.89× / 90% accept), CPU + wgpu/Metal + Vulkan iGPU, 20 tok/s 1B / 5.7 tok/s 8B / 2.9 tok/s Qwen 3.5-4B (M3 Metal). Desktop GUI: [ALICE-LLM Studio](https://github.com/ext-sakamoro/ALICE-LLM-Studio) v0.1.0-alpha (macOS / Linux / Windows) | MIT OR Apache-2.0 |
 | [ALICE-GAN](https://github.com/ext-sakamoro/ALICE-GAN) | v1.0.0 | GAN Framework | Generator/discriminator, Wasserstein, spectral norm | MIT OR Apache-2.0 |
 | [ALICE-AutoML](https://github.com/ext-sakamoro/ALICE-AutoML) | v1.0.0 | AutoML | Hyperparameter search, Bayesian optimization, NAS | MIT OR Apache-2.0 |
 
