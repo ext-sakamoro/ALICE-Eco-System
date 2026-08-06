@@ -2,7 +2,7 @@
 //!
 //! 5 bridges connecting the WebAssembly mini-runtime to the ALICE ecosystem.
 
-use alice_wasm::{validate_program, Opcode, WasmError, VM};
+use alice_wasm::{validate_program, Opcode, VmError, VM};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -187,9 +187,9 @@ pub fn wasm_to_analytics_metrics(
     let execution_ok = result.is_ok();
     let exit_code = match &result {
         Ok(_) => 0u8,
-        Err(WasmError::FuelExhausted) => 1,
-        Err(WasmError::StackUnderflow) => 2,
-        Err(WasmError::DivisionByZero) => 3,
+        Err(VmError::FuelExhausted) => 1,
+        Err(VmError::StackUnderflow) => 2,
+        Err(VmError::DivisionByZero) => 3,
         Err(_) => 4,
     };
     let final_stack_depth = if execution_ok { vm.stack.len() } else { 0 };
@@ -289,7 +289,7 @@ pub fn wasm_to_edge_event(program: &[Opcode], num_locals: usize, fuel: u64) -> W
     let execution_ok = result.is_ok();
     let fuel_used = vm.fuel_used;
 
-    let fuel_exhausted = matches!(result, Err(WasmError::FuelExhausted));
+    let fuel_exhausted = matches!(result, Err(VmError::FuelExhausted));
     let other_error = result.is_err() && !fuel_exhausted;
 
     // Branchless edge_action: other_error → 2, fuel_exhausted → 1, ok → 0.

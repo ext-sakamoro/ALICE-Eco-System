@@ -9,10 +9,10 @@
 | リポジトリ | `ext-sakamoro/ALICE-Eco-System` |
 | リモート | `origin` (`git@github.com:ext-sakamoro/ALICE-Eco-System.git`) |
 | ブランチ | `main` |
-| バージョン | v0.3.3 |
+| バージョン | v0.3.4 |
 | ライセンス | MIT |
-| ブリッジ数 | 1355 (243モジュール, 186クレート + ALICE-GameEngine + ALICE-Shader) |
-| テスト数 | 2423 |
+| ブリッジ数 | 1329 (243モジュール, `pub fn` 実測 2026-08-06) |
+| テスト数 | 2423 (`cargo test --lib` 実測 2026-08-06) |
 
 ## コーディングルール
 
@@ -91,7 +91,7 @@ ALICE-KARIKARI.md「100/100品質基準」参照。clippy基準: `pedantic+nurse
 | 指標 | 値 |
 |------|-----|
 | clippy (pedantic+nursery) | 0 warnings |
-| テスト数 | 2412 |
+| テスト数 | 2423 (`cargo test --lib` 実測 2026-08-06) |
 | fmt | clean |
 
 ## ALICE関連リポジトリとの連携

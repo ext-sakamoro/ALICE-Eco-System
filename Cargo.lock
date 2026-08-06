@@ -798,7 +798,7 @@ version = "1.0.1"
 
 [[package]]
 name = "alice-font"
-version = "0.2.0"
+version = "0.7.5"
 
 [[package]]
 name = "alice-form"
@@ -937,7 +937,7 @@ version = "1.0.0"
 
 [[package]]
 name = "alice-llm"
-version = "1.0.0"
+version = "1.6.0"
 
 [[package]]
 name = "alice-lms"
@@ -963,7 +963,7 @@ dependencies = [
 
 [[package]]
 name = "alice-lol"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "alice-lol-macro",
  "alice-sdf",
@@ -972,7 +972,7 @@ dependencies = [
 
 [[package]]
 name = "alice-lol-macro"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1197,7 +1197,7 @@ version = "0.1.0"
 
 [[package]]
 name = "alice-sdf"
-version = "1.7.3"
+version = "1.7.4"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -1262,7 +1262,7 @@ dependencies = [
 
 [[package]]
 name = "alice-simd"
-version = "1.0.0"
+version = "1.0.1"
 
 [[package]]
 name = "alice-slam"

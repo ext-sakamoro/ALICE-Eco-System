@@ -1,9 +1,9 @@
 [package]
 name = "alice-eco-system"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2021"
 authors = ["Moroya Sakamoto <sakamoro@alicelaw.net>"]
-description = "ALICE Ecosystem Integration Hub - 1355 bridges, 243 bridge modules, 186 crates"
+description = "ALICE Ecosystem Integration Hub - 1329 bridges, 243 bridge modules, 108 public crates"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
@@ -154,7 +154,7 @@ alice-voice-commercial = { path = "../ALICE-Voice-Commercial", package = "alice-
 
 # Media bridges (2026-03 batch)
 alice-asr = { path = "../ALICE-ASR", default-features = false }
-alice-tts = { path = "../ALICE-TTS", default-features = false }
+alice-tts = { path = "../ALICE-TTS/crates/alice-tts", default-features = false }
 alice-ocr = { path = "../ALICE-OCR", default-features = false }
 alice-audio = { path = "../ALICE-Audio", default-features = false }
 alice-video = { path = "../ALICE-Video", default-features = false }
