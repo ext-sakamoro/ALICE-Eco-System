@@ -49,6 +49,12 @@
 
 ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) is an ecosystem of libraries that work together to achieve extreme data compression by storing mathematical models instead of raw data.
 
+### Recent Milestone — 2026-08〜09 Public Crate Updates
+
+- **ALICE-Physics v0.12.0** (2026-09-09): Add velocity self-advection to the CFD path plus a runnable `Euler_R3` example demonstrating incompressible flow. Bumped from v0.8.0 in the 2026-07 D-split milestone.
+- **ALICE-SDF v1.7.7** (2026-09-04): Iterative minor releases across v1.7.4 → v1.7.7 covering PyO3 detach ergonomics, `cargo fmt` hygiene, and CI security-audit tightening.
+- **Canonical CI template rollout** (2026-09-04): Tier 3 wave 2 propagation of the ALICE-SDF-derived CI template (`security-audit.yml` 6-job + `fuzz.yml` nightly + `deny.toml` + `alice-stubs` local action) to ALICE-Compiler and ALICE-Codec v0.1.2. Establishes a standard security workflow for public crates.
+
 ### Recent Milestone — 2026-07 D-split modularization
 
 **117 crates modularized to D-style module structure — 0 monoliths remaining** (F phase 65 + G phase 25 + H phase 22 + I phase 5, 2026-07-05〜06, 2 days)
@@ -70,7 +76,7 @@ ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) 
 | [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | v0.1.2 | 3D Wavelet Video/Audio Codec | CDF 9/7 Wavelet, rANS entropy coding, MP4/MKV container parser | AGPL-3.0 |
 | [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | v0.1.0 | Voice Procedural Codec | LPC parametric 100-600x, privacy-preserving | MIT |
 | [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | v1.0.0 | Exception-Based Text Compression | Pattern recognition, columnar encoding | BSL 1.1 (→MIT 2028) |
-| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | v1.7.4 | 3D Signed Distance Functions | 10-1000x, infinite resolution, CSG ops | MIT |
+| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | v1.7.7 | 3D Signed Distance Functions | 10-1000x, infinite resolution, CSG ops | MIT |
 | [ALICE-Synth](https://github.com/ext-sakamoro/ALICE-Synth) | v0.1.1 | Procedural Audio Synthesis | FM/Additive/Subtractive/Wavetable, 64-voice polyphony, no_std, FFI 20fn, PyO3 | MIT |
 | [ALICE-Text-Compression](https://github.com/ext-sakamoro/ALICE-Text-Compression) | v0.1.0 | Text-Specific Compression | BWT, MTF, RLE, Huffman | MIT OR Apache-2.0 |
 
