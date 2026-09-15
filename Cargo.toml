@@ -44,7 +44,9 @@ alice-trt = { path = "../ALICE-TRT", default-features = false }
 # Network & Security bridges
 alice-dns = { path = "../ALICE-DNS", default-features = false }
 alice-api = { path = "../ALICE-API", default-features = false, features = ["std"] }
-alice-zip = { path = "../ALICE-Zip/libalice", default-features = false }
+# crates.io core crate (lib name aliased to `alice_core` as used by bridge_zip.rs); the
+# `libalice` path dep broke when that package was renamed `alice-zip-cli` (0.4.0)
+alice_core = { package = "alice-zip", version = "0.5", default-features = false, features = ["std", "lzma"] }
 
 # Auth & Crypto bridges
 alice-auth = { path = "../ALICE-Auth", default-features = false, features = ["std"] }
