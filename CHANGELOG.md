@@ -2,6 +2,11 @@
 
 All notable changes to ALICE-Eco-System will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **`bridge_physics` / `bridge_physics_scene_io` の test を `ManifoldConfig` / `PhysicsScene` の struct literal から `Default` / `new` に変更 (2026-09-30)** `PhysicsScene` は alice-physics 1.5.0 で既に `#[non_exhaustive]` なので、literal のままでは test が compile できなかった (E0639) `ManifoldConfig` は将来の付与に備えた予防 公開 API の変更なし
+
 ## [0.3.4] - 2026-07-01
 
 ### Changed

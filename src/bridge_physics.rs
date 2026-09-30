@@ -648,12 +648,14 @@ mod tests {
     #[test]
     fn test_physics_to_sdf_collider_config() {
         let body = RigidBody::new_dynamic(Vec3Fix::from_int(3, 7, -2), Fix128::ONE);
-        let manifold = ManifoldConfig {
-            samples_per_axis: 5,
-            sample_radius: 0.5,
-            max_contacts: 4,
-            min_depth: 0.001,
-        };
+        // `ManifoldConfig` は non_exhaustive なので struct literal は使えない
+        // 元の literal の 4 field はいずれも default と同値なので、
+        // 値を assert で固定する
+        let manifold = ManifoldConfig::default();
+        assert_eq!(manifold.samples_per_axis, 5);
+        assert_eq!(manifold.sample_radius, 0.5);
+        assert_eq!(manifold.max_contacts, 4);
+        assert_eq!(manifold.min_depth, 0.001);
 
         let result = physics_to_sdf_collider_config(&body, 42, &manifold, 1.0);
 

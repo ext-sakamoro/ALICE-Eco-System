@@ -335,12 +335,9 @@ mod tests {
             })
             .collect();
 
-        PhysicsScene {
-            bodies,
-            joints,
-            config: ScenePhysicsConfig::default(),
-            version: 1,
-        }
+        // `PhysicsScene` は non_exhaustive なので struct literal は使えない
+        // `new` は 4 引数をそのまま同名 field に入れるだけの assembler
+        PhysicsScene::new(bodies, joints, ScenePhysicsConfig::default(), 1)
     }
 
     // ── Test 1: Scene → DB asset record ────────────────────────────────
