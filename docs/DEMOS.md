@@ -5,38 +5,31 @@ crates into one pipeline. They are integration demonstrations, not
 benchmarks: they print what each stage produced so the hand-off between
 crates can be followed.
 
-## Setting up
+## Building them
 
-`Cargo.toml` refers to the crates by sibling path, so the repositories have to
-be cloned next to this one:
-
-```sh
-mkdir alice && cd alice
-for r in ALICE-Eco-System ALICE-Edge ALICE-DB ALICE-View ALICE-Streaming-Protocol \
-         ALICE-SDF ALICE-CDN ALICE-Cache ALICE-Physics ALICE-Sync; do
-  git clone "https://github.com/ext-sakamoro/$r.git"
-done
-cd ALICE-Eco-System
-```
-
-The full `Cargo.toml` also lists bridge targets that are not public, so a
-build of the whole hub crate needs those paths removed first. The demos below
-only use the public crates listed with them.
+`Cargo.toml` refers to every bridged crate by sibling path (`../ALICE-*`), and
+`src/lib.rs` compiles the bridge modules unconditionally; some of those
+crates are not public. **The demos therefore do not build from public
+checkouts alone at present.** Making them buildable needs the bridge modules
+for non-public crates put behind optional features; until then this page
+documents what each demo does, with links to its source.
 
 ## Edge-to-database pipeline (`cargo run`)
 
 Source: [src/main.rs](../src/main.rs). Crates: ALICE-Edge, ALICE-DB,
-ALICE-View.
+ALICE-View (only for `--view`).
 
 ```text
 [sensor sample generator] → [ALICE-Edge: fit a model on the stack]
     → [network: send model coefficients] → [ALICE-DB: batch write] → [ALICE-View]
 ```
 
-A generator produces synthetic temperature samples. ALICE-Edge fits a linear
-model to each window in fixed point, only the model coefficients cross the
-"network", and ALICE-DB stores them and answers aggregation queries. Passing
-`--view` opens the ALICE-View window on the stored series.
+A generator produces 1000 synthetic temperature samples. ALICE-Edge fits one
+linear model to the whole buffer in fixed point (`fit_linear_fixed`), only the
+two coefficients cross the "network", and ALICE-DB stores the reconstructed
+series and answers average / minimum / maximum queries. Passing `--view`
+afterwards opens an ALICE-View window with its own procedural scenes; it does
+not display the stored series.
 
 ## SDF asset delivery (`cargo run --example sdf_delivery`)
 
@@ -57,16 +50,18 @@ cache hit rate.
 ## Game engine pipeline (`cargo run --example game_pipeline`)
 
 Source: [examples/game_pipeline.rs](../examples/game_pipeline.rs). Crates:
-ALICE-SDF, ALICE-CDN, ALICE-Physics, ALICE-Sync, ALICE-DB.
+ALICE-SDF, ALICE-CDN, ALICE-Physics, ALICE-Sync (ALICE-DB is used through
+the `replay` feature of ALICE-Physics).
 
 ```text
 ALICE-SDF      world geometry as an ASDF binary
 ALICE-CDN      content routing by detected content type
 ALICE-Physics  deterministic simulation on 128-bit fixed point
 ALICE-Sync     input synchronization (lockstep, 2 players)
-ALICE-DB       replay recording and telemetry
+ALICE-DB       replay recording, via ALICE-Physics `replay`
 ```
 
 The world geometry is delivered as SDF, simulated deterministically, kept in
-step between two players by exchanging inputs, recorded into ALICE-DB, and
-played back from the recording.
+step between two players by exchanging inputs, recorded through
+ALICE-Physics `replay` (stored with ALICE-DB), and played back from the
+recording.

@@ -7,7 +7,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 ### Added
 - `docs/crate-index.tsv` と `scripts/readme_index.py`: README の crate 索引の元データと検査器 `--check` は README の表と TSV の一致 (CI、3 OS)、`--online` は TSV と各 repository の一致 (public か、Cargo.toml の license、crates.io の公開状況、索引に無い public crate repository) を見る `crate-index.yml` が TSV の変更時と毎週実行する 比較件数 0 は失敗
 - `scripts/docs_lint.py` と test: 公開文書と追跡 file の語彙、CHANGELOG の版見出しを検査 (CI、3 OS)
-- `docs/DEMOS.md`: 実行できる 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した
+- `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した 現状は公開されていない crate への path 依存があり public の checkout だけでは build できないことを明記
 
 ### Changed
 - README を crate 索引中心に改稿 掲載は public の Rust crate repository (hosted service の repository を除く) で、license は各 Cargo.toml の値、版数は本文に書かず crates.io の badge で表示する 旧 README の版数のずれ、公開されていない repository への言及、存在しない repository 名を除いた

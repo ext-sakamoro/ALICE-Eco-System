@@ -8,8 +8,7 @@ checked mechanically:
   * vocabulary  development-process words that do not belong in a public
                 document (agent / process names, internal tracker names,
                 device names, private network addresses, unrelated private
-                projects) in README.md, README_JP.md, docs/MODULES.md and
-                CHANGELOG.md
+                projects) in README.md, docs/DEMOS.md and CHANGELOG.md
   * changelog   version headings: no duplicates, `[Unreleased]` first,
                 released versions in descending semver order, the Cargo.toml
                 version either released or covered by `[Unreleased]`; inside
@@ -17,7 +16,7 @@ checked mechanically:
                 and no emoji status markers
 
 The development-process, tracker, instruction-source and device vocabulary is
-also checked in the text of every other tracked file (docs/ROADMAP.md, comments,
+also checked in the text of every other tracked file (comments,
 workflows, generated ledgers); private names are checked in every file path and
 text.
 
@@ -69,7 +68,7 @@ FORBIDDEN = [
                                  # numbered entries of an internal pitfall catalogue / CI template
                                  r"|罠\s*#\s*\d+|canonical\s+(?:CI\s+)?template")),
     ("instruction source", re.compile(r"user\s*(?:指示|裁定|指摘|判断)")),
-    ("device", re.compile(words(r"Jetson", r"Mac\s?mini", r"MacBook") + r"|Raspberry\s*Pi|EAC-4000|reCamera")),
+    ("device", re.compile(words(r"Jetson", r"Mac\s?mini", r"MacBook") + r"|Raspberry\s*Pi")),
     ("private address", re.compile(r"\b100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}\b|\b192\.168\.\d{1,3}\.\d{1,3}\b|\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b")),
 ]
 
@@ -78,7 +77,7 @@ FORBIDDEN = [
 # either. Addresses stay document-only (dotted numbers occur in data files).
 TREE_LABELS = ("agent process", "session name", "internal tracker", "internal note", "instruction source", "device")
 # These files define and test the vocabulary, so they spell it out
-TREE_VOCAB_EXEMPT = {"scripts/docs_lint.py", "scripts/test_docs_lint.py", "scripts/test_land.py"}
+TREE_VOCAB_EXEMPT = {"scripts/docs_lint.py", "scripts/test_docs_lint.py"}
 # The bridge modules connect crates whose domain vocabulary includes agents, swarms and
 # worker pools (alice-agent, alice-swarm, schedulers); in code the words name the domain
 TREE_LABEL_EXEMPT_PREFIX = {"agent process": ("src/", "examples/")}
@@ -91,6 +90,12 @@ TREE_DOMAIN_WORDS = re.compile(r"(?i)^(?:workers?|multi[- ]?agents?|エージェ
 # SHA-256 of a lower-case word, or of a two- or three-word phrase joined by one
 # space; documents are tokenised and every 1-, 2- and 3-gram is hashed and looked up.
 PRIVATE_NAME_HASHES = {
+    # owned equipment and private network names (not generic products)
+    "1034f65141df5f4ca8ef4b136e1a4d67f70ef8f7bfd16f91f6d94d980c8061c3",
+    "af1c54d629fb3db8ecaa658f846b5b3f8ef314e6b01d1494bafac6af8a9183f1",
+    "699074f67aea6aa9733bfbf42ff376f92b7762049c5ef5136256908c298b7514",
+    "795b104abe3e4134960ca245ded0e617f162c751209347b7f003bc35e062f43e",
+    "791dc82c39c048682e2c8bcc953dba44838997987e5678c161f257d6fc27bf4a",
     "76ed632eacc9561fddba93918e12fa408df40a2f9e8e038c7803346d9e2b9ab3",
     "8c2dda2f006c7c4f0e8875c47387901590ff92de46261dbf15c325dc5b3ff8aa",
     "2ef7d5809068e897d756dd958a81b31e3811673a716eb80b96680436550e096b",
@@ -231,7 +236,7 @@ def check(root: str) -> tuple[list[str], dict[str, int]]:
             counts["categories"] = 1  # no unreleased work: nothing to compare, not an error
 
     # private / internal names (hashed above) anywhere in the tree: file paths and
-    # the text of every tracked file, not only the four documents. Generated
+    # the text of every tracked file, not only the public documents. Generated
     # ledgers, comments, workflows and scripts are published too.
     counts["tree files"] = 0
     counts["tree vocabulary"] = 0

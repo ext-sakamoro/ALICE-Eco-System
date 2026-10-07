@@ -14,8 +14,9 @@ repository with its own README, CHANGELOG and CI. This repository holds:
   license and a one-line description
 - **`src/bridge_*.rs`**: conversion modules that map the types of one crate
   onto another (for example physics state into a database record)
-- **three runnable demos** that wire several crates into a pipeline, described
-  in [docs/DEMOS.md](docs/DEMOS.md)
+- **three pipeline demos** that wire several crates together, described in
+  [docs/DEMOS.md](docs/DEMOS.md) (they do not build from public checkouts
+  alone yet; see there)
 
 ## Contents
 
@@ -56,8 +57,9 @@ or from its repository:
 alice-simd = { git = "https://github.com/ext-sakamoro/ALICE-SIMD" }
 ```
 
-The pipeline demos in this repository need the crates they use checked out
-next to it (see [docs/DEMOS.md](docs/DEMOS.md)).
+The pipeline demos in this repository are documented in
+[docs/DEMOS.md](docs/DEMOS.md); they do not build from public checkouts alone
+yet.
 
 ## Crate index
 
