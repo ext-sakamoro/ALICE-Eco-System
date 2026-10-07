@@ -34,3 +34,22 @@ jobs:
         with:
           fail_level: error
           reporter: github-check
+
+  docs:
+    name: Docs and crate index (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Docs lint (tests)
+        run: python scripts/test_docs_lint.py
+      - name: Docs lint (public documents, CHANGELOG structure)
+        run: python scripts/docs_lint.py --check
+      - name: Crate index (README tables match docs/crate-index.tsv)
+        run: python scripts/readme_index.py --check

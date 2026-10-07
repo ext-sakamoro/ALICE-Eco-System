@@ -1,0 +1,34 @@
+name: Crate index
+
+# Compares docs/crate-index.tsv with the repositories it lists: visibility,
+# license in Cargo.toml, crates.io status, and public crate repositories that
+# are missing from the index. Runs when the index changes and weekly, so a new
+# or renamed repository shows up without blocking unrelated pushes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/crate-index.tsv"
+      - "README.md"
+      - "scripts/readme_index.py"
+      - ".github/workflows/crate-index.yml"
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  online:
+    name: Index matches the repositories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Compare docs/crate-index.tsv with GitHub and crates.io
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/readme_index.py --online

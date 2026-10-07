@@ -1,0 +1,86 @@
+# category	repository	crate	crates.io	license	description
+Geometry & Rendering	ALICE-SDF	alice-sdf	yes	MIT OR Apache-2.0	Signed distance functions: CSG, GLSL / WGSL / HLSL transpilation, sparse voxel octree, meshing
+Geometry & Rendering	ALICE-LOL	alice-lol	yes	MIT OR Apache-2.0	Law-oriented SDF DSL as a proc macro, with shader transpilation and print export (STL / 3MF / OBJ / FBX)
+Geometry & Rendering	ALICE-Shader	alice-shader		MIT OR LicenseRef-Commercial	GLSL and WGSL shader library (sky, terrain, PBR, SDF, VFX); frozen, SDF primitives moved to alice-sdf
+Geometry & Rendering	ALICE-View	alice-view		MIT OR Apache-2.0	Real-time procedural rendering engine
+Geometry & Rendering	ALICE-GameEngine	alice-game-engine		MIT OR LicenseRef-Commercial	Hybrid mesh and SDF game engine on wgpu
+Geometry & Rendering	ALICE-VR	alice-vr		MIT OR Apache-2.0	VR runtime: head tracking, lens distortion, stereo rendering, reprojection
+Geometry & Rendering	ALICE-Browser	alice-browser		MIT OR Apache-2.0	Semantic web browser built on the ecosystem crates
+Physics & Simulation	ALICE-Physics	alice-physics	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	Deterministic physics on 128-bit fixed point: bit-exact replay, snapshots, rollback
+Physics & Simulation	ALICE-DetMath	alice-det-math	yes	MIT OR Apache-2.0	Cross-platform bit-exact f32 / f64 transcendentals, scalar and SIMD, no_std
+Physics & Simulation	ALICE-Motion	alice-motion		MIT OR Apache-2.0	NURBS / Bezier trajectory control with trapezoidal and S-curve profiles, no_std
+Physics & Simulation	ALICE-Kinematics	alice-kinematics	yes	MIT OR Apache-2.0	Compression of human motion samples into compact kinematic intent
+Physics & Simulation	ALICE-Navigation	alice-navigation		MIT OR Apache-2.0	Path planning: RRT, PRM, potential fields, velocity obstacles, navigation mesh
+Physics & Simulation	ALICE-Swarm	alice-swarm		MIT OR Apache-2.0	Swarm control: Boids, formation, consensus, task allocation
+Physics & Simulation	ALICE-Optics	alice-optics		MIT OR Apache-2.0	Optical simulation: lens systems, ray tracing, diffraction, polarization
+Physics & Simulation	ALICE-Chemistry	alice-chemistry		MIT OR Apache-2.0	Molecular dynamics and chemistry: force fields, reaction kinetics, thermodynamics
+Physics & Simulation	ALICE-Bio	alice-bio		AGPL-3.0-only OR LicenseRef-Commercial	Molecular structure as SDF: amino acid potentials and pairwise interactions
+Physics & Simulation	ALICE-Climate	alice-climate		MIT OR Apache-2.0	Climate fields as continuous SDF: atmosphere, ocean, anomaly detection
+Physics & Simulation	ALICE-Energy	alice-energy		AGPL-3.0-only OR LicenseRef-Commercial	Power grid simulation: phase synchronization, battery degradation, frequency regulation
+Physics & Simulation	ALICE-Space	alice-space		AGPL-3.0-only OR LicenseRef-Commercial	Orbital mechanics and satellite positioning
+Physics & Simulation	ALICE-Space-Drone-Bridge	alice-space-drone-bridge		AGPL-3.0-only OR LicenseRef-Commercial	Bridge from satellite positioning to drone control: geodetic to local frames, waypoints, geofences
+AI & ML	ALICE-LLM	alice-llm	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	LLM inference engine: GGUF, K-quants, CPU and wgpu GPU paths, speculative decoding, OpenAI-compatible server
+AI & ML	ALICE-ML	alice-ml	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	1.58-bit ternary inference with add / subtract only matrix operations
+AI & ML	ALICE-TRT	alice-trt		AGPL-3.0 OR LicenseRef-Commercial	GPU ternary inference engine with 2-bit bitplane weights on wgpu
+AI & ML	ALICE-Train	alice-train		AGPL-3.0 OR LicenseRef-Commercial	Backpropagation and training for ternary networks
+AI & ML	ALICE-Token	alice-token		MIT OR Apache-2.0	BPE tokenizer
+AI & ML	ALICE-AutoML	alice-automl		MIT OR Apache-2.0	Hyperparameter search, Bayesian optimization, early stopping, cross-validation
+AI & ML	ALICE-GAN	alice-gan		MIT OR Apache-2.0	Generative adversarial network framework
+AI & ML	ALICE-Agent	alice-agent		AGPL-3.0 OR LicenseRef-Commercial	Local-first coding agent on the ternary models
+Compression & Media	ALICE-Zip	alice-zip	yes	MIT OR Apache-2.0	Compression (LZ77, dictionary coding) and procedural signal generators, no_std
+Compression & Media	ALICE-Edge	alice-edge	yes	MIT OR Apache-2.0	Embedded model fitting that compresses sensor samples into a few bytes, no_std
+Compression & Media	ALICE-Codec	alice-codec	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	3D wavelet video codec
+Compression & Media	ALICE-Text	alice-text		MIT OR Apache-2.0	Exception-based text compression
+Compression & Media	ALICE-Voice	alice-voice		MIT OR Apache-2.0	Parametric voice codec (LPC, pitch, gain)
+Compression & Media	ALICE-Synth	alice-synth		MIT OR Apache-2.0	Procedural audio synthesis: FM, additive, subtractive, wavetable, no_std
+Compression & Media	ALICE-Streaming-Protocol	libasp	yes	MIT OR Apache-2.0	Streaming protocol and wire format for video
+Compression & Media	ALICE-Audio	alice-audio		MIT OR Apache-2.0	Audio processing: FFT, filters, mixer, effects, resampling
+Compression & Media	ALICE-Video	alice-video		MIT OR Apache-2.0	Video processing: GOP, motion compensation, DCT, entropy coding
+Compression & Media	ALICE-Camera	alice-camera		MIT OR Apache-2.0	Camera ISP: white balance, demosaicing, exposure, lens correction
+Data & Storage	ALICE-DB	alice-db	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	Model-based LSM-tree database
+Data & Storage	ALICE-Cache	alice-cache	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	Predictive distributed cache
+Data & Storage	ALICE-Queue	alice-queue		AGPL-3.0 OR LicenseRef-Commercial	Deterministic zero-copy message log
+Data & Storage	ALICE-Search	alice-search		AGPL-3.0 OR LicenseRef-Commercial	FM-index full-text search
+Data & Storage	ALICE-ObjectStore	alice-objectstore		AGPL-3.0 OR LicenseRef-Commercial	S3-compatible object storage engine
+Data & Storage	ALICE-FileSystem	alice-filesystem		AGPL-3.0 OR LicenseRef-Commercial	Virtual filesystem: inodes, permissions, symlinks, mounting
+Data & Storage	ALICE-Analytics	alice-analytics	yes	MIT OR Apache-2.0	Telemetry and statistical estimation with probabilistic data structures
+Data & Storage	ALICE-History	alice-history		AGPL-3.0-or-later OR LicenseRef-Commercial	Restoration of degraded historical data
+Networking	ALICE-HTTP	alice-http	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	HTTP/1.1 and HTTP/2 parser and framework
+Networking	ALICE-gRPC	alice-grpc	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	gRPC framework with Protobuf encoding
+Networking	ALICE-WebSocket	alice-websocket	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	WebSocket protocol: framing, masking, handshake, fragmentation
+Networking	ALICE-API	alice-api		AGPL-3.0 OR LicenseRef-Commercial	API gateway with distributed rate limiting
+Networking	ALICE-Proxy	alice-proxy		AGPL-3.0 OR LicenseRef-Commercial	L7 reverse proxy: routing, header rewriting, load balancing, circuit breaker
+Networking	ALICE-CDN	alice-cdn		AGPL-3.0 OR LicenseRef-Commercial	Latency-aware CDN with Vivaldi coordinates and Maglev hashing
+Networking	ALICE-DNS	alice-dns		AGPL-3.0 OR LicenseRef-Commercial	Bloom-filter DNS blocker
+Networking	ALICE-Cloud-Gateway	alice-cloud-gateway		AGPL-3.0 OR LicenseRef-Commercial	QUIC gateway: packet ingest, device keys, telemetry
+Networking	ALICE-Sync	alice-sync	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	Peer-to-peer synchronization by event diffing
+Networking	ALICE-Bridge	alice-bridge	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	Protocol-agnostic hardware communication layer
+Networking	ALICE-BLE	alice-ble	yes	MIT OR Apache-2.0	BLE stack: GATT, advertising, pairing, ATT, L2CAP
+Networking	ALICE-LoRa	alice-lora	yes	MIT OR Apache-2.0	LoRaWAN: ADR, OTAA / ABP, MAC commands, device classes
+Networking	ALICE-NFC	alice-nfc		MIT OR Apache-2.0	NFC: NDEF, tag types 1-4, APDU, card emulation
+Security	ALICE-Auth	alice-auth	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	Ed25519 and zero-knowledge proof authentication
+Security	ALICE-Crypto	alice-crypto	yes	AGPL-3.0-or-later OR LicenseRef-Commercial	Information-theoretic security primitives
+Security	ALICE-Audit	alice-audit		AGPL-3.0 OR LicenseRef-Commercial	Hash-chained, signed audit trail with Merkle anchoring
+Security	ALICE-DLP	alice-dlp		AGPL-3.0 OR LicenseRef-Commercial	Data loss prevention: PII detection, classification, masking
+Security	ALICE-WAF	alice-waf		AGPL-3.0 OR LicenseRef-Commercial	Web application firewall: rule engine, SQLi / XSS detection, rate limiting
+Security	ALICE-Presence	alice-presence		MIT OR Apache-2.0	Proof of encounter with Vivaldi coordinates and zero-knowledge proofs
+Systems & Tooling	ALICE-SIMD	alice-simd		MIT OR Apache-2.0	SIMD, branchless and fast-math primitives, no_std
+Systems & Tooling	ALICE-RTOS	alice-rtos		AGPL-3.0 OR LicenseRef-Commercial	Real-time OS kernel with rate-monotonic scheduling, no_std
+Systems & Tooling	ALICE-RTOS-BSP			MIT OR Apache-2.0	Board support packages for ALICE-RTOS on ESP32 and Cortex-M boards
+Systems & Tooling	ALICE-Container	alice-container		AGPL-3.0 OR LicenseRef-Commercial	Container runtime with direct cgroup v2 and namespace control
+Systems & Tooling	ALICE-VM	alice-vm		MIT OR Apache-2.0	Bytecode virtual machine
+Systems & Tooling	ALICE-Compiler	alice-compiler		MIT OR Apache-2.0	DSL / JIT compiler infrastructure: AST, IR, code generation, optimization passes
+Systems & Tooling	ALICE-Parser	alice-parser		MIT OR Apache-2.0	Parser combinators: PEG, Pratt, recursive descent, error recovery
+Systems & Tooling	ALICE-VCS	alice-vcs		AGPL-3.0 OR LicenseRef-Commercial	AST-level version control: tree diff, 3-way merge, no_std
+Systems & Tooling	ALICE-Terraform	alice-terraform		AGPL-3.0 OR LicenseRef-Commercial	Infrastructure-as-code engine: resource graph, state, plan / apply
+Systems & Tooling	ALICE-Monitor	alice-monitor		AGPL-3.0 OR LicenseRef-Commercial	Monitoring: health checks, alerts, SLA tracking, heartbeats
+Systems & Tooling	ALICE-Signal	alice-signal	yes	MIT OR Apache-2.0	Digital signal processing: FFT, FIR / IIR, wavelets, PSD
+Finance	ALICE-FIX	alice-fix		MIT OR Apache-2.0	FIX 4.4 / 5.0 message parser, builder and session management
+Finance	ALICE-Ledger	alice-ledger		AGPL-3.0-only OR LicenseRef-Commercial	Order book, matching engine, position management
+Finance	ALICE-Risk	alice-risk		AGPL-3.0-only OR LicenseRef-Commercial	Pre-trade risk checks, margin, circuit breakers
+Finance	ALICE-Settlement	alice-settlement		AGPL-3.0-only OR LicenseRef-Commercial	Post-trade settlement, netting and clearing
+Business	ALICE-CRM	alice-crm		AGPL-3.0 OR LicenseRef-Commercial	Customer relationship management: pipeline, lead scoring, segmentation
+Business	ALICE-ERP	alice-erp		AGPL-3.0 OR LicenseRef-Commercial	Resource planning: inventory, BOM, MRP, scheduling, cost accounting
+Business	ALICE-HRM	alice-hrm		AGPL-3.0 OR LicenseRef-Commercial	Human resource management: attendance, payroll, leave, shifts
+Business	ALICE-LMS	alice-lms		MIT OR Apache-2.0	Learning management: courses, quizzes, grading, certificates
+Business	ALICE-Legal	alice-legal		MIT OR Apache-2.0	Statutes and contracts as deterministic ASTs with audit trails

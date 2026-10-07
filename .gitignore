@@ -1,9 +1,7 @@
-# Claude Code
-CLAUDE.md
-.claude/
-
 # Rust
 /target/
+*.rlib
+__pycache__/
 
 # OS
 .DS_Store

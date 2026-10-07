@@ -1,1303 +1,244 @@
 # ALICE Ecosystem
 
-**The Complete Edge-to-Cloud Data Pipeline with GPU Visualization**
+[![CI](https://github.com/ext-sakamoro/ALICE-Eco-System/actions/workflows/ci.yml/badge.svg)](https://github.com/ext-sakamoro/ALICE-Eco-System/actions/workflows/ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
-> "Don't send data. Send the law."
+An index of the public ALICE crates and the integration hub that connects them.
 
+The ALICE crates are independent Rust libraries for geometry (signed distance
+functions), deterministic physics, ternary-weight inference, compression,
+storage, networking and related domains. Each crate lives in its own
+repository with its own README, CHANGELOG and CI. This repository holds:
+
+- **the crate index** below: one row per public crate repository, with its
+  license and a one-line description
+- **`src/bridge_*.rs`**: conversion modules that map the types of one crate
+  onto another (for example physics state into a database record)
+- **three runnable demos** that wire several crates into a pipeline, described
+  in [docs/DEMOS.md](docs/DEMOS.md)
+
+## Contents
+
+- [What this repository is not](#what-this-repository-is-not)
+- [Quick start](#quick-start)
+- [Crate index](#crate-index)
+- [Licensing model](#licensing-model)
+- [Building and checking](#building-and-checking)
+- [License](#license)
+
+## What this repository is not
+
+- **Not a single library to depend on.** Depend on the individual crates. The
+  hub crate (`alice-eco-system`) is not published to crates.io.
+- **Not buildable from this repository alone.** `Cargo.toml` refers to the
+  other crates by sibling path (`../ALICE-*`), and some bridge modules target
+  crates that are not public. A plain clone of this repository does not
+  compile; CI checks formatting, workflow syntax and the index, not a build.
+- **Not a statement of maturity.** Crates in the index range from published,
+  versioned libraries to early implementations. The crates.io column marks the
+  ones that are released; each crate's own README states its status and known
+  defects.
+
+## Quick start
+
+Use a crate directly from crates.io:
+
+```sh
+cargo add alice-sdf        # signed distance functions
+cargo add alice-physics    # deterministic fixed-point physics
+cargo add alice-det-math   # bit-exact transcendentals
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         ALICE Ecosystem (108 public components)              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─── Compression ───┐  ┌─── Data ────┐  ┌─── Network ───┐  ┌ Security ─┐ │
-│  │ Edge   Zip  Codec │  │ DB    Cache │  │ API    CDN    │  │ Auth AuthZ│ │
-│  │ Voice  Text  SDF  │  │ Queue Search│  │ DNS  Streaming│  │ Crypto PKI│ │
-│  │ Synth  Font       │  │ ETL  CDC   │  │ Sync Cloud-GW │  │ SIEM Vault│ │
-│  │                    │  │ Lakehouse  │  │ Bridge VNet   │  │           │ │
-│  └───────────────────┘  │ StreamProc │  │ MQTT SvcMesh  │  └───────────┘ │
-│                          └────────────┘  └───────────────┘                  │
-│                                                                             │
-│  ┌──── Compute ──────┐  ┌─── Analytics ──┐  ┌─── Application ────────┐  │
-│  │ Container  ML     │  │ Analytics      │  │ Browser  Print         │  │
-│  │ Physics   TRT     │  │ View TimeSeries│  │ Animation  Manga       │  │
-│  │ RTOS  GameEngine  │  └────────────────┘  │ Form Email Payment     │  │
-│  │ Hypervisor        │                       │ Eco-System             │  │
-│  └───────────────────┘                       └────────────────────────┘  │
-│                                                                             │
-│  ┌──── AI/ML ────────┐  ┌─── Financial ───┐  ┌─── Science ──────────┐  │
-│  │ NLP  Vision  RAG  │  │ Ledger   Risk   │  │ Bio  Legal  Energy   │  │
-│  │ Embedding  RL     │  │ FIX   Settlement│  │ Space Neural Climate │  │
-│  │ Diffusion         │  │ Quant MarketData│  │ Fluid Quantum Genome │  │
-│  └───────────────────┘  └────────────────┘  │ Astro  Robotics      │  │
-│                                               └──────────────────────┘  │
-│  ┌── Motion & VCS ───┐  ┌── Media ───────┐  ┌─── DevTools ─────────┐  │
-│  │ Motion  VCS       │  │ AR   Haptic    │  │ CI  Debug  Lint      │  │
-│  │ Kinematics        │  │ PointCloud     │  │ Sandbox  PkgRegistry │  │
-│  └───────────────────┘  │ Subtitle       │  └──────────────────────┘  │
-│                          └────────────────┘                              │
-│  ┌──── Advanced ─────┐  ┌── Cross-cutting ┐                             │
-│  │ History  Atoms    │  │ Map  Identity   │                             │
-│  │ Presence          │  │ Blockchain      │                             │
-│  └───────────────────┘  │ Accessibility   │                             │
-│                          │ Sensor  IoT     │                             │
-│                          └─────────────────┘                             │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+or from its repository:
+
+```toml
+[dependencies]
+alice-simd = { git = "https://github.com/ext-sakamoro/ALICE-SIMD" }
 ```
 
-## What is ALICE?
+The pipeline demos in this repository need the crates they use checked out
+next to it (see [docs/DEMOS.md](docs/DEMOS.md)).
 
-ALICE (**A**daptive **L**ightweight **I**ntelligent **C**ompression **E**ngine) is an ecosystem of libraries that work together to achieve extreme data compression by storing mathematical models instead of raw data.
+## Crate index
 
-### Recent Milestone — 2026-08〜09 Public Crate Updates
+Every public `ALICE-*` repository that is a Rust crate is listed here. Hosted
+service repositories (the `*-SaaS` repositories and the service templates
+built from them) are not.
 
-- **ALICE-Physics v0.12.0** (2026-09-09): Add velocity self-advection to the CFD path plus a runnable `Euler_R3` example demonstrating incompressible flow. Bumped from v0.8.0 in the 2026-07 D-split milestone.
-- **ALICE-SDF v1.7.7** (2026-09-04): Iterative minor releases across v1.7.4 → v1.7.7 covering PyO3 detach ergonomics, `cargo fmt` hygiene, and CI security-audit tightening.
-- **Canonical CI template rollout** (2026-09-04): Tier 3 wave 2 propagation of the ALICE-SDF-derived CI template (`security-audit.yml` 6-job + `fuzz.yml` nightly + `deny.toml` + `alice-stubs` local action) to ALICE-Compiler and ALICE-Codec v0.1.2. Establishes a standard security workflow for public crates.
+The tables are generated from [docs/crate-index.tsv](docs/crate-index.tsv) by
+`scripts/readme_index.py`; CI fails when they diverge, and a scheduled job
+compares the TSV with the repositories themselves (visibility, license from
+`Cargo.toml`, crates.io status, and repositories missing from the index).
 
-### Recent Milestone — 2026-07 D-split modularization
+<!-- crate-index:start -->
 
-**117 crates modularized to D-style module structure — 0 monoliths remaining** (F phase 65 + G phase 25 + H phase 22 + I phase 5, 2026-07-05〜06, 2 days)
+### Geometry & Rendering
 
-- Each `lib.rs` (1,074–2,848 行 F/G phase, 1,131–1,494 行 H phase, 1,671–2,432 行 I phase partial modularized) → responsibility-based sub-modules + `integration_tests.rs` + `prelude.rs`
-- **I phase Auth (I-01)** demonstrates feature-gated split pattern: 12 non-FFI modules + 3 FFI modules (`ffi`/`ffi_nizk`/`ffi_crypto`, each `#[cfg(feature = ...)]` gated), verified across `--no-default-features`, `--features std`, `--features "std ffi api db"`, `--all-features`
-- F phase (65 crates): **7,633 tests**; G phase (25 crates): **2,893 tests**; H phase (22 crates): **2,409 tests**; I phase (5 crates): **728 tests** — total **13,663 tests** across the 117 crates
-- All `karikari-review §10` (fmt + clippy pedantic+nursery + doc + no-default-build + tests) passing; all CI green
-- Combined with 3 flagship crates (SDF v1.7.3 / Physics v0.8.0 / TRT v1.1.0) already modularized: **grand total 15,592 tests**
-- **Final ecosystem audit (2026-07-06)**: 198 implementation crates → **148 well_modularized (≥10 files) + 45 modularized (5-9 files) + 5 intentionally thin (Streaming-Protocol-Commercial/DB-Enterprise etc.) = 195/198 (98.5%) modularized+**, 0 monoliths, 0 medium_monoliths
-- Cross-repo skill accumulated: `rust-crate-modular-design` skill (**33-罠 Pattern library**, +5 new patterns from G/H phases: Python extractor empty-imports blank / `cargo fmt` vs `clippy --fix` sequence / rustfmt silent-skip on syntax error / `grep "test result"` silent fail / `if ! then echo fi` doesn't block commit)
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | [![crates.io](https://img.shields.io/crates/v/alice-sdf.svg)](https://crates.io/crates/alice-sdf) | MIT OR Apache-2.0 | Signed distance functions: CSG, GLSL / WGSL / HLSL transpilation, sparse voxel octree, meshing |
+| [ALICE-LOL](https://github.com/ext-sakamoro/ALICE-LOL) | [![crates.io](https://img.shields.io/crates/v/alice-lol.svg)](https://crates.io/crates/alice-lol) | MIT OR Apache-2.0 | Law-oriented SDF DSL as a proc macro, with shader transpilation and print export (STL / 3MF / OBJ / FBX) |
+| [ALICE-Shader](https://github.com/ext-sakamoro/ALICE-Shader) | `alice-shader` | MIT OR LicenseRef-Commercial | GLSL and WGSL shader library (sky, terrain, PBR, SDF, VFX); frozen, SDF primitives moved to alice-sdf |
+| [ALICE-View](https://github.com/ext-sakamoro/ALICE-View) | `alice-view` | MIT OR Apache-2.0 | Real-time procedural rendering engine |
+| [ALICE-GameEngine](https://github.com/ext-sakamoro/ALICE-GameEngine) | `alice-game-engine` | MIT OR LicenseRef-Commercial | Hybrid mesh and SDF game engine on wgpu |
+| [ALICE-VR](https://github.com/ext-sakamoro/ALICE-VR) | `alice-vr` | MIT OR Apache-2.0 | VR runtime: head tracking, lens distortion, stereo rendering, reprojection |
+| [ALICE-Browser](https://github.com/ext-sakamoro/ALICE-Browser) | `alice-browser` | MIT OR Apache-2.0 | Semantic web browser built on the ecosystem crates |
 
-### Compression & Encoding
+### Physics & Simulation
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | v0.1.0 | Embedded Model Generator | 500x compression, 751ns/1K samples, sensors, MQTT, dashboard | MIT OR Apache-2.0 |
-| [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | v2.2.0 | Procedural Generation Compression | 10-1000x for patterns, LZMA fallback | MIT OR Apache-2.0 |
-| [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | v0.1.2 | 3D Wavelet Video/Audio Codec | CDF 9/7 Wavelet, rANS entropy coding, MP4/MKV container parser | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | v0.1.0 | Voice Procedural Codec | LPC parametric 100-600x, privacy-preserving | MIT OR Apache-2.0 |
-| [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | v1.0.0 | Exception-Based Text Compression | Pattern recognition, columnar encoding | MIT OR Apache-2.0 |
-| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | v1.7.7 | 3D Signed Distance Functions | 10-1000x, infinite resolution, CSG ops | MIT OR Apache-2.0 |
-| [ALICE-Synth](https://github.com/ext-sakamoro/ALICE-Synth) | v0.1.1 | Procedural Audio Synthesis | FM/Additive/Subtractive/Wavetable, 64-voice polyphony, no_std, FFI 20fn, PyO3 | MIT OR Apache-2.0 |
-| [ALICE-Text-Compression](https://github.com/ext-sakamoro/ALICE-Text-Compression) | v0.1.0 | Text-Specific Compression | BWT, MTF, RLE, Huffman | MIT OR Apache-2.0 |
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | [![crates.io](https://img.shields.io/crates/v/alice-physics.svg)](https://crates.io/crates/alice-physics) | AGPL-3.0-or-later OR LicenseRef-Commercial | Deterministic physics on 128-bit fixed point: bit-exact replay, snapshots, rollback |
+| [ALICE-DetMath](https://github.com/ext-sakamoro/ALICE-DetMath) | [![crates.io](https://img.shields.io/crates/v/alice-det-math.svg)](https://crates.io/crates/alice-det-math) | MIT OR Apache-2.0 | Cross-platform bit-exact f32 / f64 transcendentals, scalar and SIMD, no_std |
+| [ALICE-Motion](https://github.com/ext-sakamoro/ALICE-Motion) | `alice-motion` | MIT OR Apache-2.0 | NURBS / Bezier trajectory control with trapezoidal and S-curve profiles, no_std |
+| [ALICE-Kinematics](https://github.com/ext-sakamoro/ALICE-Kinematics) | [![crates.io](https://img.shields.io/crates/v/alice-kinematics.svg)](https://crates.io/crates/alice-kinematics) | MIT OR Apache-2.0 | Compression of human motion samples into compact kinematic intent |
+| [ALICE-Navigation](https://github.com/ext-sakamoro/ALICE-Navigation) | `alice-navigation` | MIT OR Apache-2.0 | Path planning: RRT, PRM, potential fields, velocity obstacles, navigation mesh |
+| [ALICE-Swarm](https://github.com/ext-sakamoro/ALICE-Swarm) | `alice-swarm` | MIT OR Apache-2.0 | Swarm control: Boids, formation, consensus, task allocation |
+| [ALICE-Optics](https://github.com/ext-sakamoro/ALICE-Optics) | `alice-optics` | MIT OR Apache-2.0 | Optical simulation: lens systems, ray tracing, diffraction, polarization |
+| [ALICE-Chemistry](https://github.com/ext-sakamoro/ALICE-Chemistry) | `alice-chemistry` | MIT OR Apache-2.0 | Molecular dynamics and chemistry: force fields, reaction kinetics, thermodynamics |
+| [ALICE-Bio](https://github.com/ext-sakamoro/ALICE-Bio) | `alice-bio` | AGPL-3.0-only OR LicenseRef-Commercial | Molecular structure as SDF: amino acid potentials and pairwise interactions |
+| [ALICE-Climate](https://github.com/ext-sakamoro/ALICE-Climate) | `alice-climate` | MIT OR Apache-2.0 | Climate fields as continuous SDF: atmosphere, ocean, anomaly detection |
+| [ALICE-Energy](https://github.com/ext-sakamoro/ALICE-Energy) | `alice-energy` | AGPL-3.0-only OR LicenseRef-Commercial | Power grid simulation: phase synchronization, battery degradation, frequency regulation |
+| [ALICE-Space](https://github.com/ext-sakamoro/ALICE-Space) | `alice-space` | AGPL-3.0-only OR LicenseRef-Commercial | Orbital mechanics and satellite positioning |
+| [ALICE-Space-Drone-Bridge](https://github.com/ext-sakamoro/ALICE-Space-Drone-Bridge) | `alice-space-drone-bridge` | AGPL-3.0-only OR LicenseRef-Commercial | Bridge from satellite positioning to drone control: geodetic to local frames, waypoints, geofences |
 
-### Compiler/Language
+### AI & ML
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Compiler](https://github.com/ext-sakamoro/ALICE-Compiler) | v1.0.0 | DSL/JIT Compiler | AST, IR, code generation, optimization passes | MIT OR Apache-2.0 |
-| [ALICE-VM](https://github.com/ext-sakamoro/ALICE-VM) | v1.0.0 | Bytecode VM | Stack/register machine, heap allocator | MIT OR Apache-2.0 |
-| [ALICE-Parser](https://github.com/ext-sakamoro/ALICE-Parser) | v1.0.0 | Parser Combinators | PEG, Pratt parsing, error recovery | MIT OR Apache-2.0 |
-| [ALICE-LOL](https://github.com/ext-sakamoro/ALICE-LOL) | v0.2.0 | Law-Oriented Language | SDF DSL proc_macro, 76 constructs, GLSL/WGSL/HLSL transpile, law constraints, spatial pruning, autodiff | MIT OR Apache-2.0 |
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-LLM](https://github.com/ext-sakamoro/ALICE-LLM) | [![crates.io](https://img.shields.io/crates/v/alice-llm.svg)](https://crates.io/crates/alice-llm) | AGPL-3.0-or-later OR LicenseRef-Commercial | LLM inference engine: GGUF, K-quants, CPU and wgpu GPU paths, speculative decoding, OpenAI-compatible server |
+| [ALICE-ML](https://github.com/ext-sakamoro/ALICE-ML) | [![crates.io](https://img.shields.io/crates/v/alice-ml.svg)](https://crates.io/crates/alice-ml) | AGPL-3.0-or-later OR LicenseRef-Commercial | 1.58-bit ternary inference with add / subtract only matrix operations |
+| [ALICE-TRT](https://github.com/ext-sakamoro/ALICE-TRT) | `alice-trt` | AGPL-3.0 OR LicenseRef-Commercial | GPU ternary inference engine with 2-bit bitplane weights on wgpu |
+| [ALICE-Train](https://github.com/ext-sakamoro/ALICE-Train) | `alice-train` | AGPL-3.0 OR LicenseRef-Commercial | Backpropagation and training for ternary networks |
+| [ALICE-Token](https://github.com/ext-sakamoro/ALICE-Token) | `alice-token` | MIT OR Apache-2.0 | BPE tokenizer |
+| [ALICE-AutoML](https://github.com/ext-sakamoro/ALICE-AutoML) | `alice-automl` | MIT OR Apache-2.0 | Hyperparameter search, Bayesian optimization, early stopping, cross-validation |
+| [ALICE-GAN](https://github.com/ext-sakamoro/ALICE-GAN) | `alice-gan` | MIT OR Apache-2.0 | Generative adversarial network framework |
+| [ALICE-Agent](https://github.com/ext-sakamoro/ALICE-Agent) | `alice-agent` | AGPL-3.0 OR LicenseRef-Commercial | Local-first coding agent on the ternary models |
+
+### Compression & Media
+
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | [![crates.io](https://img.shields.io/crates/v/alice-zip.svg)](https://crates.io/crates/alice-zip) | MIT OR Apache-2.0 | Compression (LZ77, dictionary coding) and procedural signal generators, no_std |
+| [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | [![crates.io](https://img.shields.io/crates/v/alice-edge.svg)](https://crates.io/crates/alice-edge) | MIT OR Apache-2.0 | Embedded model fitting that compresses sensor samples into a few bytes, no_std |
+| [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | [![crates.io](https://img.shields.io/crates/v/alice-codec.svg)](https://crates.io/crates/alice-codec) | AGPL-3.0-or-later OR LicenseRef-Commercial | 3D wavelet video codec |
+| [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | `alice-text` | MIT OR Apache-2.0 | Exception-based text compression |
+| [ALICE-Voice](https://github.com/ext-sakamoro/ALICE-Voice) | `alice-voice` | MIT OR Apache-2.0 | Parametric voice codec (LPC, pitch, gain) |
+| [ALICE-Synth](https://github.com/ext-sakamoro/ALICE-Synth) | `alice-synth` | MIT OR Apache-2.0 | Procedural audio synthesis: FM, additive, subtractive, wavetable, no_std |
+| [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | [![crates.io](https://img.shields.io/crates/v/libasp.svg)](https://crates.io/crates/libasp) | MIT OR Apache-2.0 | Streaming protocol and wire format for video |
+| [ALICE-Audio](https://github.com/ext-sakamoro/ALICE-Audio) | `alice-audio` | MIT OR Apache-2.0 | Audio processing: FFT, filters, mixer, effects, resampling |
+| [ALICE-Video](https://github.com/ext-sakamoro/ALICE-Video) | `alice-video` | MIT OR Apache-2.0 | Video processing: GOP, motion compensation, DCT, entropy coding |
+| [ALICE-Camera](https://github.com/ext-sakamoro/ALICE-Camera) | `alice-camera` | MIT OR Apache-2.0 | Camera ISP: white balance, demosaicing, exposure, lens correction |
 
 ### Data & Storage
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-DB](https://github.com/ext-sakamoro/ALICE-DB) | v0.2.0-beta.1 | Model-Based LSM-Tree Database | O(1) point queries, 50-1000x compression | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-Cache](https://github.com/ext-sakamoro/ALICE-Cache) | v0.2.0 | Predictive Distributed Cache | Slab alloc, TinyLFU, Markov prediction | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-Queue](https://github.com/ext-sakamoro/ALICE-Queue) | v0.2.0 | Deterministic Zero-Copy Message Log | Lock-free SPSC + mmap WAL + signed_envelope (Ed25519 producer + DedupBuffer, MiFID-II RTS 25) | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-Search](https://github.com/ext-sakamoro/ALICE-Search) | v0.2.0 | FM-Index Full-Text Search + PII | Wavelet Matrix + pii_redact (7 kinds Email/PAN Luhn/マイナンバー, GDPR / PCI-DSS §3.4) | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-FileSystem](https://github.com/ext-sakamoro/ALICE-FileSystem) | v1.0.0 | Virtual File System | Inodes, permissions, symlinks, mount | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-ObjectStore](https://github.com/ext-sakamoro/ALICE-ObjectStore) | v1.0.0 | S3-Compatible Object Store | Buckets, multipart upload, versioning | AGPL-3.0 OR LicenseRef-Commercial |
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-DB](https://github.com/ext-sakamoro/ALICE-DB) | [![crates.io](https://img.shields.io/crates/v/alice-db.svg)](https://crates.io/crates/alice-db) | AGPL-3.0-or-later OR LicenseRef-Commercial | Model-based LSM-tree database |
+| [ALICE-Cache](https://github.com/ext-sakamoro/ALICE-Cache) | [![crates.io](https://img.shields.io/crates/v/alice-cache.svg)](https://crates.io/crates/alice-cache) | AGPL-3.0-or-later OR LicenseRef-Commercial | Predictive distributed cache |
+| [ALICE-Queue](https://github.com/ext-sakamoro/ALICE-Queue) | `alice-queue` | AGPL-3.0 OR LicenseRef-Commercial | Deterministic zero-copy message log |
+| [ALICE-Search](https://github.com/ext-sakamoro/ALICE-Search) | `alice-search` | AGPL-3.0 OR LicenseRef-Commercial | FM-index full-text search |
+| [ALICE-ObjectStore](https://github.com/ext-sakamoro/ALICE-ObjectStore) | `alice-objectstore` | AGPL-3.0 OR LicenseRef-Commercial | S3-compatible object storage engine |
+| [ALICE-FileSystem](https://github.com/ext-sakamoro/ALICE-FileSystem) | `alice-filesystem` | AGPL-3.0 OR LicenseRef-Commercial | Virtual filesystem: inodes, permissions, symlinks, mounting |
+| [ALICE-Analytics](https://github.com/ext-sakamoro/ALICE-Analytics) | [![crates.io](https://img.shields.io/crates/v/alice-analytics.svg)](https://crates.io/crates/alice-analytics) | MIT OR Apache-2.0 | Telemetry and statistical estimation with probabilistic data structures |
+| [ALICE-History](https://github.com/ext-sakamoro/ALICE-History) | `alice-history` | AGPL-3.0-or-later OR LicenseRef-Commercial | Restoration of degraded historical data |
 
-### Networking & Infrastructure
+### Networking
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-API](https://github.com/ext-sakamoro/ALICE-API) | v0.1.0 | API Gateway with Distributed Rate Limiting | GCRA lock-free, SFQ, zero-copy splice | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-CDN](https://github.com/ext-sakamoro/ALICE-CDN) | v0.2.0 | Decentralized Content Delivery | Vivaldi coordinates, SIMD, Maglev hashing | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | v1.0.0 | High-Performance Video Streaming Codec | FlatBuffers, motion estimation, SIMD, **media-stack** (Codec+Voice) | MIT OR Apache-2.0 |
-| [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | v0.6.0 | P2P Synchronization via Event Diffing | 18-byte events, bit-exact determinism, Lockstep/Rollback, PyO3 | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-Cloud-Gateway](https://github.com/ext-sakamoro/ALICE-Cloud-Gateway) | v0.1.0 | Edge-to-Cloud SDF Ingest Gateway | ASP decrypt, BLAKE3 KDF, DDSketch/HLL telemetry | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-DNS](https://github.com/ext-sakamoro/ALICE-DNS) | v0.2.0 | DNS Ad-Blocker + DNSSEC | Bloom filter O(1) + dnssec_verify (RFC 4034/8080 Ed25519 RRSIG) | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-Bridge](https://github.com/ext-sakamoro/ALICE-Bridge) | v0.1.0 | Universal Hardware Bridge | 5 protocol adapters (Buttplug/MQTT/REST/OSC/WS), 750+ devices, safety layer | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-Proxy](https://github.com/ext-sakamoro/ALICE-Proxy) | v1.0.0 | L7 Reverse Proxy | Routing, header rewriting, circuit breaker | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-WebSocket](https://github.com/ext-sakamoro/ALICE-WebSocket) | v1.0.0 | WebSocket Protocol | Frame parsing, masking, handshake | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-gRPC](https://github.com/ext-sakamoro/ALICE-gRPC) | v1.0.0 | gRPC Framework | Protobuf, streaming RPC | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-HTTP](https://github.com/ext-sakamoro/ALICE-HTTP) | v1.0.0 | HTTP/1.1+2 Parser | Chunked encoding, cookies, HPACK | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-BLE](https://github.com/ext-sakamoro/ALICE-BLE) | v1.0.0 | BLE Protocol | GATT, advertising, pairing | MIT OR Apache-2.0 |
-| [ALICE-LoRa](https://github.com/ext-sakamoro/ALICE-LoRa) | v1.0.0 | LoRaWAN | Chirp modulation, ADR, OTAA/ABP | MIT OR Apache-2.0 |
-| [ALICE-NFC](https://github.com/ext-sakamoro/ALICE-NFC) | v1.0.0 | NFC Protocol | NDEF, tag read/write, APDU, card emulation | MIT OR Apache-2.0 |
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-HTTP](https://github.com/ext-sakamoro/ALICE-HTTP) | [![crates.io](https://img.shields.io/crates/v/alice-http.svg)](https://crates.io/crates/alice-http) | AGPL-3.0-or-later OR LicenseRef-Commercial | HTTP/1.1 and HTTP/2 parser and framework |
+| [ALICE-gRPC](https://github.com/ext-sakamoro/ALICE-gRPC) | [![crates.io](https://img.shields.io/crates/v/alice-grpc.svg)](https://crates.io/crates/alice-grpc) | AGPL-3.0-or-later OR LicenseRef-Commercial | gRPC framework with Protobuf encoding |
+| [ALICE-WebSocket](https://github.com/ext-sakamoro/ALICE-WebSocket) | [![crates.io](https://img.shields.io/crates/v/alice-websocket.svg)](https://crates.io/crates/alice-websocket) | AGPL-3.0-or-later OR LicenseRef-Commercial | WebSocket protocol: framing, masking, handshake, fragmentation |
+| [ALICE-API](https://github.com/ext-sakamoro/ALICE-API) | `alice-api` | AGPL-3.0 OR LicenseRef-Commercial | API gateway with distributed rate limiting |
+| [ALICE-Proxy](https://github.com/ext-sakamoro/ALICE-Proxy) | `alice-proxy` | AGPL-3.0 OR LicenseRef-Commercial | L7 reverse proxy: routing, header rewriting, load balancing, circuit breaker |
+| [ALICE-CDN](https://github.com/ext-sakamoro/ALICE-CDN) | `alice-cdn` | AGPL-3.0 OR LicenseRef-Commercial | Latency-aware CDN with Vivaldi coordinates and Maglev hashing |
+| [ALICE-DNS](https://github.com/ext-sakamoro/ALICE-DNS) | `alice-dns` | AGPL-3.0 OR LicenseRef-Commercial | Bloom-filter DNS blocker |
+| [ALICE-Cloud-Gateway](https://github.com/ext-sakamoro/ALICE-Cloud-Gateway) | `alice-cloud-gateway` | AGPL-3.0 OR LicenseRef-Commercial | QUIC gateway: packet ingest, device keys, telemetry |
+| [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | [![crates.io](https://img.shields.io/crates/v/alice-sync.svg)](https://crates.io/crates/alice-sync) | AGPL-3.0-or-later OR LicenseRef-Commercial | Peer-to-peer synchronization by event diffing |
+| [ALICE-Bridge](https://github.com/ext-sakamoro/ALICE-Bridge) | [![crates.io](https://img.shields.io/crates/v/alice-bridge.svg)](https://crates.io/crates/alice-bridge) | AGPL-3.0-or-later OR LicenseRef-Commercial | Protocol-agnostic hardware communication layer |
+| [ALICE-BLE](https://github.com/ext-sakamoro/ALICE-BLE) | [![crates.io](https://img.shields.io/crates/v/alice-ble.svg)](https://crates.io/crates/alice-ble) | MIT OR Apache-2.0 | BLE stack: GATT, advertising, pairing, ATT, L2CAP |
+| [ALICE-LoRa](https://github.com/ext-sakamoro/ALICE-LoRa) | [![crates.io](https://img.shields.io/crates/v/alice-lora.svg)](https://crates.io/crates/alice-lora) | MIT OR Apache-2.0 | LoRaWAN: ADR, OTAA / ABP, MAC commands, device classes |
+| [ALICE-NFC](https://github.com/ext-sakamoro/ALICE-NFC) | `alice-nfc` | MIT OR Apache-2.0 | NFC: NDEF, tag types 1-4, APDU, card emulation |
 
-### Security & Cryptography
+### Security
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Auth](https://github.com/ext-sakamoro/ALICE-Auth) | v0.5.0 | Cryptographic Authentication | Ed25519, Schnorr NIZK, Key Rotation, Endorsement, RBAC, FFI(28)/PyO3/Unity/UE5 | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-Crypto](https://github.com/ext-sakamoro/ALICE-Crypto) | v0.1.0 | Information-Theoretic Security | Shamir SSS, BLAKE3, XChaCha20-Poly1305 | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-Browser-Secure](https://github.com/ext-sakamoro/ALICE-Browser-Secure) | v0.1.0 | Secure Browsing | CSP, sandboxing, XSS prevention, URL validation | MIT OR Apache-2.0 |
-| [ALICE-WAF](https://github.com/ext-sakamoro/ALICE-WAF) | v1.0.0 | WAF Rule Engine | SQLi/XSS detection, rate limiting | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-DLP](https://github.com/ext-sakamoro/ALICE-DLP) | v1.0.0 | Data Loss Prevention | PII detection, masking, policy | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-Audit](https://github.com/ext-sakamoro/ALICE-Audit) | v1.3.0 | Audit Trail | Signed trail + Merkle + VC export + GDPR Art. 30/15/16/17/20 | AGPL-3.0 OR LicenseRef-Commercial |
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-Auth](https://github.com/ext-sakamoro/ALICE-Auth) | [![crates.io](https://img.shields.io/crates/v/alice-auth.svg)](https://crates.io/crates/alice-auth) | AGPL-3.0-or-later OR LicenseRef-Commercial | Ed25519 and zero-knowledge proof authentication |
+| [ALICE-Crypto](https://github.com/ext-sakamoro/ALICE-Crypto) | [![crates.io](https://img.shields.io/crates/v/alice-crypto.svg)](https://crates.io/crates/alice-crypto) | AGPL-3.0-or-later OR LicenseRef-Commercial | Information-theoretic security primitives |
+| [ALICE-Audit](https://github.com/ext-sakamoro/ALICE-Audit) | `alice-audit` | AGPL-3.0 OR LicenseRef-Commercial | Hash-chained, signed audit trail with Merkle anchoring |
+| [ALICE-DLP](https://github.com/ext-sakamoro/ALICE-DLP) | `alice-dlp` | AGPL-3.0 OR LicenseRef-Commercial | Data loss prevention: PII detection, classification, masking |
+| [ALICE-WAF](https://github.com/ext-sakamoro/ALICE-WAF) | `alice-waf` | AGPL-3.0 OR LicenseRef-Commercial | Web application firewall: rule engine, SQLi / XSS detection, rate limiting |
+| [ALICE-Presence](https://github.com/ext-sakamoro/ALICE-Presence) | `alice-presence` | MIT OR Apache-2.0 | Proof of encounter with Vivaldi coordinates and zero-knowledge proofs |
 
-### Compute & Runtime
+### Systems & Tooling
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Container](https://github.com/ext-sakamoro/ALICE-Container) | v0.3.0 | Minimal Container Runtime | Direct cgroup v2, io_uring, clone3, PSI | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-ML](https://github.com/ext-sakamoro/ALICE-ML) | v0.2.0 | 1.58-bit Ternary Inference Engine | {-1,0,+1} only, 16x compression, no multiply | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-TRT](https://github.com/ext-sakamoro/ALICE-TRT) | v3.1.0 | GPU Ternary Inference Engine | wgpu/CUDA, BitNet, GPU-accelerated matmul | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | v0.12.0 | Deterministic 128-bit Physics Engine | I64F64, CORDIC, XPBD, GJK/EPA, BVH, 2D physics, cloth/fluid/rope, CCD, Netcode, PyO3 | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-RTOS](https://github.com/ext-sakamoro/ALICE-RTOS) | v0.1.0 | Math-First Real-Time OS | RMS scheduler, Liu-Layland analysis, SPSC ring, < 2KB kernel | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-SIMD](https://github.com/ext-sakamoro/ALICE-SIMD) | v1.0.1 | Shared SIMD & Fast-Math Primitives | AlignedVec, BitMask64, branchless ops, fast reciprocal/rsqrt, FNV-1a, Bloom filter, no_std | MIT OR Apache-2.0 |
-| [ALICE-Token](https://github.com/ext-sakamoro/ALICE-Token) | v1.0.0 | Ultra-Fast BPE Tokenizer | Byte-pair encoding, vocab training, O(n) encode/decode, no_std | MIT OR Apache-2.0 |
-| [ALICE-Train](https://github.com/ext-sakamoro/ALICE-Train) | v0.2.0 | Backpropagation Training Framework | STE, QAT pipeline, GPU backward (wgpu compute shader), ZeRO-Offload (AdamW CPU RAM), Llama-3 70B QAT binary, knowledge distillation, Spot auto-resume | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-GameEngine](https://github.com/ext-sakamoro/ALICE-GameEngine) | v0.6.0 | Hybrid Mesh+SDF Game Engine | wgpu deferred renderer, ECS, Verlet physics + SDF CCD, HRTF audio, **turn-based battle**, **no-code event scripting (13 EventCommands)**, `bridge::WorldProvider` for plug-in themed worlds, XR layer | MIT OR LicenseRef-Commercial |
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-SIMD](https://github.com/ext-sakamoro/ALICE-SIMD) | `alice-simd` | MIT OR Apache-2.0 | SIMD, branchless and fast-math primitives, no_std |
+| [ALICE-RTOS](https://github.com/ext-sakamoro/ALICE-RTOS) | `alice-rtos` | AGPL-3.0 OR LicenseRef-Commercial | Real-time OS kernel with rate-monotonic scheduling, no_std |
+| [ALICE-RTOS-BSP](https://github.com/ext-sakamoro/ALICE-RTOS-BSP) | workspace | MIT OR Apache-2.0 | Board support packages for ALICE-RTOS on ESP32 and Cortex-M boards |
+| [ALICE-Container](https://github.com/ext-sakamoro/ALICE-Container) | `alice-container` | AGPL-3.0 OR LicenseRef-Commercial | Container runtime with direct cgroup v2 and namespace control |
+| [ALICE-VM](https://github.com/ext-sakamoro/ALICE-VM) | `alice-vm` | MIT OR Apache-2.0 | Bytecode virtual machine |
+| [ALICE-Compiler](https://github.com/ext-sakamoro/ALICE-Compiler) | `alice-compiler` | MIT OR Apache-2.0 | DSL / JIT compiler infrastructure: AST, IR, code generation, optimization passes |
+| [ALICE-Parser](https://github.com/ext-sakamoro/ALICE-Parser) | `alice-parser` | MIT OR Apache-2.0 | Parser combinators: PEG, Pratt, recursive descent, error recovery |
+| [ALICE-VCS](https://github.com/ext-sakamoro/ALICE-VCS) | `alice-vcs` | AGPL-3.0 OR LicenseRef-Commercial | AST-level version control: tree diff, 3-way merge, no_std |
+| [ALICE-Terraform](https://github.com/ext-sakamoro/ALICE-Terraform) | `alice-terraform` | AGPL-3.0 OR LicenseRef-Commercial | Infrastructure-as-code engine: resource graph, state, plan / apply |
+| [ALICE-Monitor](https://github.com/ext-sakamoro/ALICE-Monitor) | `alice-monitor` | AGPL-3.0 OR LicenseRef-Commercial | Monitoring: health checks, alerts, SLA tracking, heartbeats |
+| [ALICE-Signal](https://github.com/ext-sakamoro/ALICE-Signal) | [![crates.io](https://img.shields.io/crates/v/alice-signal.svg)](https://crates.io/crates/alice-signal) | MIT OR Apache-2.0 | Digital signal processing: FFT, FIR / IIR, wavelets, PSD |
 
-### AI/ML
+### Finance
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-LLM](https://github.com/ext-sakamoro/ALICE-LLM) | v1.6.0 | LLM Inference Engine | GGUF Q2_K–Q8_0, DeltaNet + Full Attention hybrid (Qwen 3.5), batch-4 speculative (5.89× / 90% accept), CPU + wgpu/Metal + Vulkan iGPU, 20 tok/s 1B / 5.7 tok/s 8B / 2.9 tok/s Qwen 3.5-4B (M3 Metal). Desktop GUI: [ALICE-LLM Studio](https://github.com/ext-sakamoro/ALICE-LLM-Studio) v0.1.0-alpha (macOS / Linux / Windows) | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-GAN](https://github.com/ext-sakamoro/ALICE-GAN) | v1.0.0 | GAN Framework | Generator/discriminator, Wasserstein, spectral norm | MIT OR Apache-2.0 |
-| [ALICE-AutoML](https://github.com/ext-sakamoro/ALICE-AutoML) | v1.0.0 | AutoML | Hyperparameter search, Bayesian optimization, NAS | MIT OR Apache-2.0 |
-
-### Motion & Version Control
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Motion](https://github.com/ext-sakamoro/ALICE-Motion) | v0.1.0 | NURBS/Bezier Trajectory Control | Cox-de Boor, de Casteljau, trapezoidal/S-curve profiles, no_std | MIT OR Apache-2.0 |
-| [ALICE-VCS](https://github.com/ext-sakamoro/ALICE-VCS) | v0.2.0 | AST Semantic Version Control | Tree diff, 3-way merge, content-addressed snapshots, FNV-1a Merkle | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-Kinematics](https://github.com/ext-sakamoro/ALICE-Kinematics) | v0.1.0 | Human Motion Intent Compression | 7-DoF arm, jerk minimization, 8-byte intent packets, 10,000x compression | MIT OR Apache-2.0 |
-
-### Financial Trading
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Ledger](https://github.com/ext-sakamoro/ALICE-Ledger) | v0.3.0 | Price-Time Priority Order Book | LOB + FIFO + signed_order (MiFID-II RTS 22) + FIX 4.4 parser | AGPL-3.0-only OR LicenseRef-Commercial |
-| [ALICE-Risk](https://github.com/ext-sakamoro/ALICE-Risk) | v0.2.0 | Pre-Trade Risk Engine | Position / margin / circuit breaker + signed_risk_event (7 kinds, Ed25519, BCBS 239) | AGPL-3.0-only OR LicenseRef-Commercial |
-| [ALICE-FIX](https://github.com/ext-sakamoro/ALICE-FIX) | v0.2.0 | FIX Protocol 4.4/5.0 Engine | SOH parser + checksum + session state + gap_recovery (ResendRequest / SequenceReset) | MIT OR Apache-2.0 |
-| [ALICE-Settlement](https://github.com/ext-sakamoro/ALICE-Settlement) | v0.2.0 | Post-Trade Settlement Engine | Netting + clearing house + merkle_trail (6 SettlementEventKind + Ed25519 + Merkle root) | AGPL-3.0-only OR LicenseRef-Commercial |
-
-### Analytics & Visualization
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Analytics](https://github.com/ext-sakamoro/ALICE-Analytics) | v0.1.0 | Streaming Telemetry & Statistics | HyperLogLog++, DDSketch, CMS, LDP | MIT OR Apache-2.0 |
-| [ALICE-View](https://github.com/ext-sakamoro/ALICE-View) | v0.3.0 | Infinite Canvas GPU Renderer | wgpu procedural rendering, 60 FPS | MIT OR Apache-2.0 |
-
-### Science & Domain-Specific
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Bio](https://github.com/ext-sakamoro/ALICE-Bio) | v0.2.0 | Molecular Biology Engine | Amino acid→SDF + Lennard-Jones + CHARMM + FASTA parser + reverse complement | AGPL-3.0-only OR LicenseRef-Commercial |
-| [ALICE-Legal](https://github.com/ext-sakamoro/ALICE-Legal) | v0.3.0 | Legal Compliance Engine | Statute tree + contract analysis + signed_contract + RFC 3161 TSA integration | MIT OR Apache-2.0 |
-| [ALICE-Energy](https://github.com/ext-sakamoro/ALICE-Energy) | v0.1.0 | Power Grid Simulation | Bus/branch topology, Newton-Raphson power flow, battery SoC, phase correction | AGPL-3.0-only OR LicenseRef-Commercial |
-| [ALICE-Space](https://github.com/ext-sakamoro/ALICE-Space) | v0.7.0 | Satellite / GNSS Position Engine | WGS-84 + TLE + DOP + Klobuchar + Saastamoinen + SP3 + RINEX + SBAS (MOPS DO-229) | AGPL-3.0-only OR LicenseRef-Commercial |
-| [ALICE-Climate](https://github.com/ext-sakamoro/ALICE-Climate) | v0.1.1 | Planetary Climate Modeling | Weather stations, IDW interpolation, Clausius-Clapeyron, climate anomaly detection | MIT OR Apache-2.0 |
-| [ALICE-Legal-AI](https://github.com/ext-sakamoro/ALICE-Legal-AI) | v0.1.0 | Legal Document Analysis | Clause extraction, risk scoring | MIT OR Apache-2.0 |
-| [ALICE-Swarm](https://github.com/ext-sakamoro/ALICE-Swarm) | v1.0.0 | Swarm Intelligence | Boids, formation control, consensus, task allocation | MIT OR Apache-2.0 |
-| [ALICE-Navigation](https://github.com/ext-sakamoro/ALICE-Navigation) | v1.0.0 | Path Planning | RRT, PRM, potential field, nav mesh, dynamic replan | MIT OR Apache-2.0 |
-| [ALICE-Chemistry](https://github.com/ext-sakamoro/ALICE-Chemistry) | v1.0.0 | Molecular Dynamics | Lennard-Jones, Arrhenius, thermodynamics | MIT OR Apache-2.0 |
-| [ALICE-Optics](https://github.com/ext-sakamoro/ALICE-Optics) | v1.0.0 | Lens Systems | Diffraction, polarization, thin film, fiber | MIT OR Apache-2.0 |
-| [ALICE-Signal](https://github.com/ext-sakamoro/ALICE-Signal) | v1.5.0 | Digital Signal Processing + GNSS | FFT, FIR/IIR, wavelet + PRN + C/N0 + Kalman + Costas PLL/FLL correlator | MIT OR Apache-2.0 |
-
-### Advanced Domain
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-History](https://github.com/ext-sakamoro/ALICE-History) | v0.1.0 | Inverse Entropy Restoration | Fragment degradation modeling, iterative solver, Shannon entropy, confidence mapping | AGPL-3.0-or-later OR LicenseRef-Commercial |
-| [ALICE-Presence](https://github.com/ext-sakamoro/ALICE-Presence) | v0.1.0 | Cryptographic Presence Protocol | Vivaldi coordinates, ZKP identity, 18-byte events, proximity proofs | MIT OR Apache-2.0 |
-
-### Media
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Audio](https://github.com/ext-sakamoro/ALICE-Audio) | v1.0.0 | Audio Processing | FFT, FIR/IIR filters, mixer, effects, ADSR | MIT OR Apache-2.0 |
-| [ALICE-Video](https://github.com/ext-sakamoro/ALICE-Video) | v1.0.0 | Video Codec | I/P/B frames, DCT, motion compensation | MIT OR Apache-2.0 |
-| [ALICE-Camera](https://github.com/ext-sakamoro/ALICE-Camera) | v1.0.0 | Image Signal Processor | White balance, demosaicing, HDR, lens correction | MIT OR Apache-2.0 |
-
-### Application
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Browser](https://github.com/ext-sakamoro/ALICE-Browser) | v0.2.0 | Semantic Browser | SDF rendering, ML filtering, predictive cache | MIT OR Apache-2.0 |
-
-### Infrastructure
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-
-### DevTools
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Terraform](https://github.com/ext-sakamoro/ALICE-Terraform) | v1.0.0 | IaC Engine | Resource graph, state management, diff/apply | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-Monitor](https://github.com/ext-sakamoro/ALICE-Monitor) | v1.0.0 | Health Monitoring | Health checks, alerts, SLA tracking, incident management | AGPL-3.0 OR LicenseRef-Commercial |
-
-### Cross-cutting
-
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-FIX](https://github.com/ext-sakamoro/ALICE-FIX) | `alice-fix` | MIT OR Apache-2.0 | FIX 4.4 / 5.0 message parser, builder and session management |
+| [ALICE-Ledger](https://github.com/ext-sakamoro/ALICE-Ledger) | `alice-ledger` | AGPL-3.0-only OR LicenseRef-Commercial | Order book, matching engine, position management |
+| [ALICE-Risk](https://github.com/ext-sakamoro/ALICE-Risk) | `alice-risk` | AGPL-3.0-only OR LicenseRef-Commercial | Pre-trade risk checks, margin, circuit breakers |
+| [ALICE-Settlement](https://github.com/ext-sakamoro/ALICE-Settlement) | `alice-settlement` | AGPL-3.0-only OR LicenseRef-Commercial | Post-trade settlement, netting and clearing |
 
 ### Business
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-CRM](https://github.com/ext-sakamoro/ALICE-CRM) | v1.1.0 | Customer Management | Pipeline, lead scoring, RFM | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-ERP](https://github.com/ext-sakamoro/ALICE-ERP) | v1.1.0 | Enterprise Resource Planning | Inventory, BOM, MRP, production scheduling, cost accounting | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-HRM](https://github.com/ext-sakamoro/ALICE-HRM) | v1.1.0 | Human Resource Management | Attendance, payroll, leave management, shift, evaluation | AGPL-3.0 OR LicenseRef-Commercial |
-| [ALICE-LMS](https://github.com/ext-sakamoro/ALICE-LMS) | v1.1.0 | Learning Management System | Course management, quiz engine, grading, certificates | MIT OR Apache-2.0 |
+| Repository | Crate | License | Description |
+|---|---|---|---|
+| [ALICE-CRM](https://github.com/ext-sakamoro/ALICE-CRM) | `alice-crm` | AGPL-3.0 OR LicenseRef-Commercial | Customer relationship management: pipeline, lead scoring, segmentation |
+| [ALICE-ERP](https://github.com/ext-sakamoro/ALICE-ERP) | `alice-erp` | AGPL-3.0 OR LicenseRef-Commercial | Resource planning: inventory, BOM, MRP, scheduling, cost accounting |
+| [ALICE-HRM](https://github.com/ext-sakamoro/ALICE-HRM) | `alice-hrm` | AGPL-3.0 OR LicenseRef-Commercial | Human resource management: attendance, payroll, leave, shifts |
+| [ALICE-LMS](https://github.com/ext-sakamoro/ALICE-LMS) | `alice-lms` | MIT OR Apache-2.0 | Learning management: courses, quizzes, grading, certificates |
+| [ALICE-Legal](https://github.com/ext-sakamoro/ALICE-Legal) | `alice-legal` | MIT OR Apache-2.0 | Statutes and contracts as deterministic ASTs with audit trails |
 
-### XR
+<!-- crate-index:end -->
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-VR](https://github.com/ext-sakamoro/ALICE-VR) | v1.0.0 | VR Runtime | Head tracking, lens distortion, stereo rendering | MIT OR Apache-2.0 |
+## Licensing model
 
-### Integration
+Crates use one of two licensing models, shown per crate in the index:
 
-| Component | Version | Description | Feature | License |
-|-----------|---------|-------------|---------|---------|
-| [ALICE-Eco-System](https://github.com/ext-sakamoro/ALICE-Eco-System) | v0.3.3 | Ecosystem Integration Hub | 1250 bridges, 230 bridge modules, 22 pipeline paths (A-V), 185 crates connected | MIT OR Apache-2.0 |
+- **Permissive**: `MIT OR Apache-2.0`
+- **Copyleft with a commercial option**: `AGPL-3.0-*` or `MIT`, each
+  `OR LicenseRef-Commercial`. The commercial terms are in each repository's
+  `LICENSE-COMMERCIAL.md`.
 
-**Total: 185 components** | MIT: 61 | AGPL-3.0: 68 | MIT OR Apache-2.0: 43 | MIT (Core): 1 | BSL 1.1: 1 | Open Core: 3 | Proprietary: 8
+The license column is the SPDX expression from the crate's `Cargo.toml`.
 
-## Quick Start
+## Building and checking
 
-```bash
-# Clone the ecosystem demo
-git clone https://github.com/ext-sakamoro/ALICE-Eco-System.git
-cd ALICE-Eco-System
-
-# Run the integration demo (Edge → DB → View)
-cargo run
-
-# Run the SDF asset delivery demo (SDF → CDN → Cache)
-cargo run --example sdf_delivery
-
-# Run the game engine pipeline demo (SDF → CDN → Physics → Sync → DB)
-cargo run --example game_pipeline
-
-# Run with GPU visualization
-cargo run -- --view
+```sh
+cargo fmt -- --check                    # formatting (CI)
+python3 scripts/readme_index.py --check # README index matches docs/crate-index.tsv (CI)
+python3 scripts/readme_index.py --online  # TSV matches the repositories (needs network)
+python3 scripts/docs_lint.py --check    # vocabulary and CHANGELOG structure (CI)
+scripts/preflight.sh                    # the CI steps, locally
 ```
 
-## Demo: Edge-to-Cloud Pipeline
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Sensor    │────▶│ ALICE-Edge  │────▶│  Network    │────▶│  ALICE-DB   │────▶│ ALICE-View  │
-│  1000 pts   │     │  8 bytes    │     │  8 bytes    │     │   Query     │     │    GPU      │
-│  (4000 B)   │     │  (500x)     │     │  (LoRaWAN)  │     │  Reconstruct│     │  Rendering  │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-```
-
-### Demo Output
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║         ALICE ECOSYSTEM INTEGRATION DEMO                      ║
-╚══════════════════════════════════════════════════════════════╝
-
-━━━ PHASE 1: Sensor Data Generation (Stack Allocated) ━━━
-  Sensor readings: 1000 samples
-  Raw data size:   4000 bytes
-
-━━━ PHASE 2: ALICE-Edge Compression (Ultimate) ━━━
-  Model: y = slope × x + intercept
-  Packet size:  8 bytes
-  ┌─────────────────────────────────────────────────┐
-  │ COMPRESSION: 4000 bytes → 8 bytes               │
-  │ RATIO:       500x                               │
-  └─────────────────────────────────────────────────┘
-
-━━━ PHASE 3: Network Transmission ━━━
-  [EDGE DEVICE] ──── 8 bytes ────▶ [CLOUD SERVER]
-
-━━━ PHASE 4: ALICE-DB Storage (Batch Insert) ━━━
-  Compression:  ~50x additional
-
-━━━ PHASE 5: Query & Verification ━━━
-  ✓ Point queries accurate to 0.0001°C
-  ✓ Aggregations (AVG, MIN, MAX) working
-
-━━━ PHASE 6: ALICE-View Visualization ━━━
-  GPU-accelerated procedural rendering available!
-  Run with --view to launch the visualization window
-
-╔══════════════════════════════════════════════════════════════╗
-║  [ALICE-View] (GPU Procedural Rendering)                     ║
-║     └─ wgpu + egui, infinite zoom, X-Ray mode                ║
-╠══════════════════════════════════════════════════════════════╣
-║  TOTAL: 4000 bytes → 8 bytes → ~100 bytes                    ║
-║  BANDWIDTH SAVED: 99.8%                                      ║
-╚══════════════════════════════════════════════════════════════╝
-```
-
-## Demo: SDF Asset Delivery Pipeline
-
-ALICE-SDF + ALICE-CDN + ALICE-Cache combine to deliver 3D assets as mathematical descriptions instead of polygon meshes, achieving **200-800x bandwidth reduction** vs glTF.
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Client    │────▶│ ALICE-CDN   │────▶│ ALICE-Cache │────▶│ ALICE-SDF   │
-│  Request    │     │  Vivaldi    │     │  Markov     │     │  ASDF       │
-│  (asset_id) │     │  Routing    │     │  Prefetch   │     │  38 bytes   │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                    O(log n + k)         lock-free            vs glTF 15 KB
-                    nearest node         prediction           = 395x
-```
-
-| Asset Type | glTF Size | ASDF Size | Ratio |
-|------------|-----------|-----------|-------|
-| Sphere | ~15 KB | **38 bytes** | **395x** |
-| CSG (union+subtract) | ~200 KB | **58 bytes** | **3,448x** |
-| Complex scene (100 nodes) | ~2 MB | **398 bytes** | **5,025x** |
-
-## Demo: Turn-Based RPG (2 Crates)
-
-`ALICE-GameEngine` v0.5.x ships a complete turn-based RPG runtime — a
-hybrid of mesh + SDF rendering, a state-machine battle engine, and a
-13-command no-code event script. Themed worlds plug in through
-`bridge::WorldProvider`, and `bridge::TextProcessor` (e.g.
-`AliceTextProcessor` over `ALICE-Text`) provides natural-language log
-compression.
-
-```
-[ALICE-GameEngine]   battle::TurnBattleRunner + scripting::EventScript
-                          + ability::AbilitySystem
-       │  bridge::TextProcessor
-       ↓
-[ALICE-Text]         natural-language log compression (~3× ratio on
-                     repetitive battle text)
-```
-
-`templates/rpg.rs` shows the full opening-dialogue → choice → battle →
-reward flow using only `alice-game-engine`:
-
-```bash
-cd ALICE-GameEngine
-cargo run --example rpg
-```
-
-## Demo: Full Game Engine Pipeline (6 Crates)
-
-The `game_pipeline` example demonstrates cross-crate integration across 6 ALICE components:
-
-```
-[ALICE-SDF]        Create world geometry (ASDF binary)
-     ↓
-[ALICE-CDN]        Type-aware content routing (ASDF detection)
-     ↓
-[ALICE-Physics]    Deterministic simulation (128-bit fixed-point)
-     ↓
-[ALICE-Sync]       Input synchronization (Lockstep)
-     ↓
-[ALICE-DB]         Replay recording + Telemetry (model-based compression)
-```
-
-Cross-crate bridges demonstrated:
-- **SDF → Physics** — `physics_bridge` (`impl SdfField for CompiledSdf`)
-- **Physics → DB** — `replay.rs` (trajectory compression)
-- **Sync → DB** — `telemetry.rs` (metric time-series)
-- **CDN ← SDF** — `content_types` (ASDF detection)
-- **Sync → Physics** — `sync_to_physics_event()` (InputFrame → directional force)
-
-```bash
-cargo run --example game_pipeline
-```
-
-### Cross-Crate Bridge Matrix
-
-The ALICE ecosystem contains **1,250 cross-crate bridges** across 230 bridge files and 22 pipeline paths (A-V), connecting 185 crates. All bridges are hardware-native optimized. Key bridge categories:
-
-| Category | Bridges | Description |
-|----------|---------|-------------|
-| **Data Storage** | Cache↔Analytics, Queue→Text, Container→DB, Auth→DB, TRT→DB, Print→DB, Animation→DB, Manga→DB | Persistence and metrics |
-| **Security** | Auth↔Crypto, Container→Crypto, Auth→API | Encryption, signing, secrets |
-| **Synchronization** | Sync↔Cache, Container→Sync, Cloud-Gateway→Container | Distributed state |
-| **Media** | Voice→Text, TRT→Voice, Browser→Voice, Animation→Voice | Audio/speech processing |
-| **Content Delivery** | Browser→CDN, Browser→SDF, Browser→View, Animation→CDN, Manga→CDN | Routing and rendering |
-| **Anime Pipeline** | Animation→SDF, Animation→Codec, Animation→Cache, Animation→Browser, Animation→ML, Animation→Streaming | Anime production & distribution |
-| **Manga Pipeline** | Manga→SDF, Manga→Print, Manga→Codec, Manga→Cache, Manga→Browser, Manga→Search, Manga→Text | Manga creation & distribution |
-| **Search & Analytics** | Text→Search, Browser→Search, Browser→Analytics, Print→Analytics | Indexing and telemetry |
-| **Orchestration** | Cloud-Gateway→Queue, Cloud-Gateway→Container | Message routing and deploy |
-| **Font Bridges** | Font→View, Font→Browser, Font→SDF, Font→Manga, Font→Animation, Font→CDN, Font→Print + 7 more (14 total) | Parametric font rendering & glyph delivery |
-| **LLM Inference** | LLM→DB, LLM→Cache, LLM→Analytics, LLM→API, LLM→Monitor, LLM→Edge, LLM→SIMD, LLM→Streaming, LLM→Voice, LLM→Speculative, LLM→Neural, LLM→ML, LLM→Embedding, LLM→RAG, LLM→NLP, LLM→TRT, LLM→Queue, LLM→Auth, LLM→Crypto, LLM→Container, LLM→Chat, ASR→LLM, LLM→TTS, LLM→Codec, LLM→Diffusion, LLM→Text, LLM→Search, LLM→CDN, LLM→VectorDB, LLM→Telemetry, LLM→SDF, LLM→PointCloud, LLM→Render, LLM→Vision, LLM→Image, LLM→Document, LLM→Legal-AI, LLM→Ledger, LLM→Settlement, LLM→Cloud-Gateway, LLM→Bio, LLM→Kinematics, LLM→Quant, LLM→Graph, LLM→Geo (45 total) | LLM inference pipeline — dual-model speculative decoding, wgpu GPU inference, edge deployment, domain & science bridges |
-| **Synth Bridges** | Synth→ASP, Synth→Animation, Synth→Codec, Synth→DB, Synth→View + 6 more (11 total) | Procedural audio to ecosystem |
-| **Kinematics Bridges** | Kinematics→Sync, Kinematics→Edge, Kinematics→Physics, Kinematics→Animation, Kinematics→ASP, Kinematics→DB + 3 more (9 total) | Motion intent compression & IK |
-| **Motion Bridges** | Motion→Physics, Motion→Print, Motion→Animation, Motion→Edge, Motion→SDF | NURBS/Bezier trajectory control |
-| **RTOS Bridges** | RTOS→Edge, RTOS→Queue, RTOS→Container, RTOS→Analytics, RTOS→DB | Real-time task scheduling |
-| **VCS Bridges** | VCS→SDF, VCS→Animation, VCS→Manga, VCS→Sync, VCS→DB, VCS→Auth + 5 more (11 total) | AST semantic version control |
-| **Cross-Crate Bridges** | Synth↔RTOS, Motion↔Kinematics, Kinematics↔RTOS, Motion↔RTOS, VCS→Synth, VCS→Font, Font→Synth, RTOS↔ML, ML↔Motion, Print↔Sync, Text↔Sync, Kinematics→Voice, Synth→Search, Motion→Search, VCS→ASP, Cache↔Crypto, View→Text + 11 more (28 total) | Multi-domain integration |
-| **Voice Bridges** | Voice→Synth, Voice→Animation, Voice→Font, Voice→Edge | Parametric voice codec to ecosystem |
-| **Codec Bridges** | Codec→Synth, Codec→Animation, Codec→SDF, Codec→View | 3D wavelet codec to ecosystem |
-| **Text Bridges** | Text→Font, Text→Manga, Text→DB, Text→Browser | Exception-based text compression |
-| **ML/TRT Bridges** | ML→Physics, ML→SDF, ML→Animation, TRT→SDF, TRT→Physics, TRT→View, TRT→Kinematics, TRT→Edge | Ternary AI inference |
-| **DNS/API Bridges** | DNS→Browser, DNS→Cache, API→Auth, API→CDN, API→Queue, API→Analytics, API→DB | DNS ad-blocking + API gateway |
-| **Search Bridges** | Search→DB, Search→Browser, Search→VCS | FM-Index full-text search |
-| **Train Bridges** | Train→DB, Train→Cache, Train→Analytics, Train→Edge, Train→ML (5 total) | Backpropagation training to ecosystem |
-| **Train-QAT Bridges** | QAT→LLM, QAT→Edge, QAT→ML, QAT→Analytics, QAT→Monitor (5 total) | Quantization-aware training to inference & observability |
-| **Zip Bridges** | Zip→Edge, Zip→DB, Zip→Crypto, Zip→ML, Zip→Cache | Procedural compression + storage |
-| **Auth Bridges** | Auth→DB, Auth→Cache, Auth→Crypto, Auth→API, Auth→CDN, Auth→Edge, Auth→DNS, Auth→Sync | Ed25519 ZKP identity to ecosystem |
-| **Crypto Bridges** | Crypto→DB, Crypto→Cache, Crypto→CDN, Crypto→VCS, Crypto→Edge, Crypto→Sync, Crypto→Zip | BLAKE3 + XChaCha20 + SSS to ecosystem |
-| **Crypto Ext Bridges** | Crypto→Analytics (Key lifecycle), Crypto→DB (Shard), Crypto→Cache (Hash), Crypto→Edge (Key+Nonce), Crypto→Analytics (Seal) (5 total) | Extended crypto key management to ecosystem |
-| **Animation Bridges** | Animation→SDF, Animation→CDN, Animation→Cache, Animation→DB, Animation→Sync, Animation→View, Animation→Codec, Animation→ML | Anime SDF direction to ecosystem |
-| **Manga Bridges** | Manga→SDF, Manga→CDN, Manga→Cache, Manga→DB, Manga→Text, Manga→Search, Manga→Print, Manga→Codec | SDF manga creation to ecosystem |
-| **Print Ext Bridges** | Print→DB, Print→CDN, Print→Cache, Print→View, Print→Analytics, Print→Motion | SDF-to-G-code slicer to ecosystem |
-| **Analytics Bridges** | Analytics→DB, Analytics→Cache, Analytics→CDN, Analytics→ML, Analytics→Search, Analytics→View, Analytics→Edge | Streaming sketches to ecosystem |
-| **Queue Bridges** | Queue→DB, Queue→Edge, Queue→Crypto, Queue→Analytics, Queue→Sync, Queue→Cache | Message queue to ecosystem |
-| **Physics Bridges** | Physics→SDF, Physics→View, Physics→DB, Physics→Cache, Physics→Analytics, Physics→ForceField, MultiWorld→Analytics, ParticleSystem→Cache (8 total) | Deterministic 128-bit physics to ecosystem |
-| **Physics 2D Bridges** | Physics2D→View, Physics2D→DB, Physics2D→Cache, Physics2D→Analytics, Physics2D→Edge (5 total) | 2D physics subsystem to ecosystem |
-| **Physics Softbody Bridges** | Cloth→Analytics, Fluid→Analytics, Rope→DB, Cloth→Cache, Fluid→Edge, Deformable→View (6 total) | Cloth/fluid/rope/deformable to ecosystem |
-| **Physics Scene I/O Bridges** | PhysicsScene→DB, PhysicsScene→CDN, PhysicsScene→Cache, PhysicsScene→Analytics, PhysicsScene→Edge (5 total) | Physics scene serialization to ecosystem |
-| **SDF Material Bridges** | SdfMaterial→View (PBR descriptor), SdfMaterial→CDN (delivery), SdfMaterial→Cache (snapshot), SdfMaterial→Analytics (metrics), SdfMaterial→Edge (LOD) (5 total) | PBR material pipeline to ecosystem |
-| **SDF Destruction Bridges** | Destruction→DB (event record), Destruction→View (visual feedback), Destruction→Cache (invalidation), Destruction→Analytics (metrics), FracturePiece→Physics (collision) (5 total) | Destructible environments to ecosystem |
-| **ASP Bridges** | ASP→Cache, ASP→Codec, ASP→SDF, ASP→View, ASP→CDN, ASP→Analytics + 6 more (12 total) | Streaming protocol to ecosystem |
-| **Edge Ext Bridges** | Edge→DB, Edge→View, Edge→ASP, Edge→Analytics, Edge→Kinematics, Edge→Synth (6 total) | Extended sensor model integration |
-| **CDN Ext Bridges** | CDN→Cache, CDN→Physics, CDN→ASP, CDN→Analytics | Extended content delivery integration |
-| **Ledger Bridges** | Ledger→Analytics (Order, Fill, PnL), Ledger→DB (Fill), Ledger→Cache (Position) | Order book event integration |
-| **Risk Bridges** | Risk→Analytics (Reject), Risk→Cache (Limits), Risk→Semantic (Reject severity) | Pre-trade risk telemetry |
-| **Risk Ext Bridges** | Risk→Analytics (Limits), Risk→DB (Position), Risk→Cache (Margin), Risk→Edge (CircuitBreaker), Risk→Analytics (PreTrade) (5 total) | Extended risk management to ecosystem |
-| **FIX Bridges** | FIX→Analytics (Message), Ledger→FIX (ExecReport), FIX→Semantic (Session) | FIX protocol integration |
-| **FIX Ext Bridges** | FIX→Analytics (NewOrder), FIX→DB (ExecReport), FIX→Cache (Order), FIX→Edge (MarketData), FIX→Analytics (Session) (5 total) | Extended FIX protocol to ecosystem |
-| **Settlement Bridges** | Settlement→DB (Trade), Settlement→Analytics (Journal), Settlement→Queue (Obligation), Settlement→Semantic (Trade) | Post-trade settlement integration |
-| **Bio Bridges** | Bio→Analytics (Residue, Energy), Bio→DB (Residue), Bio→SDF (Protein), Bio→Cache (Energy) | Molecular biology to ecosystem |
-| **Legal Bridges** | Legal→Analytics (Statute, Contract), Legal→DB (AuditEntry), Legal→Cache (Contract), Legal→Edge (Alert) | Legal compliance to ecosystem |
-| **Energy Bridges** | Energy→Analytics (PowerNode, Battery), Energy→DB (PowerFlow), Energy→Edge (Phase), Energy→Cache (Battery) | Power grid to ecosystem |
-| **Space Bridges** | Space→Analytics (CommLink, Mission), Space→DB (Mission), Space→Edge (Differential), Space→Cache (CommLink) | Deep-space comms to ecosystem |
-| **Neural Bridges** | Neural→Analytics (SpikeRate, Intent), Neural→DB (Intent), Neural→Edge (SpikeRate), Neural→Cache (Intent) | BCI to ecosystem |
-| **Climate Bridges** | Climate→Analytics (Station, Anomaly), Climate→DB (Observation), Climate→Edge (Anomaly), Climate→Cache (Station) | Climate modeling to ecosystem |
-| **History Bridges** | History→Analytics (Degradation, Quality, Entropy), History→DB (Restoration), History→Cache (Restoration) | Inverse entropy to ecosystem |
-| **Atoms Bridges** | Atoms→Analytics (Crystal, Band, Properties), Atoms→DB (Compilation), Atoms→Cache (Compilation) | Molecular compilation to ecosystem |
-| **Presence Bridges** | Presence→DB (Crossing), Presence→Analytics (Crossing, Proximity), Presence→Edge (Event), Presence→Cache (Event) | Presence protocol to ecosystem |
-| **Firewall Bridges** | Firewall→ML, Firewall→Analytics, Firewall→Edge, Firewall→Cache, Firewall→DB, Firewall→Queue (6 total) | Network packet inspection to ecosystem |
-| **Edge-Commercial Bridges** | EdgeCommercial→DB, EdgeCommercial→Analytics, EdgeCommercial→Cache (3 total) | Enterprise edge features to ecosystem |
-| **ASP-Commercial Bridges** | ASPCommercial→DB, ASPCommercial→Analytics, ASPCommercial→Auth (3 total) | Enterprise streaming features to ecosystem |
-| **Semantic Telemetry Bridges** | SemanticTelemetry→Analytics, SemanticTelemetry→DB, SemanticTelemetry→View, SemanticTelemetry→Edge, SemanticTelemetry→ML, SemanticTelemetry→Physics, SemanticTelemetry→Sync, SemanticTelemetry→Motion, SemanticTelemetry→RTOS (9 total) | Semantic observability to ecosystem |
-| **Pipeline Paths** | A: IoT, B: Game/3D, C: MoCap, D: Anime, E: Embedded, F: Print, G: AI, H: Voice, I: Search, J: DNS, **K: Financial**, **L: Biology**, **M: Legal**, **N: Energy**, **O: Space**, **P: Neural**, **Q: Climate**, **R: History**, **S: Atoms**, **U: Presence** | End-to-end cross-crate pipelines |
-
-### Hardware-Native Optimization
-
-All 719 bridge functions are optimized following the ALICE hardware-native methodology:
-
-| Optimization | Applied | Impact |
-|-------------|---------|--------|
-| `#[inline]` / `#[inline(always)]` | 500+ annotations | Zero call overhead after LTO |
-| Branchless patterns | `.min()` / `.max()` / `.get().map_or()` | `minss`/`maxss`/`cmov` instructions |
-| Division exorcism | Reciprocal multiplication, hoisted loop-invariant `1.0/x` | 5-8x latency reduction on hot loops |
-| Batch-friendly loops | `chunks_exact_mut()`, pre-allocated buffers | Bounds-check elimination, autovectorization |
-| Shared FNV-1a | `hash::fnv1a()` single optimization point | Consistent hashing across all bridges |
-| Release profile | `opt-level=3, lto=fat, codegen-units=1, panic=abort, strip=true` | Maximum binary optimization |
-
-### Build Profile Changes
-
-- `[profile.release]`: `opt-level=3, lto=fat, codegen-units=1, panic=abort, strip=true`
-- `[profile.bench]`: `opt-level=3, lto=thin, codegen-units=1`
-
-## Demo: Game Engine Networking
-
-ALICE-Sync + ALICE-Physics combine for deterministic multiplayer game networking. Only player inputs (~24 bytes) are synchronized — physics state is never transmitted.
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Player    │────▶│ ALICE-Sync  │────▶│ALICE-Physics│────▶│ ALICE-View  │
-│  InputFrame │     │  Rollback   │     │  Fix128     │     │  wgpu       │
-│  (24 bytes) │     │  Lockstep   │     │  XPBD Step  │     │  Rendering  │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                    InputFrame(i16)     FrameInput(Fix128)
-                    ──── bridge ────▶
-                    SimChecksum(u64) ◀── WorldHash(u64)
-```
-
-| Metric | State Sync | ALICE Input Sync |
-|--------|-----------|-----------------|
-| Bandwidth (4p, 60fps) | ~960 KB/s | **5.6 KB/s** |
-| Determinism | Approximate | **Bit-exact** |
-| Rollback | Full state transfer | **24-byte input replay** |
-
-The `sync` bridge (feature `sync`) and `physics` bridge (feature `physics`) provide:
-- `sync_to_physics_event()` — InputFrame → SyncPhysicsEvent (movement to directional force)
-- `physics_to_view_snapshot()` / `physics_to_db_record()` / `physics_to_cache_entry()` — Physics state export
-- `physics_to_analytics_metrics()` — Physics performance telemetry
-
-## Demo: Data Pipeline
-
-ALICE-Queue + ALICE-Analytics + ALICE-DB combine for IoT/log collection with streaming aggregation and model-based persistent storage.
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ Sensor/App  │────▶│ ALICE-Queue │────▶│  Analytics  │────▶│  ALICE-DB   │
-│  MetricEvent│     │ SPSC + WAL  │     │ HLL,DDSketch│     │ LSM-Tree    │
-│  (17 bytes) │     │ Exactly-once│     │  Streaming  │     │ Model-Based │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                    Lock-free O(1)      Counter, Gauge       O(1) point query
-                    mmap persistence    P50/P90/P99          50-1000x compress
-```
-
-| Metric | Raw Logging | ALICE Data Pipeline |
-|--------|------------|---------------------|
-| Per-event size | ~200 bytes (JSON) | **17 bytes** (binary) |
-| Storage (1M events) | ~200 MB | **~6 entries/metric** (aggregated) |
-| Query latency | O(N) scan | **O(1)** model compute |
-| Privacy | Full raw data | **Only aggregates stored** |
-
-The `queue_bridge` module (feature `queue` in ALICE-Analytics) and `analytics_bridge` module (feature `analytics` in ALICE-DB) provide:
-- `encode_metric_payload()` / `parse_metric_event()` — MetricEvent ↔ 17-byte queue payload
-- `QueueConsumerPipeline` — Combined queue drain + streaming aggregation
-- `flush_metrics_to_db()` — Persist pipeline slots to model-based DB
-- `AnalyticsSink` — Combined MetricPipeline + AliceDB with windowed flush
-
-## Demo: Media Streaming Pipeline
-
-ALICE-Streaming-Protocol + ALICE-Codec + ALICE-Voice combine as a unified **media-stack** for ultra-low bandwidth video+voice streaming.
-
-```
-┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌─────────────┐
-│   Camera    │────▶│ ALICE-Codec      │────▶│ ALICE-Streaming  │────▶│  Receiver   │
-│  RGB Frame  │     │ YCoCg-R+Wavelet  │     │  Protocol (ASP)  │     │  Decode +   │
-│  (6.2 MB)   │     │ +rANS  (~50 KB)  │     │  FlatBuffers     │     │  Display    │
-└─────────────┘     └──────────────────┘     └──────────────────┘     └─────────────┘
-
-┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌─────────────┐
-│ Microphone  │────▶│ ALICE-Voice      │────▶│ ALICE-Streaming  │────▶│  Receiver   │
-│  PCM 16kHz  │     │ LPC Parametric   │     │  Protocol (ASP)  │     │  Synthesize │
-│  (32 KB/s)  │     │  (~50 bytes/frm) │     │  FlatBuffers     │     │  + Playback │
-└─────────────┘     └──────────────────┘     └──────────────────┘     └─────────────┘
-```
-
-| Stream | Traditional | ALICE Media Stack |
-|--------|-----------|-------------------|
-| Video (1080p) | 5-10 Mbps (H.265) | **~0.5-2 Mbps** (Wavelet+rANS) |
-| Voice | 32 KB/s (PCM) | **~50 bytes/frame** (LPC, 600x) |
-| Combined | ~5-10 Mbps | **~0.5-2 Mbps** |
-
-Enable with: `libasp = { features = ["media-stack"] }`
-
-Key optimizations:
-- **Rayon parallel 3-channel** video encode/decode (Y/Co/Cg via `rayon::join`)
-- **Voice batch API** for multi-frame processing
-- **Python bindings** with GIL release + NumPy zero-copy
-
-## Demo: Edge-to-Cloud AR Pipeline (7 Crates)
-
-ALICE-Cloud-Gateway orchestrates the full edge-to-cloud SDF streaming pipeline, connecting 7 ALICE crates for real-time AR data delivery.
-
-```
-┌──────── Edge (Raspberry Pi 5) ────────┐
-│                                        │
-│  Dolphin D5 Lite (USB 3.0)            │
-│       │                                │
-│  [ALICE-Edge]    depth → SDF compress  │
-│  [ALICE-ML]      1.58-bit classify     │
-│  [ALICE-Streaming-Protocol] ASP packet │
-│  [ALICE-Crypto]  seal_packet()         │
-│       │                                │
-└───────┼────────────────────────────────┘
-        │ QUIC/UDP
-        ▼
-┌──────── Cloud (ALICE-Cloud-Gateway) ───┐
-│                                        │
-│  IngestPipeline::process_packet()      │
-│       │                                │
-│       ├─→ ALICE-Crypto   decrypt       │
-│       ├─→ ALICE-DB       SDF storage   │
-│       ├─→ ALICE-Cache    hot frames    │
-│       ├─→ ALICE-Sync     device sync   │
-│       ├─→ ALICE-CDN      edge routing  │
-│       └─→ ALICE-Analytics telemetry    │
-└────────────────────────────────────────┘
-```
-
-| Stage | Data Size | Compression |
-|-------|-----------|-------------|
-| Raw point cloud (100K pts) | 4.8 MB | — |
-| SDF primitives (CSG) | 200-600 B | **8,000-24,000x** |
-| SDF SVO chunks | 2-50 KB | **96-2,400x** |
-| ASP packet (encrypted) | +40 B overhead | negligible |
-
-Cross-crate bridges:
-- **Edge → Crypto** — `seal_packet()` per-device stream encryption (BLAKE3 KDF)
-- **Gateway → DB** — `SdfStorage::store_keyframe()` Morton code spatial indexing
-- **Gateway → Sync** — `CloudSyncHub::process_device_update()` star topology
-- **Gateway → CDN** — `SdfCdnRouter::route_sdf_request()` Maglev + Vivaldi
-- **Gateway → Analytics** — `GatewayTelemetry::record_packet()` DDSketch/HLL/CMS
-
-## Demo: SDF-to-Print Pipeline (3 Crates)
-
-ALICE-SDF + ALICE-Print combine to skip the traditional mesh → STL → slicer pipeline entirely. SDF nodes are sliced directly into G-code toolpaths using SIMD Marching Squares, with optional Bambu Lab .3mf packaging.
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  SDF Node   │────▶│ ALICE-Print │────▶│   G-code    │────▶│  Printer    │
-│  CSG tree   │     │  Slicer     │     │  Marlin /   │     │  Bambu Lab  │
-│  (38 bytes) │     │  SIMD 8-wide│     │  Klipper    │     │  or FDM     │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                    CompiledSdf          154 KB (sphere)
-                    → Z-slice (Rayon)    layer-by-layer
-                    → Marching Squares
-                    → O(n) Contour
-                    → Toolpath → Gcode
-```
-
-| Shape | Traditional Pipeline | ALICE Direct Pipeline | Speedup |
-|-------|---------------------|----------------------|---------|
-| Sphere 15mm | SDF → Mesh (MC) → STL → PrusaSlicer | SDF → G-code (2.2ms) | **No intermediate mesh** |
-| Box 60x40x30 | Mesh → STL export → Import → Slice | SDF → G-code (direct) | **Zero file I/O** |
-| CSG subtract | Boolean mesh ops → Repair → Slice | SDF → G-code (native CSG) | **No mesh repair** |
-
-Cross-crate bridges:
-- **SDF → Print** — `CompiledSdf` bytecode VM + `eval_compiled_batch_simd()` for Z-slice evaluation
-- **Print → .3mf** — `pack_bambu_3mf()` ZIP packaging for Bambu Lab printers
-
-### Cloud-to-Print: Remote Fabrication Pipeline (4 Crates)
-
-ALICE-Cloud-Gateway can route SDF scenes from edge devices to ALICE-Print for remote 3D printing, enabling cloud-based digital fabrication.
-
-```
-┌──────── Edge ─────────┐     ┌──────── Cloud ─────────┐     ┌─── Fabrication ───┐
-│                       │     │                        │     │                   │
-│  [ALICE-Edge]         │     │  [ALICE-Cloud-Gateway] │     │  [ALICE-Print]    │
-│  3D scan → SDF        │────▶│  IngestPipeline        │────▶│  SDF → G-code     │
-│  [ALICE-Crypto]       │     │  → decrypt + store     │     │  → .3mf / .gcode  │
-│  seal_packet()        │     │  → ALICE-DB persist    │     │  → Bambu Lab H2S  │
-│                       │     │  → route to printer    │     │                   │
-└───────────────────────┘     └────────────────────────┘     └───────────────────┘
-```
-
-This enables **scan-to-print**: a Raspberry Pi with a 3D scanner captures an object as SDF, streams it through the cloud gateway, and a remote ALICE-Print instance generates G-code for fabrication — all without ever creating a polygon mesh.
-
-## Demo: Container Orchestration Pipeline (5 Crates)
-
-ALICE-Container + ALICE-Cloud-Gateway + ALICE-Sync + ALICE-Crypto + ALICE-DB combine for secure, synchronized container orchestration with audit logging.
-
-```
-┌─────────────┐     ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Container  │────▶│ ALICE-Sync  │────▶│ALICE-Cloud-GW│────▶│  ALICE-DB   │
-│  Runtime    │     │  Sync Event │     │  Orchestrate │     │  Audit Log  │
-│  cgroup v2  │     │  (18 bytes) │     │  Deploy/Scale│     │  (40 bytes) │
-└─────────────┘     └─────────────┘     └──────────────┘     └─────────────┘
-   │                                           │
-   ▼                                           ▼
-┌─────────────┐                        ┌──────────────┐
-│ALICE-Crypto │                        │ALICE-Container│
-│ seal/open   │                        │ queue_bridge  │
-│ XChaCha20   │                        │ Priority route│
-└─────────────┘                        └──────────────┘
-```
-
-Cross-crate bridges:
-- **Container → DB** — `ContainerRecord` 40-byte serialization + `ContainerDbSink`
-- **Container → Crypto** — `ContainerSecretStore` (XChaCha20-Poly1305 secret management)
-- **Container → Sync** — `ContainerSyncEvent` 18-byte compact sync events + `container_world_hash()`
-- **Cloud-Gateway → Queue** — `GatewayRouter` priority message routing
-- **Cloud-Gateway → Container** — `ContainerOrchestrator` deploy/scale/health_check
-
-## Demo: Compressed Log SIEM Pipeline (4 Crates)
-
-ALICE-Queue + ALICE-Text + ALICE-Search + ALICE-DB combine for a compressed log ingestion pipeline where logs are exception-compressed, full-text indexed, and stored in model-based DB.
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Log Source  │────▶│ ALICE-Queue │────▶│ ALICE-Text  │────▶│ALICE-Search │
-│  Raw logs   │     │ text_bridge │     │ search_bridge│     │  FM-Index   │
-│  (~200 B/ev)│     │ Batch+Compr.│     │ Compress+Idx│     │  Backward   │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                                                                    │
-                                                                    ▼
-                                                             ┌─────────────┐
-                                                             │  ALICE-DB   │
-                                                             │  LSM-Tree   │
-                                                             │  50-1000x   │
-                                                             └─────────────┘
-```
-
-| Metric | Traditional SIEM | ALICE Log Pipeline |
-|--------|-----------------|-------------------|
-| Per-event storage | ~200 bytes (JSON) | **~20 bytes** (exception-compressed) |
-| Full-text search | Elasticsearch (GB RAM) | **FM-Index** (~1.0x compressed size) |
-| Storage (1M logs) | ~200 MB | **~20 MB** (compressed + model-based) |
-| Query | O(N) scan | **O(m)** backward search (m = pattern length) |
-
-Cross-crate bridges:
-- **Queue → Text** — `TextLogPipeline` batched log compression via `ALICEText`
-- **Text → Search** — `CompressedSearchIndex` wrapping FM-Index for compressed text
-
-## Demo: AI-Driven SDF Pipeline (3 Crates)
-
-ALICE-TRT + ALICE-View + ALICE-Voice combine for GPU-accelerated inference with neural upscaling and voice feature extraction.
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Ternary    │────▶│ ALICE-TRT   │────▶│ ALICE-View  │────▶│   Display   │
-│  Model      │     │ db_bridge   │     │ view_bridge │     │   Neural    │
-│  (2-bit GPU)│     │ Log metrics │     │ Upscale 4x  │     │   Upscaled  │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │ ALICE-Voice │
-                    │ voice_bridge│
-                    │ Mel features│
-                    └─────────────┘
-```
-
-Cross-crate bridges:
-- **TRT → DB** — `TrtDbStore` inference metrics persistence (34-byte `InferenceRecord`)
-- **TRT → View** — `NeuralUpscaler` quality tiers (Performance/Balanced/Quality/UltraQuality)
-- **TRT → Voice** — `GpuVoiceExtractor` mel-frequency feature extraction
-
-## Demo: Zero-Trust Auth Pipeline (3 Crates)
-
-ALICE-Auth + ALICE-DB + ALICE-Crypto combine for zero-trust authentication with audit logging, rate limiting, and Ed25519 signature verification.
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Client    │────▶│ ALICE-Auth  │────▶│  ALICE-DB   │
-│  Ed25519    │     │ api_bridge  │     │ db_bridge   │
-│  token+sig  │     │ Verify+Rate │     │ Audit log   │
-└─────────────┘     └─────────────┘     └─────────────┘
-                    │                          │
-                    │ verify(&identity,        │ AuthAuditLog
-                    │  &token, &signature)     │ (43 bytes)
-                    ▼                          ▼
-              ┌─────────────┐          ┌─────────────┐
-              │ALICE-Crypto │          │  Query by   │
-              │ crypto_bridge│         │  identity + │
-              │ BLAKE3 + XCC│          │  time range │
-              └─────────────┘          └─────────────┘
-```
-
-Cross-crate bridges:
-- **Auth → API** — `AuthMiddleware` Ed25519 token verification + sliding window rate limiter
-- **Auth → DB** — `AuthDbStore` audit log persistence (43-byte `AuthAuditLog`, time-range queries)
-- **Auth → Crypto** — Existing `crypto_bridge` for token hashing + session encryption
-
-## Demo: Next-Gen Browser Pipeline (8 Crates)
-
-ALICE-Browser connects to 8 ALICE crates for a fully integrated semantic browser with SDF rendering, CDN routing, voice input, analytics, and compressed text.
-
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                          ALICE-Browser                                    │
-│                                                                          │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐       │
-│  │ text_bridge│  │cache_bridge│  │cdn_bridge  │  │analytics   │       │
-│  │ ALICE-Text │  │ ALICE-Cache│  │ ALICE-CDN  │  │ _bridge    │       │
-│  │ Compress   │  │ DOM cache  │  │ Vivaldi rt │  │ DDSketch   │       │
-│  └────────────┘  └────────────┘  └────────────┘  └────────────┘       │
-│                                                                          │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐       │
-│  │search_bridge│ │view_bridge │  │ sdf_bridge │  │voice_bridge│       │
-│  │ALICE-Search│  │ SDF UI     │  │ Web SDF    │  │ Voice Act. │       │
-│  │ In-page    │  │ Rounded    │  │ Scene eval │  │ Detection  │       │
-│  │ FM-Index   │  │ Rects      │  │ Sphere tr. │  │ Downsample │       │
-│  └────────────┘  └────────────┘  └────────────┘  └────────────┘       │
-│                                                                          │
-│  Core: dom, net, render, engine, simd, branchless, fast_math, mobile    │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
-| Feature | Traditional Browser | ALICE-Browser |
-|---------|-------------------|---------------|
-| UI Rendering | Raster/Vector | **SDF** (infinite resolution) |
-| Content Routing | DNS round-robin | **Vivaldi** coordinate nearest-node |
-| Search | JavaScript DOM walk | **FM-Index** O(m) backward search |
-| Text Compression | gzip (~3x) | **Exception-based** (~10-50x) |
-| Analytics | External JS SDK | **Built-in** DDSketch/HLL/CMS |
-| Voice | WebRTC | **Parametric** 600x compression |
-
-Cross-crate bridges (8 total):
-- **Browser → Text** — `text_bridge` compressed DOM content
-- **Browser → Cache** — `cache_bridge` DOM classification caching
-- **Browser → Search** — `search_bridge` in-page FM-Index search
-- **Browser → Analytics** — `analytics_bridge` page load telemetry (DDSketch, HLL, CMS)
-- **Browser → CDN** — `cdn_bridge` Vivaldi coordinate routing
-- **Browser → View (SDF UI)** — `view_bridge` resolution-independent SDF rounded rects
-- **Browser → SDF** — `sdf_bridge` WebSDF scene evaluation + sphere tracing
-- **Browser → Voice** — `voice_bridge` voice activity detection + downsample
-
-## Demo: Anime Production Pipeline (3-5 Crates)
-
-ALICE-Animation + ALICE-SDF combine for anime episode production as compact SDF packages (~20-50 KB per episode), replacing hundreds of megabytes of traditional video.
-
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Storyboard │────▶│   ALICE-     │────▶│  ALICE-SDF   │────▶│ ALICE-View  │
-│  Director   │     │  Animation   │     │  ASDF binary │     │  Real-time  │
-│  Cuts/Scenes│     │  SceneGraph  │     │  (20-50 KB)  │     │  NPR render │
-└─────────────┘     │  Camera/NPR  │     └──────────────┘     └─────────────┘
-                    └──────────────┘
-                     ↑ (optional)
-               ┌─────────────┐
-               │ ALICE-Voice │
-               │  Lip sync   │
-               │  (formants) │
-               └─────────────┘
-```
-
-| Metric | Traditional Anime | ALICE Anime Pipeline |
-|--------|------------------|---------------------|
-| Episode file size | 200-500 MB (video) | **20-50 KB** (ASDF) |
-| Resolution | Fixed (1080p/4K) | **Infinite** (SDF) |
-| Character re-pose | Re-draw/re-render | **Timeline keyframe edit** |
-| Localization | Subtitle overlay | **SDF balloon reflow** |
-
-Cross-crate bridges:
-- **Animation → SDF** — SceneGraph actors wrap `SdfNode`, `Timeline` keyframes
-- **Animation → Voice** — `lip_sync` module: `ParametricParams` formant → phoneme → mouth `Timeline`
-- **Animation → View** — CameraState + AnimeShading for NPR rendering
-- **Animation → Streaming-Protocol** — Episode → `SdfSceneDescriptor` for streaming delivery
-
-## Demo: SDF Manga Pipeline (2-3 Crates)
-
-ALICE-Manga + ALICE-SDF produce resolution-independent manga pages as SDF trees (~2-10 KB per page), with mathematically moire-free screentones.
-
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Artist     │────▶│  ALICE-Manga │────▶│  ALICE-SDF   │────▶│  Reader     │
-│  Strokes,   │     │  Panel/Tone  │     │  ASDF binary │     │  ALICE-View │
-│  Balloons   │     │  Balloon     │     │  (2-10 KB)   │     │  or SVG     │
-└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
-                     ↑ (optional)
-               ┌─────────────┐
-               │ ALICE-Text  │
-               │ Localization│
-               │ (compress)  │
-               └─────────────┘
-```
-
-| Metric | Traditional Manga (raster) | ALICE Manga (SDF) |
-|--------|---------------------------|-------------------|
-| Page size | 2-5 MB (PNG/JPEG) | **2-10 KB** (ASDF) |
-| Zoom quality | Pixelated at 200%+ | **Infinite resolution** |
-| Screen tone | Moire at non-native DPI | **Mathematically moire-free** |
-| Localization | Manual text replacement | **Balloon auto-reflow** |
-
-Cross-crate bridges:
-- **Manga → SDF** — Strokes (`Segment2D`/`Bezier`), Panels (`RoundedRect2D`+`Onion`), Tones (`RepeatInfinite`)
-- **Manga → Text** — `compress_tuned()` for dialogue compression
-- **Manga → Animation** — Optional: animated manga (page transitions, panel effects)
-
-## Demo: Motion Capture Pipeline — Path C (6 Crates)
-
-ALICE-Kinematics + ALICE-Sync + ALICE-Edge + ALICE-Physics + ALICE-DB + ALICE-Streaming-Protocol combine for ultra-compressed motion capture streaming with **10,000x compression** via 8-byte intent packets.
-
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-│  MoCap Suit │────▶│   ALICE-     │────▶│  ALICE-Sync  │────▶│  ALICE-DB   │
-│  1000 Hz    │     │  Kinematics  │     │  P2P Diff    │     │  MoCap      │
-│  raw joints │     │  Intent 8B   │     │  (18 bytes)  │     │  Archive    │
-└─────────────┘     │  10,000x     │     └──────────────┘     └─────────────┘
-                    └──────────────┘
-                     ↑                    ┌──────────────┐
-                ┌─────────────┐          │  ALICE-Edge  │
-                │ALICE-Physics│          │  IoT stream  │
-                │ IK → Fix128 │          │  8-byte pkt  │
-                └─────────────┘          └──────────────┘
-```
-
-| Metric | Traditional MoCap | ALICE MoCap Pipeline |
-|--------|------------------|---------------------|
-| Per-sample size | 12 bytes/joint × 1000 Hz | **8 bytes/intent** (10,000x) |
-| Network bandwidth | ~100 KB/s (raw) | **~80 bytes/s** (intent) |
-| Storage (1 hour) | ~360 MB | **~36 KB** |
-
-Cross-crate bridges:
-- **Kinematics → Sync** — `IntentSyncPacket` 8-byte intent via `InputFrame` movement fields
-- **Kinematics → Edge** — `MocapEdgePacket` compressed IoT streaming with 10,000x ratio
-- **Kinematics → Physics** — `KinematicsPhysicsState` IK chain to Fix128 coordinates
-- **Kinematics → Animation** — `KinematicsAnimKeyframe` intent → character keyframes
-- **Kinematics → ASP** — `IntentAspPayload` intent streaming over ALICE-Streaming-Protocol
-- **Kinematics → DB** — `MocapDbRecord` motion capture archive with FNV-1a hashing
-
-## Demo: Anime Production Pipeline — Path D (8 Crates)
-
-Full anime production pipeline combining ALICE-Animation + ALICE-Font + ALICE-Synth + ALICE-VCS + ALICE-SDF + ALICE-Codec + ALICE-Streaming-Protocol + ALICE-View for version-controlled anime episodes with procedural audio and parametric typography.
-
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Storyboard │────▶│   ALICE-     │────▶│  ALICE-VCS   │────▶│ ALICE-Codec │
-│  + Script   │     │  Animation   │     │  AST diff    │     │  Wavelet    │
-│  + Music    │     │  SceneGraph  │     │  versioning  │     │  compress   │
-└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
-                     ↑         ↑
-                ┌─────────┐ ┌─────────┐   ┌──────────────┐
-                │ ALICE-  │ │ ALICE-  │   │   ALICE-     │
-                │  Font   │ │  Synth  │   │  Streaming   │
-                │ MetaFont│ │ FM/BGM  │   │  Protocol    │
-                └─────────┘ └─────────┘   └──────────────┘
-```
-
-Cross-crate bridges:
-- **Font → Animation** — `FontAnimTimeline` animated subtitles with MetaFont params
-- **Synth → Animation** — `AnimAudioCue` BGM/SFX timing for lip-sync
-- **VCS → Animation** — Scene graph change tracking with AST diff
-- **VCS → Font** — Typography versioning (glyph parameter history)
-- **Font → Synth** — `FontSynthLyricsTiming` lyric timing from shaped text
-
-## Demo: Real-Time Embedded Pipeline — Path E (5 Crates)
-
-ALICE-RTOS + ALICE-Edge + ALICE-Kinematics + ALICE-Motion + ALICE-Physics combine for deterministic real-time control on embedded systems with < 2KB kernel footprint.
-
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-│  Sensors    │────▶│  ALICE-RTOS  │────▶│ ALICE-Motion │────▶│  Actuators  │
-│  IMU, Force │     │  RMS sched   │     │  Bezier path │     │  Motors     │
-│  1 kHz      │     │  < 2KB kern  │     │  S-curve     │     │  Servos     │
-└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
-                     ↑                    ↑
-                ┌─────────────┐     ┌──────────────┐
-                │ALICE-Physics│     │   ALICE-     │
-                │ Fix128 sim  │     │  Kinematics  │
-                │ Determinism │     │  7-DoF IK    │
-                └─────────────┘     └──────────────┘
-```
-
-| Metric | Traditional RTOS | ALICE Embedded Pipeline |
-|--------|-----------------|------------------------|
-| Kernel footprint | 8-64 KB | **< 2 KB** |
-| Scheduling analysis | Empirical | **Liu-Layland guaranteed** |
-| Physics precision | 32-bit float | **128-bit fixed-point** |
-| Motion planning | Linear interpolation | **Bezier + S-curve profiles** |
-
-Cross-crate bridges:
-- **RTOS → Edge** — `RtosEdgeTelemetry` task execution metrics for IoT monitoring
-- **RTOS → Queue** — `RtosQueueBridge` priority-mapped message routing
-- **RTOS → Container** — `RtosContainerMetrics` resource usage monitoring
-- **Motion → Physics** — `TrajectoryPhysicsState` trajectory-constrained Fix128 bodies
-- **Motion → Edge** — `ActuatorEdgePacket` 48-byte Bezier trajectory for actuator streaming
-- **Kinematics → Physics** — `KinematicsPhysicsState` IK chain to rigid body coordinates
-
-## Demo: 3D Print Optimization Pipeline — Path F (5 Crates)
-
-ALICE-Motion + ALICE-SDF + ALICE-Print + ALICE-Physics + ALICE-RTOS combine for optimized 3D printing with Bezier-based toolpath control and real-time feed rate adaptation.
-
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-│  ALICE-SDF  │────▶│  ALICE-Print │────▶│ ALICE-Motion │────▶│  Printer    │
-│  CSG model  │     │  Slicer      │     │  Bezier path │     │  G-code     │
-│  (38 bytes) │     │  SIMD 8-wide │     │  S-curve feed│     │  Optimized  │
-└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
-                                          ↑
-                                    ┌──────────────┐
-                                    │  ALICE-RTOS  │
-                                    │  Real-time   │
-                                    │  feed control│
-                                    └──────────────┘
-```
-
-Cross-crate bridges:
-- **Motion → Print** — `GcodeMotionSegment` Bezier curve → G-code feed rate segments
-- **Motion → SDF** — `MotionSdfSweep` Bezier path → SDF sweep extrusion profile
-- **Font → Print** — `FontPrintLayout` MetaFont text → toolpath engraving coordinates
-- **RTOS → Edge** — Real-time actuator scheduling for printer stepper control
-- **Synth → RTOS** — Audio feedback scheduling for print status notifications
-
-## Demo: Financial Trading Pipeline — Path K (4 Crates)
-
-ALICE-FIX + ALICE-Risk + ALICE-Ledger + ALICE-Settlement combine for a full-stack financial trading pipeline from FIX protocol ingestion through order matching, risk management, and post-trade settlement.
-
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-│  FIX Client │────▶│  ALICE-FIX   │────▶│  ALICE-Risk  │────▶│ALICE-Ledger │
-│  NewOrder   │     │  Parser +    │     │  PreTrade    │     │  OrderBook  │
-│  MsgType D  │     │  Session mgmt│     │  Limits/CB   │     │  LOB Match  │
-└─────────────┘     └──────────────┘     └──────────────┘     └─────────────┘
-                                                                     │
-                                                                     │ Fill
-                                                                     ▼
-                    ┌──────────────┐     ┌──────────────┐     ┌─────────────┐
-                    │  ALICE-FIX   │◀────│  ALICE-      │◀────│  Position   │
-                    │  ExecReport  │     │  Settlement  │     │  Tracker    │
-                    │  MsgType 8   │     │  Netting +   │     │  PnL calc   │
-                    └──────────────┘     │  Clearing    │     └─────────────┘
-                                        └──────────────┘
-```
-
-| Metric | Traditional | ALICE Financial Pipeline |
-|--------|-----------|------------------------|
-| Order matching | String-based FIX parsing | **BTreeMap LOB** price-time priority |
-| Risk check | External risk system | **Inline** pre-trade check (branchless) |
-| Price arithmetic | 64-bit float (drift) | **i64 ticks** (deterministic) |
-| PnL calculation | Float accumulation | **i128 intermediate** (no overflow) |
-| Netting | End-of-day batch | **Real-time** bilateral netting |
-
-Cross-crate bridges (15 total):
-- **FIX → Analytics** — `fix_message_to_analytics()` protocol metrics (msg_type_hash, field_count)
-- **FIX → Semantic** — `fix_session_to_semantic()` session lifecycle telemetry
-- **Ledger → FIX** — `ledger_fill_to_fix_exec()` Fill → ExecutionReport (branchless exec_type)
-- **Ledger → Analytics** — `ledger_order_to_analytics()`, `ledger_fill_to_analytics()`, `ledger_position_to_analytics()`
-- **Ledger → DB** — `ledger_fill_to_db_record()` fill persistence with symbol_hash
-- **Ledger → Cache** — `ledger_position_to_cache()` branchless TTL (volatile=5s, stable=30s)
-- **Risk → Analytics** — `risk_reject_to_analytics()` reject code telemetry
-- **Risk → Cache** — `risk_limits_to_cache()` limit configuration caching (TTL=3600s)
-- **Risk → Semantic** — `risk_reject_to_semantic()` severity-classified reject events
-- **Settlement → DB** — `settlement_trade_to_db()` trade record persistence
-- **Settlement → Analytics** — `settlement_journal_entry_to_analytics()` journal event telemetry
-- **Settlement → Queue** — `settlement_obligation_to_queue()` high-priority clearing messages
-- **Settlement → Semantic** — `settlement_trade_to_semantic()` trade lifecycle telemetry
-
-## Use Cases
-
-### IoT / Edge Computing
-- Smart sensors (temperature, humidity, pressure)
-- Industrial monitoring (vibration, flow rate)
-- Agriculture (soil moisture, weather stations)
-
-### 3D Asset Delivery
-- Game level streaming (SDF zones, Markov prefetch)
-- Procedural content (CSG recipes instead of baked meshes)
-- Collaborative 3D editing (SDF diffs at minimal bandwidth)
-- IoT/Edge 3D (38 bytes vs 15 KB per object)
-
-### Multiplayer Game Engine
-- Deterministic lockstep / rollback netcode (5.6 KB/s for 4 players)
-- Physics-accurate rollback with snapshot restore
-- Cross-platform bit-exact simulation (128-bit fixed-point)
-- SDF asset streaming for game worlds (200-800x vs glTF)
-
-### 3D Printing / Digital Fabrication
-- Direct SDF-to-G-code slicing (no mesh intermediary)
-- Cloud-to-print via ALICE-Cloud-Gateway (scan → SDF → remote print)
-- CSG operations natively supported (no boolean mesh repair)
-- Bambu Lab .3mf packaging for one-click print
-- LLM-assisted model generation (ALICE-SDF `llm_schema` → ALICE-Print)
-
-### Financial Trading
-- Deterministic order matching with price-time priority (BTreeMap LOB)
-- Pre-trade risk management with circuit breakers and margin calculation
-- FIX protocol 4.4/5.0 session management with sequence tracking
-- Post-trade bilateral netting and clearing house settlement
-- Audit trail via append-only settlement journal
-
-### Science & Domain-Specific
-- **Molecular Biology** (Path L): Protein SDF modeling, amino acid residue analytics, Lennard-Jones energy computation
-- **Legal Compliance** (Path M): Statute tree analysis, contract conflict detection, append-only audit logs
-- **Energy Grid** (Path N): Newton-Raphson power flow, battery SoC simulation, phase correction telemetry
-- **Deep-Space Communication** (Path O): Comm link budgets, differential telemetry (delta encoding), autonomous mission control
-- **Brain-Computer Interface** (Path P): Spike train detection, ISI analysis, Bayesian intent classification
-- **Planetary Climate** (Path Q): IDW interpolation, Clausius-Clapeyron moisture, climate anomaly detection
-
-### Advanced Domain
-- **Inverse Entropy Restoration** (Path R): Fragment degradation modeling, iterative regularized solver, Shannon entropy measurement, confidence mapping
-- **Molecular Compilation** (Path S): Crystal lattice optimization via genetic algorithm, band structure computation, material property prediction
-- **Note: Path T is reserved for future use.**
-- **Cryptographic Presence** (Path U): Vivaldi network coordinates, zero-knowledge identity proofs, 18-byte presence events, proximity verification
-
-### Benefits
-- **Bandwidth**: 99% reduction in data transmission
-- **Battery**: 90% less power for radio (biggest consumer)
-- **Cost**: Fewer LoRaWAN/LTE-M packets = lower bills
-- **Latency**: Immediate trend analysis on cloud
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                            ALICE Ecosystem Architecture                          │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                  │
-│  ╔═══════════════════════════════════════════════════════════════════════════╗   │
-│  ║  LAYER 7: Application                                                    ║   │
-│  ║  ┌──────────────────────────────────────────────────────────────────┐     ║   │
-│  ║  │ ALICE-Browser    (SDF render, ML filter, smart cache, search)   │     ║   │
-│  ║  │ ALICE-Print      (SDF → G-code, SIMD slicer, Bambu .3mf)     │     ║   │
-│  ║  │ ALICE-Animation  (Anime SDF direction, NPR, fake perspective) │     ║   │
-│  ║  │ ALICE-Manga      (SDF manga, moire-free tone, balloon reflow) │     ║   │
-│  ║  └─────────────────────────────┬────────────────────────────────────┘     ║   │
-│  ╚════════════════════════════════╪═════════════════════════════════════════╝   │
-│                                   │                                              │
-│  ╔════════════════════════════════╪═════════════════════════════════════════╗   │
-│  ║  LAYER 6: Visualization & Analytics                                      ║   │
-│  ║  ┌────────────┐  ┌────────────────┐                                      ║   │
-│  ║  │ ALICE-View │  │ ALICE-Analytics│                                      ║   │
-│  ║  │ wgpu/egui  │  │ HLL, DDSketch  │                                      ║   │
-│  ║  │ GPU render │  │ CMS, LDP       │                                      ║   │
-│  ║  └─────┬──────┘  └───────┬────────┘                                      ║   │
-│  ╚════════╪═════════════════╪═══════════════════════════════════════════════╝   │
-│           │                 │                                                    │
-│  ╔════════╪═════════════════╪═══════════════════════════════════════════════╗   │
-│  ║  LAYER 5: Data & Storage ▼                                               ║   │
-│  ║  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐             ║   │
-│  ║  │ ALICE-DB │  │   Cache  │  │  Queue   │  │    Search    │             ║   │
-│  ║  │ LSM-Tree │  │ TinyLFU  │  │ SPSC WAL │  │  FM-Index    │             ║   │
-│  ║  └─────┬────┘  └────┬─────┘  └────┬─────┘  └──────┬───────┘             ║   │
-│  ╚════════╪═════════════╪════════════╪═══════════════╪══════════════════════╝   │
-│           │             │            │               │                            │
-│  ╔════════╪═════════════╪════════════╪═══════════════╪══════════════════════╗   │
-│  ║  LAYER 4: Networking & Streaming   ▼               ▼                      ║   │
-│  ║  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐            ║   │
-│  ║  │ ALICE-API│  │   CDN    │  │   Sync   │  │  Streaming    │            ║   │
-│  ║  │ GCRA/SFQ │  │ Vivaldi  │  │ P2P Diff │  │  Protocol     │            ║   │
-│  ║  └─────┬────┘  └────┬─────┘  └────┬─────┘  └──────┬────────┘            ║   │
-│  ║  ┌──────────┐  ┌─────────────────────────────────────────────┐          ║   │
-│  ║  │ALICE-DNS │  │ ALICE-Cloud-Gateway (ASP ingest, BLAKE3 KDF)│          ║   │
-│  ║  │Bloom O(1)│  └─────────────────────────┬───────────────────┘          ║   │
-│  ║  └─────┬────┘                            │                              ║   │
-│  ╚════════╪═════════════╪════════════╪═══════════════╪═════════════════════╝   │
-│           │             │            │                                            │
-│  ╔════════╪═════════════╪════════════╪══════════════════════════════════════╗   │
-│  ║  LAYER 3: Security    ▼            ▼                                     ║   │
-│  ║  ┌──────────────┐  ┌──────────────────┐                                  ║   │
-│  ║  │  ALICE-Auth  │  │  ALICE-Crypto    │                                  ║   │
-│  ║  │ Ed25519, ZKP │  │ SSS, BLAKE3      │                                  ║   │
-│  ║  │              │  │ XChaCha20-Poly   │                                  ║   │
-│  ║  └──────┬───────┘  └────────┬─────────┘                                  ║   │
-│  ╚═════════╪═══════════════════╪════════════════════════════════════════════╝   │
-│            │                   │                                                  │
-│  ╔═════════╪═══════════════════╪════════════════════════════════════════════╗   │
-│  ║  LAYER 2: Compression & Encoding                                         ║   │
-│  ║  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐     ║   │
-│  ║  │  Edge  │ │  Zip   │ │ Codec  │ │ Voice  │ │  Text  │ │  SDF   │     ║   │
-│  ║  │ 500x   │ │10-1000x│ │Wavelet │ │LPC 600x│ │Pattern │ │  CSG   │     ║   │
-│  ║  │ no_std │ │  LZMA  │ │  rANS  │ │Privacy │ │Columnar│ │Infinite│     ║   │
-│  ║  └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘ └────┬───┘     ║   │
-│  ║  ┌────────┐ ┌────────┐                                                   ║   │
-│  ║  │ Synth  │ │  Font  │  Procedural audio + parametric metafont          ║   │
-│  ║  └────┬───┘ └────┬───┘                                                   ║   │
-│  ╚═══════╪══════════╪══════════╪══════════╪══════════╪══════════╪══════════╝   │
-│          │          │          │          │          │          │                  │
-│  ╔═══════╪══════════╪══════════╪══════════╪══════════╪══════════╪══════════╗   │
-│  ║  LAYER 1: Compute & Runtime                                              ║   │
-│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌─────────────┐  ║   │
-│  ║  │ALICE-Container│ │   ALICE-ML    │ │  ALICE-TRT    │ │ALICE-Physics│  ║   │
-│  ║  │ cgroup v2     │ │1.58-bit ternry│ │ GPU ternary   │ │128-bit Fixed│  ║   │
-│  ║  │ io_uring      │ │ no multiply   │ │ wgpu/CUDA     │ │ XPBD,GJK   │  ║   │
-│  ║  │ clone3, PSI   │ │ SIMD-ready    │ │ BitNet matmul │ │ CORDIC,BVH  │  ║   │
-│  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
-│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐                  ║   │
-│  ║  │  ALICE-RTOS   │ │ ALICE-Motion  │ │  ALICE-VCS    │                  ║   │
-│  ║  │ RMS scheduler │ │ NURBS/Bezier  │ │ AST diff/merge│                  ║   │
-│  ║  │ Liu-Layland   │ │ Trapezoidal   │ │ Merkle hash   │                  ║   │
-│  ║  │ SPSC ring,<2KB│ │ S-curve prof. │ │ Content-addr  │                  ║   │
-│  ║  └───────────────┘ └───────────────┘ └───────────────┘                  ║   │
-│  ║  ┌───────────────────┐                                                  ║   │
-│  ║  │ALICE-Kinematics   │  7-DoF arm, jerk min., 8-byte intent packets    ║   │
-│  ║  │ MIT decoder       │  Open Core (encoder = AGPL-3.0)                  ║   │
-│  ║  └───────────────────┘                                                  ║   │
-│  ║  ┌───────────────┐ ┌───────────────┐                                    ║   │
-│  ║  │ ALICE-Token   │ │ ALICE-Train   │                                    ║   │
-│  ║  │ BPE tokenizer │ │ Backprop STE  │                                    ║   │
-│  ║  │ MIT           │ │ AGPL-3.0      │                                    ║   │
-│  ║  └───────────────┘ └───────────────┘                                    ║   │
-│  ║                                                                          ║   │
-│  ║  LAYER 1b: Financial Trading                                            ║   │
-│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌─────────────┐  ║   │
-│  ║  │ALICE-Ledger   │ │  ALICE-Risk   │ │  ALICE-FIX    │ │  ALICE-     │  ║   │
-│  ║  │ BTreeMap LOB  │ │ PreTrade     │ │ FIX 4.4/5.0  │ │ Settlement  │  ║   │
-│  ║  │ Price-Time    │ │ CircuitBreak │ │ SOH parser   │ │ Netting +   │  ║   │
-│  ║  │ i64 tick, i128│ │ i128 margin  │ │ Session mgmt │ │ Clearing    │  ║   │
-│  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
-│  ║                                                                          ║   │
-│  ║  LAYER 1c: Science & Domain-Specific (Path L-Q)                        ║   │
-│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌─────────────┐  ║   │
-│  ║  │  ALICE-Bio    │ │ ALICE-Legal   │ │ ALICE-Energy  │ │ ALICE-Space │  ║   │
-│  ║  │ Protein SDF   │ │ Statute tree  │ │ Power flow    │ │ Comm link   │  ║   │
-│  ║  │ Lennard-Jones │ │ Audit log     │ │ Battery SoC   │ │ Diff telm.  │  ║   │
-│  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
-│  ║  ┌───────────────┐ ┌───────────────┐                                    ║   │
-│  ║  │ ALICE-Neural  │ │ ALICE-Climate │                                    ║   │
-│  ║  │ Spike train   │ │ IDW interp.   │                                    ║   │
-│  ║  │ Bayesian BCI  │ │ Anomaly det.  │                                    ║   │
-│  ║  └───────────────┘ └───────────────┘                                    ║   │
-│  ║                                                                          ║   │
-│  ║  LAYER 1d: Advanced Domain (Path R-U)                                  ║   │
-│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐                  ║   │
-│  ║  │ ALICE-History │ │ ALICE-Atoms   │ │ALICE-Presence │                  ║   │
-│  ║  │ Inv. entropy  │ │ Mol. compiler │ │ Vivaldi+ZKP   │                  ║   │
-│  ║  │ Frag. restore │ │ Genetic algo  │ │ 18-byte event │                  ║   │
-│  ║  │ AGPL-3.0      │ │ Proprietary   │ │ MIT           │                  ║   │
-│  ║  └───────────────┘ └───────────────┘ └───────────────┘                  ║   │
-│  ║                                                                          ║   │
-│  ║  LAYER 1e: AI/ML + DevTools + Cross-cutting (46 new crates)            ║   │
-│  ║  ┌───────────────┐ ┌───────────────┐ ┌───────────────┐ ┌─────────────┐  ║   │
-│  ║  │  ALICE-NLP    │ │ ALICE-Vision  │ │ALICE-Embedding│ │ ALICE-RL    │  ║   │
-│  ║  │  ALICE-RAG    │ │ALICE-Diffusion│ │ALICE-GameEng  │ │ALICE-Robotics│ ║   │
-│  ║  │  ALICE-Fluid  │ │ALICE-Quantum  │ │ ALICE-Genome  │ │ ALICE-Astro │  ║   │
-│  ║  │  ALICE-CI     │ │ ALICE-Debug   │ │ ALICE-Lint    │ │ ALICE-Map   │  ║   │
-│  ║  │  + 32 more    │ │ MIT license   │ │ v1.0.0 each   │ │ Pure Rust   │  ║   │
-│  ║  └───────────────┘ └───────────────┘ └───────────────┘ └─────────────┘  ║   │
-│  ╚══════════════════════════════════════════════════════════════════════════╝   │
-│                                                                                  │
-│  All components: Rust | no_std compatible | Zero allocation | Deterministic      │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
-## Mathematical Foundation
-
-ALICE is based on **Kolmogorov Complexity**: the shortest program that produces the data is the optimal compression.
-
-```
-Traditional: Store [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  → 40 bytes
-ALICE:       Store "f(x) = x" for x in [1,10]       → 8 bytes
-```
-
-For sensor data that follows physical laws (temperature gradients, pressure decay, etc.), the mathematical model is often trivially small compared to the raw data.
-
-## Continuous Integration — O(N) Hierarchical Feature Flag Testing
-
-The ALICE ecosystem uses a **5-tier hierarchical testing strategy** to prevent feature flag combination explosions (2^N problem) while maintaining comprehensive coverage.
-
-### Testing Tier System
-
-| Tier | Strategy | Purpose |
-|------|----------|---------|
-| **T0** | `--no-default-features` | Bare minimum compilation — catches missing `#[cfg]` guards |
-| **T1** | Default features | Standard build — the configuration most users run |
-| **T2** | Meta-feature groups | Domain-specific bundles (`mobile`, `unity`, `aaa`, `edge-pipeline`) |
-| **T3** | Individual leaf features (build-only) | Per-feature compilation check — catches broken `dep:` references |
-| **T4** | `full` / `alice-full` / `enterprise-full` | All features enabled — integration test for maximum configuration |
-
-### Per-Crate CI Coverage
-
-| Crate | Features | CI Tests | Tiers | Platform |
-|-------|----------|----------|-------|----------|
-| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | 25 | 9 | T0-T4 | macOS, Linux, Windows |
-| [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | 15 | 7 | T0-T2 | macOS, Linux |
-| [ALICE-Browser](https://github.com/ext-sakamoro/ALICE-Browser) | 14 | 8 | T0-T4 | macOS, Linux |
-| [ALICE-Sync](https://github.com/ext-sakamoro/ALICE-Sync) | 13 | 7 | T0-T3 | macOS, Linux |
-| [ALICE-Streaming-Protocol](https://github.com/ext-sakamoro/ALICE-Streaming-Protocol) | 12 | 6 | T0-T3 | macOS, Linux |
-
-**Total: 59 feature flag test configurations across 8 crates.** (CI coverage for Token, Train pending)
-
-### CI Job Structure
-
-Each crate runs three parallel CI jobs:
-
-1. **test** — Multi-platform feature flag matrix (T0-T4)
-2. **clippy** — Lint check with dependency stubs
-3. **fmt** — `cargo fmt --check` formatting enforcement
-
-### Dependency Stub Pattern
-
-Cross-crate `path = "../ALICE-*"` dependencies are resolved in CI by creating lightweight stubs:
-
-```yaml
-- name: Create dependency stubs
-  run: |
-    mkdir -p ../ALICE-Physics/src
-    cat > ../ALICE-Physics/Cargo.toml << 'TOML'
-    [package]
-    name = "alice-physics"
-    version = "0.1.0"
-    edition = "2021"
-    [lib]
-    path = "src/lib.rs"
-    TOML
-    echo "" > ../ALICE-Physics/src/lib.rs
-```
-
-This enables each crate to build independently in CI without requiring the full 184-component workspace.
+After editing `docs/crate-index.tsv`, regenerate the tables with
+`python3 scripts/readme_index.py --write`.
 
 ## License
 
-MIT License (this integration demo)
+The hub crate in this repository is licensed under either of
 
-Each crate declares its own license in its `Cargo.toml` and on crates.io; the
-tables above list the SPDX expression for every crate in this ecosystem.
-Several crates are dual-licensed (`... OR LicenseRef-Commercial`) — use the
-open option under its terms, or contact the author for the commercial one.
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT license ([LICENSE](LICENSE))
 
-Enabling an optional feature can pull in a crate under a different license
-than the one the host crate declares. Check the resolved dependency graph
-(`cargo tree -e no-dev`) before shipping.
-
-## Author
-
-Moroya Sakamoto
-
----
-
-*"The best data is the data you never had to send."*
+at your option. Each crate in the index carries its own license, shown in the
+table.
