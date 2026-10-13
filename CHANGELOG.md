@@ -17,6 +17,9 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - 使われていない bridge module 6 本と、それに対応する lib.rs の pipeline 説明 2 件を削除
 - build 生成物の `libbridge_*.rlib` 22 file を追跡対象から外し `.gitignore` に `*.rlib` を追加
 
+### Fixed
+- `scripts/docs_lint.py`: `[Unreleased]` の中身が空 (release を切った直後の状態) でも `Cargo.toml` の版に節が無ければ「compared nothing」で fail していた 空の `[Unreleased]` は Cargo の版に節がある時だけ通し、無い時は明示的に fail するよう修正 (ALICE-DB / ALICE-Analytics で先に landing 済の修正を移植)
+
 ## [0.3.4] - 2026-07-01
 
 ### Changed
