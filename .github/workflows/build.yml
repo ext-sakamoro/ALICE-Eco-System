@@ -1,0 +1,107 @@
+name: Build
+
+# The crate depends on about 190 sibling repositories by path, so nothing here
+# compiled it. This job clones them (shallow, default branch, public) next to
+# the checkout and runs `cargo check` against them. A sibling's main moving its
+# API reddens this job, which is the point: the drift used to stay invisible.
+# Sibling changes do not trigger this repository, so the schedule runs it too.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'examples/**'
+      - 'benches/**'
+      - 'tests/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'scripts/siblings.py'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'examples/**'
+      - 'benches/**'
+      - 'tests/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'rust-toolchain.toml'
+      - 'scripts/siblings.py'
+      - '.github/workflows/build.yml'
+  schedule:
+    # daily cargo check (sibling changes do not trigger this repository)
+    - cron: '17 3 * * *'
+    # weekly test run, Sunday 03:17 JST
+    - cron: '17 18 * * 6'
+  workflow_dispatch:
+    inputs:
+      tests:
+        description: also run the test job
+        type: boolean
+        default: false
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: cargo check against sibling mains
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: ALICE-Eco-System
+      - uses: dtolnay/rust-toolchain@1.92.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ALICE-Eco-System
+      - name: Clone sibling repositories (shallow, default branch)
+        working-directory: ALICE-Eco-System
+        run: python3 scripts/siblings.py --summary "$RUNNER_TEMP/siblings.txt"
+      - name: Sibling heads (at least one, or nothing was compared)
+        run: |
+          cat "$RUNNER_TEMP/siblings.txt"
+          n=$(grep -c . "$RUNNER_TEMP/siblings.txt" || true)
+          echo "siblings: $n"
+          test "$n" -gt 0
+      - name: cargo check (all targets)
+        working-directory: ALICE-Eco-System
+        run: cargo check --locked --all-targets
+
+  # the test suite takes several minutes, so it runs weekly or on request only
+  test:
+    name: cargo test against sibling mains (weekly)
+    if: github.event.schedule == '17 18 * * 6' || (github.event_name == 'workflow_dispatch' && inputs.tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: build-test
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: ALICE-Eco-System
+      - uses: dtolnay/rust-toolchain@1.92.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ALICE-Eco-System
+      - name: Clone sibling repositories (shallow, default branch)
+        working-directory: ALICE-Eco-System
+        run: python3 scripts/siblings.py --summary "$RUNNER_TEMP/siblings.txt"
+      - name: Sibling heads (at least one, or nothing was compared)
+        run: |
+          cat "$RUNNER_TEMP/siblings.txt"
+          n=$(grep -c . "$RUNNER_TEMP/siblings.txt" || true)
+          echo "siblings: $n"
+          test "$n" -gt 0
+      - name: cargo test (all targets)
+        working-directory: ALICE-Eco-System
+        run: cargo test --locked --all-targets

@@ -53,3 +53,5 @@ jobs:
         run: python scripts/docs_lint.py --check
       - name: Crate index (README tables match docs/crate-index.tsv)
         run: python scripts/readme_index.py --check
+      - name: Sibling closure of the build job (tests)
+        run: python scripts/test_siblings.py
