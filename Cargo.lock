@@ -142,7 +142,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a15f179cd60c4584b8a8c596927aadc462e27f2ca70c04e0071964a73ba7a75"
 dependencies = [
  "cfg-if",
- "const-random",
  "getrandom 0.3.4",
  "once_cell",
  "version_check",
@@ -184,8 +183,9 @@ version = "1.0.0"
 
 [[package]]
 name = "alice-analytics"
-version = "0.1.0"
+version = "0.6.0"
 dependencies = [
+ "alice-det-math",
  "libm",
 ]
 
@@ -193,7 +193,7 @@ dependencies = [
 name = "alice-animation"
 version = "0.1.0"
 dependencies = [
- "alice-sdf 1.13.0",
+ "alice-sdf 6.1.0",
  "bincode 1.3.3",
  "crc32fast",
  "glam",
@@ -240,7 +240,7 @@ dependencies = [
 
 [[package]]
 name = "alice-auth"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "ed25519-dalek",
  "getrandom 0.2.17",
@@ -326,9 +326,9 @@ version = "0.1.0"
 name = "alice-cache"
 version = "0.2.0"
 dependencies = [
- "ahash 0.8.12",
  "hashbrown 0.14.5",
  "parking_lot",
+ "portable-atomic",
  "spin",
 ]
 
@@ -384,8 +384,8 @@ dependencies = [
  "alice-analytics",
  "alice-cache",
  "alice-cdn",
- "alice-crypto",
- "alice-db 0.2.0-beta.2",
+ "alice-crypto 0.4.1",
+ "alice-db 0.5.1",
  "alice-sync",
  "env_logger",
  "libasp",
@@ -396,7 +396,7 @@ dependencies = [
 
 [[package]]
 name = "alice-codec"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "libm",
 ]
@@ -441,34 +441,33 @@ dependencies = [
 
 [[package]]
 name = "alice-crypto"
-version = "0.1.0"
+version = "0.4.1"
 dependencies = [
  "blake3",
+ "chacha20",
  "chacha20poly1305",
  "getrandom 0.2.17",
+ "zeroize",
+]
+
+[[package]]
+name = "alice-crypto"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4aab06bc5e8d31374c8b92ad47d78f0b3ce4bb8ab48a99d058ba219e6533769c"
+dependencies = [
+ "blake3",
+ "chacha20",
+ "chacha20poly1305",
+ "getrandom 0.2.17",
+ "zeroize",
 ]
 
 [[package]]
 name = "alice-datashield"
-version = "0.1.0"
-
-[[package]]
-name = "alice-db"
-version = "0.2.0-beta.2"
+version = "0.2.0"
 dependencies = [
- "alice-zip 0.4.0",
- "bincode 1.3.3",
- "crc32fast",
- "crossbeam-channel",
- "fs2",
- "log",
- "lzma-rs",
- "memmap2",
- "parking_lot",
- "rayon",
- "rkyv",
- "serde",
- "wide",
+ "alice-crypto 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -493,10 +492,54 @@ dependencies = [
 ]
 
 [[package]]
+name = "alice-db"
+version = "0.5.1"
+dependencies = [
+ "alice-det-math",
+ "alice-zip 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bincode 1.3.3",
+ "crc32fast",
+ "crossbeam-channel",
+ "fs2",
+ "getrandom 0.2.17",
+ "log",
+ "lzma-rs",
+ "memmap2",
+ "parking_lot",
+ "rayon",
+ "rkyv",
+ "serde",
+ "wide",
+]
+
+[[package]]
+name = "alice-db"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6ed8d7045f31f8aff2d8097a414b72541af1cfa9cc7b059d85457fa08e6adc1"
+dependencies = [
+ "alice-det-math",
+ "alice-zip 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bincode 1.3.3",
+ "crc32fast",
+ "crossbeam-channel",
+ "fs2",
+ "getrandom 0.2.17",
+ "log",
+ "lzma-rs",
+ "memmap2",
+ "parking_lot",
+ "rayon",
+ "rkyv",
+ "serde",
+ "wide",
+]
+
+[[package]]
 name = "alice-db-enterprise"
 version = "1.0.0"
 dependencies = [
- "alice-db 0.2.0-beta.2",
+ "alice-db 0.5.1",
  "argon2",
  "bincode 1.3.3",
  "bitflags 2.10.0",
@@ -517,6 +560,16 @@ dependencies = [
 [[package]]
 name = "alice-debug"
 version = "1.0.0"
+
+[[package]]
+name = "alice-det-math"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2857e06dcc3838a2138f4c8ed7b30cf8515a223eeb6d5fbd068dd13d45cb4ff4"
+dependencies = [
+ "bytemuck",
+ "wide",
+]
 
 [[package]]
 name = "alice-diffusion"
@@ -594,9 +647,9 @@ dependencies = [
  "alice-consensus",
  "alice-container",
  "alice-crm",
- "alice-crypto",
+ "alice-crypto 0.4.1",
  "alice-datashield",
- "alice-db 0.2.0-beta.2",
+ "alice-db 0.5.1",
  "alice-db-enterprise",
  "alice-debug",
  "alice-diffusion",
@@ -692,7 +745,7 @@ dependencies = [
  "alice-rtos",
  "alice-sandbox",
  "alice-scheduler",
- "alice-sdf 1.13.0",
+ "alice-sdf 6.1.0",
  "alice-search",
  "alice-secret-vault",
  "alice-semantic-telemetry",
@@ -735,7 +788,7 @@ dependencies = [
  "alice-wasm",
  "alice-websocket",
  "alice-workflow",
- "alice-zip 0.5.0",
+ "alice-zip 0.5.2",
  "bincode 1.3.3",
  "crc32fast",
  "criterion",
@@ -747,7 +800,10 @@ dependencies = [
 
 [[package]]
 name = "alice-edge"
-version = "0.1.0"
+version = "0.3.0"
+dependencies = [
+ "alice-det-math",
+]
 
 [[package]]
 name = "alice-edge-enterprise"
@@ -821,7 +877,7 @@ version = "1.0.2"
 
 [[package]]
 name = "alice-font"
-version = "0.7.5"
+version = "0.7.6"
 
 [[package]]
 name = "alice-form"
@@ -930,7 +986,7 @@ dependencies = [
 
 [[package]]
 name = "alice-kinematics"
-version = "0.1.0"
+version = "0.2.1"
 
 [[package]]
 name = "alice-lakehouse"
@@ -961,7 +1017,7 @@ version = "1.0.0"
 
 [[package]]
 name = "alice-llm"
-version = "1.6.0"
+version = "2.0.1"
 
 [[package]]
 name = "alice-lms"
@@ -987,17 +1043,20 @@ dependencies = [
 
 [[package]]
 name = "alice-lol"
-version = "0.3.0"
+version = "0.4.2"
 dependencies = [
+ "alice-det-math",
  "alice-lol-macro",
- "alice-sdf 1.13.0",
+ "alice-sdf 6.1.0",
+ "alice-zip 0.10.0",
  "glam",
+ "sha2",
  "stacker",
 ]
 
 [[package]]
 name = "alice-lol-macro"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1012,7 +1071,7 @@ version = "1.0.1"
 name = "alice-manga"
 version = "0.1.0"
 dependencies = [
- "alice-sdf 1.13.0",
+ "alice-sdf 6.1.0",
  "bincode 1.3.3",
  "glam",
  "serde",
@@ -1044,8 +1103,9 @@ version = "0.1.0"
 
 [[package]]
 name = "alice-ml"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
+ "alice-det-math",
  "libm",
 ]
 
@@ -1124,9 +1184,11 @@ dependencies = [
 
 [[package]]
 name = "alice-physics"
-version = "1.2.0"
+version = "3.1.0"
 dependencies = [
- "alice-db 0.2.0-beta.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "alice-db 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "alice-det-math",
+ "sha2",
 ]
 
 [[package]]
@@ -1142,13 +1204,18 @@ version = "1.0.0"
 
 [[package]]
 name = "alice-presence"
-version = "0.1.0"
+version = "0.2.0"
+dependencies = [
+ "blake3",
+ "ed25519-dalek",
+ "rand_core 0.6.4",
+]
 
 [[package]]
 name = "alice-print"
 version = "0.1.0"
 dependencies = [
- "alice-sdf 1.13.0",
+ "alice-sdf 6.1.0",
  "glam",
  "rayon",
  "wide",
@@ -1186,6 +1253,9 @@ version = "0.1.0"
 [[package]]
 name = "alice-realtime"
 version = "0.1.1"
+dependencies = [
+ "portable-atomic",
+]
 
 [[package]]
 name = "alice-recommend"
@@ -1242,8 +1312,9 @@ dependencies = [
 
 [[package]]
 name = "alice-sdf"
-version = "1.13.0"
+version = "6.1.0"
 dependencies = [
+ "alice-det-math",
  "bincode 2.0.1",
  "bytemuck",
  "crc32fast",
@@ -1335,12 +1406,11 @@ version = "1.0.0"
 
 [[package]]
 name = "alice-sync"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "alice-db 0.2.0-beta.2",
  "bincode 1.3.3",
  "bitcode",
- "crossbeam-channel",
  "rustc-hash 2.1.1",
  "serde",
  "wide",
@@ -1365,11 +1435,10 @@ dependencies = [
 name = "alice-text"
 version = "1.0.0"
 dependencies = [
+ "alice-zip 0.5.2",
  "bincode 1.3.3",
- "bytemuck",
  "chrono",
  "clap",
- "log",
  "lzma-rs",
  "memmap2",
  "mimalloc",
@@ -1455,12 +1524,10 @@ name = "alice-view"
 version = "0.3.0"
 dependencies = [
  "alice-lol",
- "alice-sdf 1.13.0",
+ "alice-sdf 6.1.0",
  "anyhow",
  "bytemuck",
  "chrono",
- "console_error_panic_hook",
- "console_log",
  "dirs",
  "egui 0.31.1",
  "egui-wgpu 0.31.1",
@@ -1478,9 +1545,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
  "wgpu 24.0.5",
  "winit",
 ]
@@ -1547,27 +1611,41 @@ dependencies = [
 
 [[package]]
 name = "alice-zip"
-version = "0.4.0"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63cb1d51f9aa64608aff8143ac536909a730678da5c17d2aa2353706ac477d27"
-dependencies = [
- "flate2",
- "libm",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
-]
-
-[[package]]
-name = "alice-zip"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4e5abb1bab423e0675217e1900c8659d659ca08f13389d3babf220072077656"
+checksum = "6b714e56d9d470588e8a3e4ddf21ea67b2bb25f553336451c592f7a40b12b8a6"
 dependencies = [
  "flate2",
  "libm",
  "lzma-rs",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
+ "sha2",
+]
+
+[[package]]
+name = "alice-zip"
+version = "0.10.0"
+dependencies = [
+ "alice-det-math",
+ "libm",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "sha2",
+]
+
+[[package]]
+name = "alice-zip"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c74382778e10a48c4f3269a1b904dec6cc8a424690daadf51b655b49554a3e4"
+dependencies = [
+ "alice-det-math",
+ "flate2",
+ "libm",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "sha2",
 ]
 
 [[package]]
@@ -1587,12 +1665,6 @@ checksum = "dc890384c8602f339876ded803c97ad529f3842aba97f6392b3dba0dd171769b"
 dependencies = [
  "equator",
 ]
-
-[[package]]
-name = "allocator-api2"
-version = "0.2.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "android-activity"
@@ -1706,9 +1778,6 @@ name = "arbitrary"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
-dependencies = [
- "derive_arbitrary",
-]
 
 [[package]]
 name = "arboard"
@@ -2701,50 +2770,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "console_error_panic_hook"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a06aeb73f470f66dcdbf7223caeebb85984942f22f1adb2a088cf9668146bbbc"
-dependencies = [
- "cfg-if",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "console_log"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be8aed40e4edbf4d3b4431ab260b63fdc40f5780a4766824329ea0f1eefe3c0f"
-dependencies = [
- "log",
- "web-sys",
-]
-
-[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
-
-[[package]]
-name = "const-random"
-version = "0.1.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87e00182fe74b066627d63b85fd550ac2998d4b0bd86bfed477a0ae4c7c71359"
-dependencies = [
- "const-random-macro",
-]
-
-[[package]]
-name = "const-random-macro"
-version = "0.1.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9d839f2a20b0aee515dc581a6172f2321f96cab76c1a38a4c584a194955390e"
-dependencies = [
- "getrandom 0.2.17",
- "once_cell",
- "tiny-keccak",
-]
 
 [[package]]
 name = "constant_time_eq"
@@ -3017,17 +3046,6 @@ checksum = "e7c1832837b905bbfb5101e07cc24c8deddf52f93225eee6ead5f4d63d53ddcb"
 dependencies = [
  "const-oid",
  "zeroize",
-]
-
-[[package]]
-name = "derive_arbitrary"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e567bd82dcff979e4b03460c307b3cdc9e96fde3d73bed1496d2bc75d9dd62a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.114",
 ]
 
 [[package]]
@@ -3630,6 +3648,7 @@ checksum = "b375d6465b98090a5f25b1c7703f3859783755aa9a80433b36e0379a3ec2f369"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
+ "zlib-rs",
 ]
 
 [[package]]
@@ -4119,10 +4138,6 @@ name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
-dependencies = [
- "ahash 0.8.12",
- "allocator-api2",
-]
 
 [[package]]
 name = "hashbrown"
@@ -4695,7 +4710,7 @@ checksum = "7a79a3332a6609480d7d0c9eab957bca6b455b91bb84e66d19f5ff66294b85b8"
 
 [[package]]
 name = "libasp"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "base64",
  "bytemuck",
@@ -4723,9 +4738,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.180"
+version = "0.2.190"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcc35a38544a891a5f7c865aca548a982ccb3b8650a5b06d0fd33a10283c56fc"
+checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
 
 [[package]]
 name = "libfuzzer-sys"
@@ -5038,6 +5053,7 @@ dependencies = [
  "hexf-parse",
  "indexmap",
  "log",
+ "pp-rs",
  "rustc-hash 1.1.0",
  "spirv",
  "strum",
@@ -5136,6 +5152,18 @@ dependencies = [
  "cfg_aliases 0.2.1",
  "libc",
  "memoffset",
+]
+
+[[package]]
+name = "nix"
+version = "0.31.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
+dependencies = [
+ "bitflags 2.10.0",
+ "cfg-if",
+ "cfg_aliases 0.2.1",
+ "libc",
 ]
 
 [[package]]
@@ -5972,6 +6000,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b73949432f5e2a09657003c25bca5e19a0e9c84f8058ca374f49e0ebe605af77"
 dependencies = [
  "zerovec",
+]
+
+[[package]]
+name = "pp-rs"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb458bb7f6e250e6eb79d5026badc10a3ebb8f9a15d1fff0f13d17c71f4d6dee"
+dependencies = [
+ "unicode-xid",
 ]
 
 [[package]]
@@ -7391,15 +7428,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tiny-keccak"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
-dependencies = [
- "crunchy",
-]
-
-[[package]]
 name = "tiny-skia"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7811,6 +7839,12 @@ checksum = "cb30dbbd9036155e74adad6812e9898d03ec374946234fbcebd5dfc7b9187b90"
 dependencies = [
  "rustc-hash 2.1.1",
 ]
+
+[[package]]
+name = "typed-path"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e28f89b80c87b8fb0cf04ab448d5dd0dd0ade2f8891bae878de66a75a28600e"
 
 [[package]]
 name = "typenum"
@@ -9175,7 +9209,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "hex",
- "nix",
+ "nix 0.29.0",
  "ordered-stream",
  "rand 0.8.5",
  "serde",
@@ -9409,20 +9443,24 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "2.4.2"
+version = "9.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fabe6324e908f85a1c52063ce7aa26b68dcb7eb6dbc83a2d148403c9bc3eba50"
+checksum = "a954114b47a54df49f83d2722814e86b23d4bb1b54a1b90fb7d92b41619ddc22"
 dependencies = [
- "arbitrary",
  "crc32fast",
- "crossbeam-utils",
- "displaydoc",
  "flate2",
  "indexmap",
  "memchr",
- "thiserror 2.0.18",
+ "nix 0.31.3",
+ "typed-path",
  "zopfli",
 ]
+
+[[package]]
+name = "zlib-rs"
+version = "0.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40990edd51aae2c2b6907af74ffb635029d5788228222c4bb811e9351c0caad3"
 
 [[package]]
 name = "zmij"
