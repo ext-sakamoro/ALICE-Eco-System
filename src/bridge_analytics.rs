@@ -2,7 +2,7 @@
 //!
 //! 7 bridges connecting streaming analytics sketches to the ALICE ecosystem.
 
-use alice_analytics::prelude::*;
+use alice_analytics::sketch::{DDSketch256, HyperLogLog12};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -404,6 +404,7 @@ pub fn edge_to_analytics_metrics(
 #[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
+    use alice_analytics::sketch::FnvHasher;
 
     fn test_sketches() -> (HyperLogLog12, DDSketch256) {
         let mut hll = HyperLogLog12::new();

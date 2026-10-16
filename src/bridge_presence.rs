@@ -2,7 +2,9 @@
 //!
 //! 5 bridges connecting presence protocol to the ALICE ecosystem.
 
-use alice_presence::{CrossingRecord, CrossingStatus, PresenceEvent, ProximityProof};
+use alice_presence::{
+    verify_record, CrossingRecord, CrossingStatus, PresenceEvent, ProximityProof, VerifyResult,
+};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -29,6 +31,9 @@ pub struct PresenceDbCrossingRecord {
     /// Whether both ZKPs verified and proximity confirmed.
     pub fully_verified: bool,
     /// Crossing status discriminant: 0=Initiated, 1=Mutual, 2=Verified, 3=Recorded, 4=Revoked.
+    ///
+    /// `CrossingRecord::status` no longer produces `Verified`, so 2 does not occur; the
+    /// mapping keeps it so the byte values of the other states stay the same.
     pub status: u8,
     /// Vivaldi distance between the two parties.
     pub distance: f64,
@@ -59,7 +64,7 @@ pub fn presence_crossing_to_db(record: &CrossingRecord) -> PresenceDbCrossingRec
         party_a_id: record.event.party_a_id,
         party_b_id: record.event.party_b_id,
         timestamp_ns: record.event.timestamp_ns,
-        fully_verified: record.is_fully_verified(),
+        fully_verified: verify_record(record) == VerifyResult::Valid,
         status: status_byte,
         distance: record.proximity.distance,
     }
@@ -77,11 +82,14 @@ pub struct PresenceAnalyticsCrossingEvent {
     pub party_b_id: u32,
     /// Vivaldi distance.
     pub distance: f64,
-    /// Whether the crossing is fully verified.
+    /// Whether `verify_record` accepts the record (both signatures over the
+    /// transcript, proximity, identifier hashes).
     pub fully_verified: bool,
-    /// Whether party A's ZKP was verified.
+    /// Whether party A's signature verifies over the record's transcript and
+    /// the challenge the proof carries. That the challenge was fresh (issued by
+    /// the verifier for this exchange) is the verifier's check, not this one.
     pub proof_a_valid: bool,
-    /// Whether party B's ZKP was verified.
+    /// As `proof_a_valid`, for party B.
     pub proof_b_valid: bool,
 }
 
@@ -93,18 +101,28 @@ pub fn presence_crossing_to_analytics(record: &CrossingRecord) -> PresenceAnalyt
     key[0..4].copy_from_slice(&record.event.party_a_id.to_le_bytes());
     key[4..8].copy_from_slice(&record.event.party_b_id.to_le_bytes());
     key[8..16].copy_from_slice(&record.proximity.distance.to_bits().to_le_bytes());
-    key[16] = record.proof_a.verified as u8;
-    key[17] = record.proof_b.verified as u8;
-    key[18] = record.is_fully_verified() as u8;
+    let transcript = record.transcript();
+    let proof_a_valid = record
+        .proof_a
+        .verify(&record.proof_a.challenge, &transcript)
+        .is_ok();
+    let proof_b_valid = record
+        .proof_b
+        .verify(&record.proof_b.challenge, &transcript)
+        .is_ok();
+    let fully_verified = verify_record(record) == VerifyResult::Valid;
+    key[16] = proof_a_valid as u8;
+    key[17] = proof_b_valid as u8;
+    key[18] = fully_verified as u8;
 
     PresenceAnalyticsCrossingEvent {
         content_hash: fnv1a(&key),
         party_a_id: record.event.party_a_id,
         party_b_id: record.event.party_b_id,
         distance: record.proximity.distance,
-        fully_verified: record.is_fully_verified(),
-        proof_a_valid: record.proof_a.verified,
-        proof_b_valid: record.proof_b.verified,
+        fully_verified,
+        proof_a_valid,
+        proof_b_valid,
     }
 }
 
@@ -226,15 +244,24 @@ pub fn presence_proximity_to_analytics(proof: &ProximityProof) -> PresenceAnalyt
 mod tests {
     use super::*;
     use alice_presence::{
-        execute_presence_protocol, CrossingRecord, PartyInfo, PresenceConfig, PresenceEvent,
-        ProximityProof, VivaldiCoord,
+        execute_presence_protocol, CrossingRecord, ExchangeChallenges, Identity, PartyInfo,
+        PresenceConfig, PresenceEvent, ProximityProof, VivaldiCoord,
     };
 
     fn make_crossing() -> CrossingRecord {
-        let a = PartyInfo::new(VivaldiCoord::new(0.0, 0.0), 42, 1);
-        let b = PartyInfo::new(VivaldiCoord::new(1.0, 0.0), 99, 2);
+        let ia = Identity::from_seed([0xA1; 32]);
+        let ib = Identity::from_seed([0xB0; 32]);
+        let a = PartyInfo::new(VivaldiCoord::new(0.0, 0.0), &ia, 1);
+        let b = PartyInfo::new(VivaldiCoord::new(1.0, 0.0), &ib, 2);
         let cfg = PresenceConfig::default();
-        execute_presence_protocol(&a, &b, 1_000_000, &cfg).unwrap()
+        execute_presence_protocol(
+            &a,
+            &b,
+            &ExchangeChallenges::from_seed([7; 32]),
+            1_000_000,
+            &cfg,
+        )
+        .unwrap()
     }
 
     #[test]
@@ -259,6 +286,34 @@ mod tests {
         assert!(ev.fully_verified);
         assert!(ev.proof_a_valid);
         assert!(ev.proof_b_valid);
+    }
+
+    /// A forged signature on one side: the record is not verified, only the
+    /// other side's proof is valid, and the content hash differs from the
+    /// honest record's.
+    #[test]
+    fn test_forged_proof_is_not_verified() {
+        let honest = make_crossing();
+        for side in [0, 1] {
+            let mut record = make_crossing();
+            if side == 0 {
+                record.proof_a.signature = [0u8; 64];
+            } else {
+                record.proof_b.signature[0] ^= 1;
+            }
+            let ev = presence_crossing_to_analytics(&record);
+            assert!(!ev.fully_verified, "side {side}");
+            assert_eq!(ev.proof_a_valid, side != 0, "side {side}");
+            assert_eq!(ev.proof_b_valid, side != 1, "side {side}");
+            assert_ne!(
+                ev.content_hash,
+                presence_crossing_to_analytics(&honest).content_hash
+            );
+            assert!(
+                !presence_crossing_to_db(&record).fully_verified,
+                "side {side}"
+            );
+        }
     }
 
     #[test]

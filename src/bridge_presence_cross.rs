@@ -3,7 +3,7 @@
 //! 3 bridges connecting presence protocol events to sync frame transport,
 //! authentication token generation, and cryptographic proof sealing.
 
-use alice_presence::{IdentityCommitment, PresenceEvent, ProximityProof};
+use alice_presence::{Challenge, ChallengeProof, PresenceEvent, ProofError, ProximityProof};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -63,54 +63,74 @@ pub fn presence_event_to_sync_frame(event: &PresenceEvent) -> PresenceSyncFrame 
     }
 }
 
-// ── Bridge 2: IdentityCommitment → Auth (verification token) ────────
+// ── Bridge 2: ChallengeProof → Auth (verification token) ────────────
 
-/// Auth verification token derived from an identity commitment.
+/// Auth verification token issued for a verified presence identity.
 ///
-/// Maps an identity commitment into ALICE-Auth token metadata so the
-/// Auth layer can verify presence identity claims using its existing
-/// token validation infrastructure.
+/// Issued only for a [`ChallengeProof`] whose Ed25519 signature verifies over
+/// the verifier's own challenge and the encounter transcript, so a token names
+/// a key that answered this verifier. The hashes are FNV-1a identifiers for the
+/// Auth layer's bookkeeping, not authentication: the authentication is the
+/// signature check done before the token exists.
 pub struct PresenceAuthToken {
-    /// FNV-1a hash over `commitment_hash`, nonce, `timestamp_ns`, `token_hash` bytes.
+    /// FNV-1a hash over `key_hash`, `challenge_hash`, `timestamp_ns`, `token_hash` bytes.
     pub content_hash: u64,
-    /// Commitment hash from the identity commitment.
-    pub commitment_hash: u64,
-    /// Nonce used in the commitment.
-    pub nonce: u64,
+    /// The prover's Ed25519 public key.
+    pub public_key: [u8; 32],
+    /// FNV-1a hash of the public key.
+    pub key_hash: u64,
+    /// FNV-1a hash of the challenge the proof answered.
+    pub challenge_hash: u64,
     /// Timestamp (nanoseconds).
     pub timestamp_ns: u64,
-    /// Token hash: fnv1a of `commitment_hash` + nonce + timestamp.
+    /// Token hash: fnv1a of `key_hash` + `challenge_hash` + timestamp.
     pub token_hash: u64,
     /// Time-to-live in seconds (3600 = 1 hour).
     pub ttl_secs: u32,
 }
 
-/// Convert an identity commitment into an auth verification token.
+/// Issue an auth token for a presence proof that verifies.
+///
+/// `expected_challenge` is the challenge this verifier issued for the
+/// exchange (drawn by the verifier, so a replayed proof does not match) and
+/// `transcript` the encounter transcript the proof signs
+/// (`CrossingRecord::transcript`).
+///
+/// # Errors
+///
+/// The [`ProofError`] of [`ChallengeProof::verify`]: a challenge that is not
+/// the expected one, an invalid public key or a signature that does not
+/// verify. No token is issued then.
 #[inline]
-#[must_use]
-pub fn presence_identity_to_auth_token(commitment: &IdentityCommitment) -> PresenceAuthToken {
-    // Compute token hash: fnv1a of commitment_hash + nonce + timestamp
+pub fn presence_proof_to_auth_token(
+    proof: &ChallengeProof,
+    expected_challenge: &Challenge,
+    transcript: &[u8],
+    timestamp_ns: u64,
+) -> Result<PresenceAuthToken, ProofError> {
+    proof.verify(expected_challenge, transcript)?;
+    let key_hash = fnv1a(&proof.public_key);
+    let challenge_hash = fnv1a(&proof.challenge.0);
+
     let mut tok_key = [0u8; 24];
-    tok_key[0..8].copy_from_slice(&commitment.commitment_hash.to_le_bytes());
-    tok_key[8..16].copy_from_slice(&commitment.nonce.to_le_bytes());
-    tok_key[16..24].copy_from_slice(&commitment.timestamp_ns.to_le_bytes());
+    tok_key[0..8].copy_from_slice(&key_hash.to_le_bytes());
+    tok_key[8..16].copy_from_slice(&challenge_hash.to_le_bytes());
+    tok_key[16..24].copy_from_slice(&timestamp_ns.to_le_bytes());
     let token_hash = fnv1a(&tok_key);
 
-    // Content hash over all fields including derived token_hash
     let mut key = [0u8; 32];
-    key[0..8].copy_from_slice(&commitment.commitment_hash.to_le_bytes());
-    key[8..16].copy_from_slice(&commitment.nonce.to_le_bytes());
-    key[16..24].copy_from_slice(&commitment.timestamp_ns.to_le_bytes());
+    key[0..24].copy_from_slice(&tok_key);
     key[24..32].copy_from_slice(&token_hash.to_le_bytes());
 
-    PresenceAuthToken {
+    Ok(PresenceAuthToken {
         content_hash: fnv1a(&key),
-        commitment_hash: commitment.commitment_hash,
-        nonce: commitment.nonce,
-        timestamp_ns: commitment.timestamp_ns,
+        public_key: proof.public_key,
+        key_hash,
+        challenge_hash,
+        timestamp_ns,
         token_hash,
         ttl_secs: 3600,
-    }
+    })
 }
 
 // ── Bridge 3: ProximityProof → Crypto (sealed proof) ────────────────
@@ -180,7 +200,21 @@ pub fn presence_proof_to_crypto_sealed(proof: &ProximityProof) -> PresenceCrypto
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alice_presence::{IdentityCommitment, PresenceEvent, ProximityProof, VivaldiCoord};
+    use alice_presence::{
+        execute_presence_protocol, CrossingRecord, ExchangeChallenges, Identity, PartyInfo,
+        PresenceConfig, PresenceEvent, ProximityProof, VivaldiCoord,
+    };
+
+    fn crossing(seed: u8) -> (CrossingRecord, ExchangeChallenges) {
+        let ia = Identity::from_seed([0xA1; 32]);
+        let ib = Identity::from_seed([0xB0; 32]);
+        let a = PartyInfo::new(VivaldiCoord::new(0.0, 0.0), &ia, 1);
+        let b = PartyInfo::new(VivaldiCoord::new(3.0, 4.0), &ib, 2);
+        let ch = ExchangeChallenges::from_seed([seed; 32]);
+        let r = execute_presence_protocol(&a, &b, &ch, 1_000_000, &PresenceConfig::default())
+            .expect("proximate");
+        (r, ch)
+    }
 
     // ── Bridge 1: event → sync frame ──────────────────────────────────
 
@@ -227,49 +261,64 @@ mod tests {
         assert_ne!(f1.content_hash, f2.content_hash);
     }
 
-    // ── Bridge 2: identity → auth token ───────────────────────────────
+    // ── Bridge 2: verified proof → auth token ─────────────────────────
 
     #[test]
-    fn test_presence_identity_to_auth_token() {
-        let commitment = IdentityCommitment::new(42, 12345, 9_000_000);
-        let token = presence_identity_to_auth_token(&commitment);
-        assert_ne!(token.content_hash, 0);
-        assert_eq!(token.commitment_hash, commitment.commitment_hash);
-        assert_eq!(token.nonce, 12345);
+    fn test_presence_proof_to_auth_token() {
+        let (r, ch) = crossing(1);
+        let token = presence_proof_to_auth_token(&r.proof_a, &ch.for_a, &r.transcript(), 9_000_000)
+            .expect("an honest proof verifies");
+        assert_eq!(
+            token.public_key,
+            Identity::from_seed([0xA1; 32]).public_key()
+        );
         assert_eq!(token.timestamp_ns, 9_000_000);
-        assert_ne!(token.token_hash, 0);
         assert_eq!(token.ttl_secs, 3600);
-        // Token hash must differ from content hash
+        assert_ne!(token.token_hash, 0);
         assert_ne!(token.token_hash, token.content_hash);
+        let again = presence_proof_to_auth_token(&r.proof_a, &ch.for_a, &r.transcript(), 9_000_000)
+            .unwrap();
+        assert_eq!(again.content_hash, token.content_hash);
     }
 
     #[test]
-    fn test_presence_identity_to_auth_token_deterministic() {
-        let commitment = IdentityCommitment::new(99, 777, 1_000_000);
-        let t1 = presence_identity_to_auth_token(&commitment);
-        let t2 = presence_identity_to_auth_token(&commitment);
-        assert_eq!(t1.content_hash, t2.content_hash);
-        assert_eq!(t1.token_hash, t2.token_hash);
+    fn test_presence_proof_to_auth_token_keys_and_challenges_differ() {
+        let (r, ch) = crossing(1);
+        let ta = presence_proof_to_auth_token(&r.proof_a, &ch.for_a, &r.transcript(), 5).unwrap();
+        let tb = presence_proof_to_auth_token(&r.proof_b, &ch.for_b, &r.transcript(), 5).unwrap();
+        assert_ne!(ta.key_hash, tb.key_hash);
+        assert_ne!(ta.token_hash, tb.token_hash);
+        let (r2, ch2) = crossing(2);
+        let t2 =
+            presence_proof_to_auth_token(&r2.proof_a, &ch2.for_a, &r2.transcript(), 5).unwrap();
+        assert_ne!(ta.challenge_hash, t2.challenge_hash);
+        assert_ne!(ta.content_hash, t2.content_hash);
     }
 
+    /// A forged or replayed proof gets no token.
     #[test]
-    fn test_presence_identity_to_auth_token_different_nonce_differs() {
-        let c1 = IdentityCommitment::new(42, 111, 1000);
-        let c2 = IdentityCommitment::new(42, 222, 1000);
-        let t1 = presence_identity_to_auth_token(&c1);
-        let t2 = presence_identity_to_auth_token(&c2);
-        assert_ne!(t1.token_hash, t2.token_hash);
-        assert_ne!(t1.content_hash, t2.content_hash);
-    }
-
-    #[test]
-    fn test_presence_identity_to_auth_token_verify_round_trip() {
-        let secret_id: u64 = 42;
-        let commitment = IdentityCommitment::new(secret_id, 55555, 2_000_000);
-        assert!(commitment.verify(secret_id));
-        let token = presence_identity_to_auth_token(&commitment);
-        // Token should reflect valid commitment
-        assert_eq!(token.commitment_hash, commitment.commitment_hash);
+    fn test_presence_proof_to_auth_token_refuses_forged_and_replayed() {
+        let (r, ch) = crossing(1);
+        let mut forged = r.proof_a;
+        forged.signature = [0u8; 64];
+        assert_eq!(
+            presence_proof_to_auth_token(&forged, &ch.for_a, &r.transcript(), 5).err(),
+            Some(ProofError::InvalidSignature)
+        );
+        let mut flipped = r.proof_a;
+        flipped.signature[10] ^= 1;
+        assert!(presence_proof_to_auth_token(&flipped, &ch.for_a, &r.transcript(), 5).is_err());
+        // a proof for another exchange's challenge (replay) is refused
+        let (_, other) = crossing(2);
+        assert_eq!(
+            presence_proof_to_auth_token(&r.proof_a, &other.for_a, &r.transcript(), 5).err(),
+            Some(ProofError::ChallengeMismatch)
+        );
+        // the transcript of another encounter does not match the signature
+        let (r2, _) = crossing(2);
+        assert!(presence_proof_to_auth_token(&r.proof_a, &ch.for_a, &r2.transcript(), 5).is_err());
+        // B's proof does not answer A's challenge
+        assert!(presence_proof_to_auth_token(&r.proof_b, &ch.for_a, &r.transcript(), 5).is_err());
     }
 
     // ── Bridge 3: proof → crypto sealed ───────────────────────────────
