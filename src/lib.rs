@@ -30,7 +30,7 @@
 
 //! ALICE Eco-System — Unified Pipeline Library
 //!
-//! Connects 183 ALICE crates into unified pipelines with 1,250 cross-crate bridges across 230 bridge modules.
+//! Connects 44 public ALICE crates into unified pipelines through 189 bridge modules.
 //! Powers 146 `SaaS` services (AGPL-3.0-or-later) via the MIT Core + AGPL `SaaS` Shell pattern.
 //!
 //! ```text
@@ -108,18 +108,11 @@
 //! ```
 
 pub mod bridge_agent;
-pub mod bridge_agent_llm;
 pub mod bridge_analytics;
-#[cfg(feature = "animation")]
-pub mod bridge_animation;
 pub mod bridge_api;
 pub mod bridge_asp;
 #[cfg(feature = "streaming-protocol-commercial")]
 pub mod bridge_asp_commercial;
-#[cfg(feature = "atoms")]
-pub mod bridge_atoms;
-#[cfg(feature = "atoms")]
-pub mod bridge_atoms_cross;
 pub mod bridge_auth;
 pub mod bridge_auth_ext;
 pub mod bridge_bio;
@@ -134,14 +127,10 @@ pub mod bridge_climate_cross;
 pub mod bridge_cloud_gateway;
 pub mod bridge_codec;
 pub mod bridge_container;
-pub mod bridge_cross;
 pub mod bridge_crypto;
 pub mod bridge_crypto_ext;
 pub mod bridge_db;
-pub mod bridge_db_enterprise;
-pub mod bridge_digital_twin_cross;
 pub mod bridge_dns;
-pub mod bridge_document_cross;
 pub mod bridge_edge;
 #[cfg(feature = "edge-commercial")]
 pub mod bridge_edge_commercial;
@@ -152,31 +141,21 @@ pub mod bridge_energy_cross;
 pub mod bridge_firewall;
 pub mod bridge_fix;
 pub mod bridge_fix_ext;
-pub mod bridge_font;
 pub mod bridge_history;
 pub mod bridge_history_cross;
-pub mod bridge_image_cross;
 pub mod bridge_kinematics;
 pub mod bridge_ledger;
 pub mod bridge_legal;
 pub mod bridge_legal_cross;
 pub mod bridge_lol;
-#[cfg(feature = "manga")]
-pub mod bridge_manga;
 pub mod bridge_ml;
 pub mod bridge_motion;
-#[cfg(feature = "neural")]
-pub mod bridge_neural;
-#[cfg(feature = "neural")]
-pub mod bridge_neural_cross;
 pub mod bridge_physics;
 pub mod bridge_physics_2d;
 pub mod bridge_physics_scene_io;
 pub mod bridge_physics_softbody;
 pub mod bridge_presence;
 pub mod bridge_presence_cross;
-#[cfg(feature = "print")]
-pub mod bridge_print_ext;
 pub mod bridge_queue;
 pub mod bridge_reverse;
 pub mod bridge_risk;
@@ -186,8 +165,6 @@ pub mod bridge_sdf;
 pub mod bridge_sdf_destruction;
 pub mod bridge_sdf_material;
 pub mod bridge_search;
-pub mod bridge_semantic_telemetry;
-pub mod bridge_semantic_telemetry_cross;
 pub mod bridge_settlement_ext;
 pub mod bridge_space;
 pub mod bridge_space_cross;
@@ -203,64 +180,33 @@ pub mod bridge_trt;
 pub mod bridge_vcs;
 pub mod bridge_view;
 pub mod bridge_voice;
-#[cfg(feature = "voice-commercial")]
-pub mod bridge_voice_commercial;
 pub mod bridge_zip;
 
 // Infrastructure bridges
-pub mod bridge_backup;
-pub mod bridge_circuit;
-pub mod bridge_config;
-pub mod bridge_consensus;
-pub mod bridge_log;
-pub mod bridge_migrate;
-pub mod bridge_scheduler;
 
 // Data/Communication bridges
-pub mod bridge_collab;
-pub mod bridge_notify;
-pub mod bridge_rate_limit;
-pub mod bridge_realtime;
-pub mod bridge_serial;
-pub mod bridge_workflow;
 
 // Security bridges
 pub mod bridge_browser_secure;
 pub mod bridge_compliance;
-pub mod bridge_compliance_cross;
 pub mod bridge_datashield;
 pub mod bridge_fin_compliance;
-pub mod bridge_fin_compliance_cross;
 
 // Analytics/Monitoring bridges
 pub mod bridge_experiment;
-pub mod bridge_experiment_cross;
 pub mod bridge_metrics;
 pub mod bridge_metrics_cross;
 pub mod bridge_observability;
 pub mod bridge_test;
 
 // Domain bridges
-pub mod bridge_billing;
-pub mod bridge_billing_cross;
-pub mod bridge_digital_twin;
-pub mod bridge_document;
-pub mod bridge_geo;
-pub mod bridge_graph;
-pub mod bridge_graph_cross;
-pub mod bridge_i18n;
 pub mod bridge_legal_ai;
 
 // SIMD bridge
 pub mod bridge_simd;
 
 // Media/Compression/Low-level bridges
-pub mod bridge_ffi;
-pub mod bridge_image;
 pub mod bridge_text_compression;
-pub mod bridge_vectordb;
-pub mod bridge_vectordb_cross;
-pub mod bridge_wasm;
 pub mod bridge_wasm_cross;
 
 // 2026-03 batch: Media bridges
@@ -286,7 +232,6 @@ pub mod bridge_recommend;
 
 // 2026-03 batch: Real-time bridges
 pub mod bridge_chat;
-pub mod bridge_chat_llm;
 pub mod bridge_loadbalancer;
 pub mod bridge_videoanalytics;
 
@@ -413,7 +358,6 @@ pub mod bridge_robotics;
 pub mod bridge_shader;
 
 // 2026-03 batch 2: IoT extended bridges
-pub mod bridge_iot;
 pub mod bridge_ota;
 pub mod bridge_sensor;
 
@@ -457,10 +401,9 @@ where
 // Re-export pipeline API
 pub use pipeline::{
     path_g_ai_inference, path_h_voice_delivery, path_i_fulltext_search, path_j_dns_api_gateway,
-    AiInferenceResult, AlicePipeline, AnimeProductionResult, AssetDeliveryResult, CdnNodeConfig,
-    ContainerDeployResult, DnsApiGatewayResult, EmbeddedResult, FullTextSearchResult,
-    GameTickResult, MocapResult, PipelineConfig, PrintOptResult, SensorIngestResult,
-    VoiceDeliveryResult,
+    AiInferenceResult, AlicePipeline, AssetDeliveryResult, CdnNodeConfig, ContainerDeployResult,
+    DnsApiGatewayResult, EmbeddedResult, FullTextSearchResult, GameTickResult, MocapResult,
+    PipelineConfig, PrintOptResult, SensorIngestResult, VoiceDeliveryResult,
 };
 
 // Re-export key types from constituent crates
@@ -470,7 +413,6 @@ pub use alice_sdf::{SdfNode, SdfTree};
 pub use alice_sync::InputFrame;
 
 // Re-export new crate key types
-pub use alice_font::MetaFontParams;
 pub use alice_kinematics::{ArmChain, Intent, Vec3k};
 pub use alice_motion::{CubicBezier, MotionPlan, Vec3 as MotionVec3};
 pub use alice_rtos::{Kernel, Task};

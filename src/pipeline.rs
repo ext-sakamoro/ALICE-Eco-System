@@ -6,7 +6,6 @@
 //! - **Path B-1** (Asset Delivery): SDF → CDN → Cache
 //! - **Path B-2** (Game Loop): Sync → Physics → Replay/Telemetry → DB
 //! - **Path C** (Motion Capture): Edge → Kinematics → Sync → Physics → View
-//! - **Path D** (Anime Production): VCS → SDF → Animation + Font + Synth → CDN
 //! - **Path E** (Real-Time Embedded): RTOS → Edge → Synth → ASP
 //! - **Path F** (3D Print Optimization): SDF → Motion (S-curve) → Print → .3mf
 //! - **Path G** (AI Inference): ML → TRT → SDF / Physics / View
@@ -30,13 +29,10 @@ use alice_sync::telemetry::SyncTelemetry;
 use alice_sync::{InputFrame, LockstepSession};
 use libasp::{AspPacket, IPacketPayload};
 
-use alice_font::param::MetaFontParams;
-use alice_font::{SdfAtlas, TextShaper};
 use alice_kinematics::{ArmChain, Intent};
 use alice_motion::{CubicBezier, TrapezoidalProfile, VelocityProfile};
 use alice_rtos::{Kernel, TaskPriority};
 use alice_synth::{FmPatch, Patch, Score, Synthesizer};
-use alice_vcs::Repository;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -126,22 +122,6 @@ pub struct MocapResult {
     pub ik_iterations: u32,
     /// End-effector position (x, y, z).
     pub end_effector: (f32, f32, f32),
-}
-
-/// Result of anime production pipeline (Path D: VCS → SDF + Font + Synth → CDN).
-pub struct AnimeProductionResult {
-    /// VCS commit hash.
-    pub vcs_hash: u64,
-    /// SDF scene serialized size.
-    pub sdf_bytes: usize,
-    /// Font parameters size (40 bytes).
-    pub font_params_bytes: usize,
-    /// Number of shaped subtitle glyphs.
-    pub subtitle_glyphs: usize,
-    /// Audio score size in bytes.
-    pub audio_score_bytes: usize,
-    /// Total CDN payload.
-    pub total_payload: usize,
 }
 
 /// Result of real-time embedded pipeline (Path E: RTOS → Edge → Synth → ASP).
@@ -687,51 +667,6 @@ impl AlicePipeline {
         })
     }
 
-    // ── Path D: Anime Production ─────────────────────────────────────
-
-    /// Production pipeline: VCS → SDF + Font + Synth for anime content.
-    ///
-    /// `[ALICE-VCS] → [ALICE-SDF] + [ALICE-Font] + [ALICE-Synth] → [ALICE-CDN]`
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if SDF serialization fails.
-    pub fn anime_production(
-        &mut self,
-        sdf_scene: &SdfTree,
-        text: &str,
-        score: &Score,
-        commit_message: &str,
-    ) -> Result<AnimeProductionResult> {
-        // 1. VCS: version the SDF scene
-        let mut repo = Repository::new();
-        let vcs_tree = crate::bridge_vcs::sdf_to_vcs_tree(sdf_scene);
-        let hash = repo.commit(&vcs_tree, commit_message, "anime-pipeline");
-
-        // 2. SDF: serialize for CDN
-        let sdf_body = bincode::serialize(sdf_scene)?;
-        let sdf_size = sdf_body.len();
-
-        // 3. Font: shape text for subtitles
-        let params = MetaFontParams::sans_regular();
-        let shaper = TextShaper::new(params);
-        let mut atlas = SdfAtlas::new(8, params);
-        let shaped = shaper.shape_line(text, &mut atlas);
-        let font_params_size = 40;
-
-        // 4. Synth: render audio
-        let audio_size = score.to_bytes().len();
-
-        Ok(AnimeProductionResult {
-            vcs_hash: hash,
-            sdf_bytes: sdf_size,
-            font_params_bytes: font_params_size,
-            subtitle_glyphs: shaped.glyphs.len(),
-            audio_score_bytes: audio_size,
-            total_payload: sdf_size + font_params_size + audio_size,
-        })
-    }
-
     // ── Path E: Real-Time Embedded ───────────────────────────────────
 
     /// Embedded pipeline: RTOS → Edge → Synth → ASP.
@@ -1038,35 +973,6 @@ mod tests {
         assert_eq!(result.intent_size, 8);
         assert_eq!(result.sync_frame, 1);
         assert!(result.ik_iterations > 0);
-    }
-
-    #[test]
-    fn test_path_d_anime_production() {
-        let (_dir, config) = test_setup();
-        let mut pipeline = AlicePipeline::new(config).unwrap();
-        let sdf = SdfTree::new(SdfNode::sphere(1.0));
-        let mut score = Score::new(120, 1);
-        score.add_event(NoteEvent {
-            delta_tick: 0,
-            channel: 0,
-            note: 60,
-            velocity: 100,
-            kind: NoteEventKind::NoteOn,
-        });
-        score.add_event(NoteEvent {
-            delta_tick: 96,
-            channel: 0,
-            note: 60,
-            velocity: 0,
-            kind: NoteEventKind::NoteOff,
-        });
-        let result = pipeline
-            .anime_production(&sdf, "Hello", &score, "ep1 scene1")
-            .unwrap();
-        assert_ne!(result.vcs_hash, 0);
-        assert!(result.sdf_bytes > 0);
-        assert_eq!(result.font_params_bytes, 40);
-        assert!(result.subtitle_glyphs > 0);
     }
 
     #[test]

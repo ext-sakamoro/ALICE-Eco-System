@@ -1,12 +1,10 @@
-//! Edge core bridges — ALICE-Edge ↔ Analytics, DB, `SemanticTelemetry`
+//! Edge core bridges — ALICE-Edge ↔ Analytics, DB
 //!
-//! 3 bridges connecting the core Edge sensor pipeline to the ALICE ecosystem.
-//! Covers sensor pipeline throughput metrics, sensor reading persistence, and
-//! threshold-crossing event injection into the semantic telemetry ring.
+//! 2 bridges connecting the core Edge sensor pipeline to the ALICE ecosystem:
+//! sensor pipeline throughput metrics and sensor reading persistence.
 
 use crate::hash::fnv1a;
 use alice_edge::{compute_residual_error, fit_linear_fixed, should_use_linear};
-use alice_semantic_telemetry::{EventKind, SemanticEvent, Severity};
 
 /// Reciprocal of Q16.16 scale factor — replaces division in Q16 → f32.
 const RCP_Q16: f32 = 1.0 / 65536.0;
@@ -149,81 +147,6 @@ pub fn edge_to_db_reading_record(data: &[i32]) -> EdgeDbReadingRecord {
     }
 }
 
-// ── Bridge 3: Edge → SemanticTelemetry (threshold crossing events) ────────
-
-/// Threshold crossing event emitted by the Edge sensor pipeline.
-///
-/// Produced whenever a sensor reading exceeds a configured bound.
-/// Carries the raw crossing value and the threshold so downstream
-/// subscribers can assess severity without re-reading sensor history.
-pub struct EdgeThresholdEvent {
-    /// FNV-1a hash over `(sensor_id, value)` — event deduplication key.
-    pub content_hash: u64,
-    /// Sensor channel identifier.
-    pub sensor_id: u64,
-    /// Sensor value at the moment of crossing (raw integer units).
-    pub crossing_value: i32,
-    /// Configured threshold that was exceeded.
-    pub threshold: i32,
-    /// True when the value exceeded the upper bound; false for lower bound.
-    pub is_upper_crossing: bool,
-    /// `SemanticEvent` ready for injection into ALICE-SemanticTelemetry ring.
-    pub semantic_event: SemanticEvent,
-}
-
-/// Build a threshold crossing event for ALICE-SemanticTelemetry injection.
-///
-/// `sensor_id` uniquely identifies the sensor channel.  `value` is the raw
-/// reading; `threshold` is the bound that was crossed; `is_upper` selects
-/// upper vs. lower bound crossing.  `timestamp_ns` is the nanosecond wall
-/// clock at the time of the crossing.
-///
-/// The severity is `Warn` for a first crossing and is set uniformly here;
-/// the caller may override it before ring insertion if escalation logic is
-/// required.
-///
-/// Optimisation note: the `is_upper_crossing` flag is derived via a
-/// branchless integer comparison — no conditional branch in the hot path.
-#[inline]
-#[must_use]
-pub fn edge_to_semantic_threshold_event(
-    sensor_id: u64,
-    value: i32,
-    threshold: i32,
-    is_upper: bool,
-    timestamp_ns: u64,
-) -> EdgeThresholdEvent {
-    // Branchless upper-crossing flag: value > threshold maps to true via cmp.
-    let is_upper_crossing = is_upper && value > threshold;
-
-    // Content hash over the (sensor_id, value) pair for deduplication.
-    let mut key = [0u8; 12];
-    key[0..8].copy_from_slice(&sensor_id.to_le_bytes());
-    key[8..12].copy_from_slice(&value.to_le_bytes());
-    let content_hash = fnv1a(&key);
-
-    // Encode the crossing value in the SemanticEvent payload.
-    // payload  = raw sensor value (i32 bits reinterpreted as u64).
-    // payload2 = configured threshold (i32 bits reinterpreted as u64).
-    let semantic_event = SemanticEvent {
-        timestamp_ns,
-        source_id: sensor_id,
-        kind: EventKind::ThresholdCrossing,
-        severity: Severity::Warn,
-        payload: value as u32 as u64,
-        payload2: threshold as u32 as u64,
-    };
-
-    EdgeThresholdEvent {
-        content_hash,
-        sensor_id,
-        crossing_value: value,
-        threshold,
-        is_upper_crossing,
-        semantic_event,
-    }
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -341,45 +264,6 @@ mod tests {
         assert_ne!(rec.content_hash, flat_rec.content_hash);
     }
 
-    // ── Bridge 3: Edge → SemanticTelemetry ──────────────────────────────
-
-    #[test]
-    fn test_edge_to_semantic_threshold_event() {
-        // Upper bound crossing: value 120 > threshold 100.
-        let ev = edge_to_semantic_threshold_event(42, 120, 100, true, 1_000_000_000);
-
-        assert_ne!(ev.content_hash, 0);
-        assert_eq!(ev.sensor_id, 42);
-        assert_eq!(ev.crossing_value, 120);
-        assert_eq!(ev.threshold, 100);
-        assert!(ev.is_upper_crossing, "expected upper crossing");
-
-        // SemanticEvent fields.
-        assert_eq!(ev.semantic_event.source_id, 42);
-        assert_eq!(ev.semantic_event.kind, EventKind::ThresholdCrossing);
-        assert_eq!(ev.semantic_event.severity, Severity::Warn);
-        assert_eq!(ev.semantic_event.timestamp_ns, 1_000_000_000);
-        // Payload encodes the crossing value.
-        assert_eq!(ev.semantic_event.payload, 120u64);
-        // Payload2 encodes the threshold.
-        assert_eq!(ev.semantic_event.payload2, 100u64);
-
-        // Lower bound crossing: is_upper = false, value < threshold.
-        // is_upper_crossing should be false regardless of comparison.
-        let ev_lower = edge_to_semantic_threshold_event(7, 10, 50, false, 2_000_000_000);
-        assert!(!ev_lower.is_upper_crossing);
-
-        // Content hashes must differ for different (sensor_id, value) pairs.
-        assert_ne!(ev.content_hash, ev_lower.content_hash);
-
-        // Non-crossing with is_upper = true and value <= threshold.
-        let ev_no_cross = edge_to_semantic_threshold_event(1, 50, 100, true, 0);
-        assert!(
-            !ev_no_cross.is_upper_crossing,
-            "value <= threshold should not be an upper crossing"
-        );
-    }
-
     // ── 追加テスト ────────────────────────────────────────────────────────
 
     #[test]
@@ -407,22 +291,5 @@ mod tests {
         let data: [i32; 5] = [10, 20, 30, 40, 50];
         let rec = edge_to_db_reading_record(&data);
         assert_eq!(rec.sample_count, 5);
-    }
-
-    #[test]
-    fn test_edge_threshold_event_determinism() {
-        // 同一引数で2回呼び出すと content_hash が一致すること。
-        let ev1 = edge_to_semantic_threshold_event(99, 200, 150, true, 9_999_999);
-        let ev2 = edge_to_semantic_threshold_event(99, 200, 150, true, 9_999_999);
-        assert_eq!(ev1.content_hash, ev2.content_hash);
-    }
-
-    #[test]
-    fn test_edge_threshold_event_lower_crossing_payload() {
-        // 下限越えイベントの payload・payload2 フィールドが正しく設定されること。
-        let ev = edge_to_semantic_threshold_event(5, 10, 50, false, 500);
-        assert_eq!(ev.semantic_event.payload, 10u64);
-        assert_eq!(ev.semantic_event.payload2, 50u64);
-        assert_eq!(ev.semantic_event.timestamp_ns, 500);
     }
 }
