@@ -316,6 +316,45 @@ mod tests {
         }
     }
 
+    /// Both signatures verify, yet `verify_record` is not `Valid` because an
+    /// identifier hash outside the signed transcript was altered: the record
+    /// identifier (`content_hash`) or the proximity proof's own hash. Then
+    /// `fully_verified` is false while both per-proof flags stay true, so the
+    /// field is `verify_record`, not the two signatures alone.
+    #[test]
+    fn test_valid_signatures_with_a_bad_hash_are_not_fully_verified() {
+        let honest = make_crossing();
+        let mut record_hash = make_crossing();
+        record_hash.content_hash ^= 1;
+        let mut proximity_hash = make_crossing();
+        proximity_hash.proximity.content_hash ^= 1;
+        for (name, record) in [
+            ("record hash", &record_hash),
+            ("proximity hash", &proximity_hash),
+        ] {
+            assert_eq!(verify_record(record), VerifyResult::HashMismatch, "{name}");
+            let ev = presence_crossing_to_analytics(record);
+            assert!(
+                ev.proof_a_valid && ev.proof_b_valid,
+                "{name}: both signatures verify"
+            );
+            assert!(!ev.fully_verified, "{name}");
+            assert!(!presence_crossing_to_db(record).fully_verified, "{name}");
+        }
+        // the verification bit is part of the analytics content hash: the honest
+        // record and the one differing only in verification hash differently
+        let a = presence_crossing_to_analytics(&honest);
+        let b = presence_crossing_to_analytics(&record_hash);
+        assert_eq!((a.party_a_id, a.party_b_id), (b.party_a_id, b.party_b_id));
+        assert_eq!(a.distance.to_bits(), b.distance.to_bits());
+        assert_eq!(
+            (a.proof_a_valid, a.proof_b_valid),
+            (b.proof_a_valid, b.proof_b_valid)
+        );
+        assert_ne!(a.fully_verified, b.fully_verified);
+        assert_ne!(a.content_hash, b.content_hash);
+    }
+
     #[test]
     fn test_event_to_edge() {
         let mut event = PresenceEvent::new(10, 20, 5000);
