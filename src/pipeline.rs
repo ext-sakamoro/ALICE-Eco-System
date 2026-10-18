@@ -4,7 +4,7 @@
 //!
 //! - **Path A** (IoT/Sensor): Edge → ASP → CDN → DB
 //! - **Path B-1** (Asset Delivery): SDF → CDN → Cache
-//! - **Path B-2** (Game Loop): Sync → Physics → Replay/Telemetry → DB
+//! - **Path B-2** (Game Loop): Sync → Physics → Telemetry → DB
 //! - **Path C** (Motion Capture): Edge → Kinematics → Sync → Physics → View
 //! - **Path D** (Anime Production): VCS → SDF → Animation + Font + Synth → CDN
 //! - **Path E** (Real-Time Embedded): RTOS → Edge → Synth → ASP
@@ -22,7 +22,6 @@ use alice_cdn::content_types::ContentType;
 use alice_cdn::{ContentLocator, MaglevHash, VivaldiCoord};
 use alice_db::AliceDB;
 use alice_edge::{evaluate_linear_fixed, fit_linear_fixed};
-use alice_physics::replay::ReplayRecorder;
 use alice_physics::{Fix128, PhysicsConfig, PhysicsWorld, RigidBody};
 use alice_sdf::io::AsdfHeader;
 use alice_sdf::SdfTree;
@@ -46,8 +45,6 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub struct PipelineConfig {
     /// Path for ALICE-DB storage.
     pub db_path: PathBuf,
-    /// Path for replay recording (Physics → DB).
-    pub replay_path: PathBuf,
     /// Path for telemetry recording (Sync → DB).
     pub telemetry_path: PathBuf,
     /// CDN edge node definitions.
@@ -56,8 +53,6 @@ pub struct PipelineConfig {
     pub client_coord: [f64; 4],
     /// Number of players for lockstep sync (typically 2).
     pub num_players: usize,
-    /// Number of physics bodies (must match bodies added via `add_body`).
-    pub num_bodies: usize,
     /// Cache capacity (number of entries).
     pub cache_capacity: usize,
 }
@@ -349,7 +344,6 @@ pub struct AlicePipeline {
     // Game engine
     physics: PhysicsWorld,
     sync_session: LockstepSession,
-    recorder: ReplayRecorder,
     telemetry: SyncTelemetry,
     // Streaming state
     asp_sequence: u32,
@@ -408,9 +402,6 @@ impl AlicePipeline {
         // ALICE-Sync
         let sync_session = LockstepSession::new(config.num_players as u8);
 
-        // ALICE-Physics → DB (Replay)
-        let recorder = ReplayRecorder::new(&config.replay_path, config.num_bodies)?;
-
         // ALICE-Sync → DB (Telemetry)
         let telemetry = SyncTelemetry::new(&config.telemetry_path)?;
 
@@ -422,7 +413,6 @@ impl AlicePipeline {
             cdn_nodes,
             physics,
             sync_session,
-            recorder,
             telemetry,
             asp_sequence: 0,
             sensor_content_id: 10000,
@@ -544,11 +534,11 @@ impl AlicePipeline {
 
     /// Execute one game tick through the synchronization pipeline.
     ///
-    /// `[ALICE-Sync] → [ALICE-Physics] → [Replay → DB] + [Telemetry → DB]`
+    /// `[ALICE-Sync] → [ALICE-Physics] → [Telemetry → DB]`
     ///
     /// # Errors
     ///
-    /// Returns an error if replay recording or telemetry persistence fails.
+    /// Returns an error if telemetry persistence fails.
     pub fn game_tick(&mut self, local: InputFrame, remote: InputFrame) -> Result<GameTickResult> {
         let frame = self.frame_counter;
 
@@ -563,10 +553,7 @@ impl AlicePipeline {
             let dt = Fix128::from_ratio(1, 60);
             self.physics.step(dt);
 
-            // 3. Replay recording → ALICE-DB (trajectory compression)
-            self.recorder.record_frame(&self.physics)?;
-
-            // 4. Telemetry recording → ALICE-DB (metric time-series)
+            // 3. Telemetry recording → ALICE-DB (metric time-series)
             self.telemetry.record_rtt(frame, 10.0)?;
             self.telemetry.record_prediction_accuracy(frame, 1.0)?;
 
@@ -635,7 +622,6 @@ impl AlicePipeline {
     ///
     /// Returns an error if any buffered write fails.
     pub fn flush(&mut self) -> Result<()> {
-        self.recorder.flush()?;
         self.telemetry.flush()?;
         self.db.flush()?;
         Ok(())
@@ -648,7 +634,6 @@ impl AlicePipeline {
     /// Returns an error if flush or resource cleanup fails.
     pub fn close(mut self) -> Result<()> {
         self.flush()?;
-        self.recorder.close()?;
         self.telemetry.close()?;
         self.db.close()?;
         Ok(())
@@ -921,7 +906,6 @@ mod tests {
         let dir = tempdir().unwrap();
         let config = PipelineConfig {
             db_path: dir.path().join("db"),
-            replay_path: dir.path().join("replay"),
             telemetry_path: dir.path().join("telemetry"),
             cdn_nodes: vec![
                 CdnNodeConfig {
@@ -942,7 +926,6 @@ mod tests {
             ],
             client_coord: [1.0, 1.0, 0.0, 1.0],
             num_players: 2,
-            num_bodies: 3,
             cache_capacity: 100,
         };
         (dir, config)
@@ -1132,7 +1115,7 @@ mod tests {
         let asset_result = pipeline.deliver_asset(&tree, 2001).unwrap();
         assert!(asset_result.asdf_size > 0);
 
-        // Path B-2: Game ticks (Sync → Physics → Replay/Telemetry → DB)
+        // Path B-2: Game ticks (Sync → Physics → Telemetry → DB)
         pipeline.add_body(RigidBody::new_dynamic(
             Vec3Fix::from_int(0, 5, 0),
             Fix128::ONE,

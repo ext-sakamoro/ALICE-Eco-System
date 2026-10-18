@@ -50,18 +50,17 @@ cache hit rate.
 ## Game engine pipeline (`cargo run --example game_pipeline`)
 
 Source: [examples/game_pipeline.rs](../examples/game_pipeline.rs). Crates:
-ALICE-SDF, ALICE-CDN, ALICE-Physics, ALICE-Sync (ALICE-DB is used through
-the `replay` feature of ALICE-Physics).
+ALICE-SDF, ALICE-CDN, ALICE-Physics, ALICE-Sync (ALICE-DB stores ALICE-Sync's
+telemetry).
 
 ```text
 ALICE-SDF      world geometry as an ASDF binary
 ALICE-CDN      content routing by detected content type
 ALICE-Physics  deterministic simulation on 128-bit fixed point
 ALICE-Sync     input synchronization (lockstep, 2 players)
-ALICE-DB       replay recording, via ALICE-Physics `replay`
+ALICE-DB       telemetry storage and aggregation, via ALICE-Sync
 ```
 
 The world geometry is delivered as SDF, simulated deterministically, kept in
-step between two players by exchanging inputs, recorded through
-ALICE-Physics `replay` (stored with ALICE-DB), and played back from the
-recording.
+step between two players by exchanging inputs, and the session's telemetry
+is stored with ALICE-DB and aggregated.

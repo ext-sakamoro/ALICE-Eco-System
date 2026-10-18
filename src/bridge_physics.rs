@@ -1,10 +1,8 @@
 //! Physics bridges — ALICE-Physics ↔ SDF, View, DB, Cache, Analytics, Edge
 //!
-//! 8 bridges connecting deterministic physics simulation to the ALICE ecosystem.
+//! 7 bridges connecting deterministic physics simulation to the ALICE ecosystem.
 
-use alice_physics::{
-    ManifoldConfig, MultiWorld, ParticleSystem, PhysicsConfig, RigidBody, SdfForceType,
-};
+use alice_physics::{ManifoldConfig, ParticleSystem, PhysicsConfig, RigidBody, SdfForceType};
 
 // ── Bridge 1: Physics ↔ SDF (collision detection config) ────────────────
 
@@ -485,70 +483,7 @@ pub fn physics_to_analytics_metrics(
     }
 }
 
-// ── Bridge 7: MultiWorld → Analytics (multi-world simulation metrics) ──
-
-/// Analytics event for a multi-world physics configuration.
-///
-/// Captures per-world body counts and aggregate metrics for monitoring
-/// multi-world simulation fleet health.
-pub struct MultiWorldAnalyticsEvent {
-    /// Content hash for time-series deduplication.
-    pub content_hash: u64,
-    /// Number of physics worlds.
-    pub world_count: usize,
-    /// Total body count across all worlds.
-    pub total_body_count: usize,
-    /// Per-world body counts.
-    pub per_world_body_counts: Vec<usize>,
-    /// Maximum body count in any single world (hotspot detection).
-    pub max_world_body_count: usize,
-    /// Minimum body count (load balance indicator).
-    pub min_world_body_count: usize,
-}
-
-/// Build a `MultiWorldAnalyticsEvent` from a `MultiWorld`.
-///
-/// Single pass over worlds accumulates body counts. Max/min computed
-/// branchlessly via `usize::max()`/`usize::min()`.
-#[inline]
-#[must_use]
-pub fn multiworld_to_analytics(mw: &MultiWorld) -> MultiWorldAnalyticsEvent {
-    let world_count = mw.world_count();
-    let total_body_count = mw.total_body_count();
-
-    let mut per_world_body_counts = Vec::with_capacity(world_count);
-    let mut max_count: usize = 0;
-    let mut min_count: usize = usize::MAX;
-
-    for world in &mw.worlds {
-        let bc = world.bodies.len();
-        per_world_body_counts.push(bc);
-        max_count = max_count.max(bc);
-        min_count = min_count.min(bc);
-    }
-
-    // If no worlds, reset min to 0.
-    if world_count == 0 {
-        min_count = 0;
-    }
-
-    let mut bytes = [0u8; 24];
-    bytes[0..8].copy_from_slice(&(world_count as u64).to_le_bytes());
-    bytes[8..16].copy_from_slice(&(total_body_count as u64).to_le_bytes());
-    bytes[16..24].copy_from_slice(&(max_count as u64).to_le_bytes());
-    let content_hash = crate::hash::fnv1a(&bytes);
-
-    MultiWorldAnalyticsEvent {
-        content_hash,
-        world_count,
-        total_body_count,
-        per_world_body_counts,
-        max_world_body_count: max_count,
-        min_world_body_count: min_count,
-    }
-}
-
-// ── Bridge 8: ParticleSystem → Cache (particle state cache entry) ──────
+// ── Bridge 7: ParticleSystem → Cache (particle state cache entry) ──────
 
 /// Cache entry for a particle system state snapshot.
 ///
@@ -619,7 +554,7 @@ pub fn particle_system_to_cache(ps: &ParticleSystem) -> ParticleSystemCacheEntry
 mod tests {
     use super::*;
     use alice_physics::{Fix128, PhysicsConfig, RigidBody, Vec3Fix};
-    use alice_physics::{ManifoldConfig, MultiWorld, ParticleSystem, SdfForceType};
+    use alice_physics::{ManifoldConfig, ParticleSystem, SdfForceType};
 
     /// Construct a default `PhysicsConfig` for testing.
     fn test_config() -> PhysicsConfig {
@@ -922,65 +857,6 @@ mod tests {
             metrics.content_hash, metrics2.content_hash,
             "hash must be deterministic"
         );
-    }
-
-    // ── Test 7: MultiWorld → Analytics ────────────────────────────────
-
-    #[test]
-    fn test_multiworld_to_analytics() {
-        let mut mw = MultiWorld::new();
-        let config = PhysicsConfig::default();
-        let w0 = mw.add_world(config);
-        let w1 = mw.add_world(config);
-
-        // Add bodies to each world.
-        mw.worlds[w0].add_body(RigidBody::new_dynamic(
-            Vec3Fix::from_int(0, 0, 0),
-            Fix128::ONE,
-        ));
-        mw.worlds[w0].add_body(RigidBody::new_dynamic(
-            Vec3Fix::from_int(1, 0, 0),
-            Fix128::ONE,
-        ));
-        mw.worlds[w1].add_body(RigidBody::new_dynamic(
-            Vec3Fix::from_int(0, 5, 0),
-            Fix128::ONE,
-        ));
-
-        let evt = multiworld_to_analytics(&mw);
-        assert_eq!(evt.world_count, 2);
-        assert_eq!(evt.total_body_count, 3);
-        assert_eq!(evt.per_world_body_counts, vec![2, 1]);
-        assert_eq!(evt.max_world_body_count, 2);
-        assert_eq!(evt.min_world_body_count, 1);
-        assert_ne!(evt.content_hash, 0);
-    }
-
-    // ── Test 8: MultiWorld analytics hash determinism ──────────────────
-
-    #[test]
-    fn test_multiworld_analytics_hash_determinism() {
-        let mut mw = MultiWorld::new();
-        let config = PhysicsConfig::default();
-        mw.add_world(config);
-
-        let e1 = multiworld_to_analytics(&mw);
-        let e2 = multiworld_to_analytics(&mw);
-        assert_eq!(e1.content_hash, e2.content_hash);
-    }
-
-    // ── Test 9: MultiWorld analytics empty ─────────────────────────────
-
-    #[test]
-    fn test_multiworld_analytics_empty() {
-        let mw = MultiWorld::new();
-        let evt = multiworld_to_analytics(&mw);
-
-        assert_eq!(evt.world_count, 0);
-        assert_eq!(evt.total_body_count, 0);
-        assert!(evt.per_world_body_counts.is_empty());
-        assert_eq!(evt.min_world_body_count, 0);
-        assert_eq!(evt.max_world_body_count, 0);
     }
 
     // ── Test 10: ParticleSystem → Cache ────────────────────────────────
