@@ -11,7 +11,7 @@
 //!      ↓
 //! [ALICE-Sync]       Input synchronization (Lockstep / Rollback)
 //!      ↓
-//! [ALICE-DB]         Replay recording + Telemetry (model-based compression)
+//! [ALICE-DB]         Telemetry (model-based compression)
 //! ```
 //!
 //! Run: `cargo run --example game_pipeline`
@@ -27,7 +27,6 @@
 
 use alice_cdn::content_types::{AsdfMetadata, ContentType};
 use alice_cdn::{ContentLocator, VivaldiCoord};
-use alice_physics::replay::{ReplayPlayer, ReplayRecorder};
 use alice_physics::{Fix128, PhysicsConfig, PhysicsWorld, RigidBody, Vec3Fix};
 use alice_sdf::{SdfNode, SdfTree};
 use alice_sync::telemetry::SyncTelemetry;
@@ -160,22 +159,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dt = Fix128::from_ratio(1, 60);
     let frames_to_simulate = 60;
 
-    // Setup replay recording (→ ALICE-DB)
-    let replay_path = dir.path().join("replay");
-    let mut recorder = ReplayRecorder::new(&replay_path, 3)?; // 3 bodies
-
     // Setup telemetry recording (→ ALICE-DB)
     let telemetry_path = dir.path().join("telemetry");
     let telemetry = SyncTelemetry::new(&telemetry_path)?;
 
     println!("  Mode: Lockstep (2 players)");
     println!("  Frames: {frames_to_simulate} @ 60 FPS");
-    println!("  Replay → ALICE-DB: {}", replay_path.display());
     println!("  Telemetry → ALICE-DB: {}", telemetry_path.display());
     println!();
 
     // ========================================================================
-    // PHASE 5: GAME LOOP — Sync + Physics + Record
+    // PHASE 5: GAME LOOP — Sync + Physics + Telemetry
     // ========================================================================
     println!("━━━ PHASE 5: Game Loop (60 frames) ━━━");
 
@@ -195,9 +189,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Step physics
             world.step(dt);
 
-            // Record replay (positions → ALICE-DB)
-            recorder.record_frame(&world)?;
-
             // Record telemetry
             let simulated_rtt = (frame as f32).mul_add(0.05, 10.0); // simulated RTT
             telemetry.record_rtt(frame, simulated_rtt)?;
@@ -205,7 +196,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    recorder.flush()?;
     telemetry.flush()?;
 
     let p1_final = world.bodies[p1_id].position;
@@ -224,40 +214,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         p2_final.y.to_f32(),
         p2_final.z.to_f32()
     );
-    println!("    Replay frames:  {}", recorder.frame_count());
     println!("    Sync confirmed: frame {}", session.confirmed_frame());
     println!();
 
     // ========================================================================
-    // PHASE 6: REPLAY PLAYBACK — ALICE-DB → Positions
+    // PHASE 6: TELEMETRY ANALYSIS — ALICE-DB Aggregation
     // ========================================================================
-    println!("━━━ PHASE 6: Replay Playback (ALICE-DB → Positions) ━━━");
-
-    recorder.close()?;
-    let player = ReplayPlayer::open(&replay_path, 3)?;
-
-    println!("  ┌───────┬──────────────────────────────────────────────┐");
-    println!("  │ Frame │ Player 1 Position          │ Player 2 Pos   │");
-    println!("  ├───────┼──────────────────────────────────────────────┤");
-
-    for frame in [0, 14, 29, 44, 59] {
-        let p1 = player.get_position(frame, 0)?;
-        let p2 = player.get_position(frame, 1)?;
-        if let (Some((x1, y1, _)), Some((x2, y2, _))) = (p1, p2) {
-            println!(
-                "  │  {frame:>3}  │ ({x1:>7.2}, {y1:>7.2})          │ ({x2:>6.2}, {y2:>6.2}) │"
-            );
-        }
-    }
-    println!("  └───────┴──────────────────────────────────────────────┘");
-    println!();
-
-    player.close()?;
-
-    // ========================================================================
-    // PHASE 7: TELEMETRY ANALYSIS — ALICE-DB Aggregation
-    // ========================================================================
-    println!("━━━ PHASE 7: Telemetry Analysis (ALICE-DB Aggregation) ━━━");
+    println!("━━━ PHASE 6: Telemetry Analysis (ALICE-DB Aggregation) ━━━");
 
     let rtt_data = telemetry.scan_rtt(0, 59)?;
     println!("  RTT samples recorded:     {}", rtt_data.len());
@@ -283,12 +246,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "║  [ALICE-Sync]    → Lockstep, {} confirmed frames           ║",
         session.confirmed_frame()
     );
-    println!("║  [ALICE-DB]      → Replay: {frames_to_simulate} frames + Telemetry           ║");
+    println!("║  [ALICE-DB]      → Telemetry: {frames_to_simulate} frames                     ║");
     println!("║                                                              ║");
     println!("╠══════════════════════════════════════════════════════════════╣");
     println!("║  CROSS-CRATE BRIDGES:                                        ║");
     println!("║    ✓ SDF  → Physics  (physics_bridge, impl SdfField)         ║");
-    println!("║    ✓ Physics → DB    (replay.rs, trajectory compression)     ║");
     println!("║    ✓ Sync → DB       (telemetry.rs, metric time-series)      ║");
     println!("║    ✓ CDN  ← SDF      (content_types, ASDF detection)         ║");
     println!("║    ✓ Sync → Physics  (physics_bridge, PhysicsRollback)       ║");
