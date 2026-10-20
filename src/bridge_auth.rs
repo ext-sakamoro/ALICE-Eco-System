@@ -259,7 +259,9 @@ mod tests {
     fn test_auth_to_api_verify() {
         let identity = test_identity();
         let msg = b"hello";
-        let sig = identity.sign(msg);
+        let sig = identity
+            .sign(msg)
+            .expect("a message outside the reserved prefix is signed");
         let result = auth_to_api_verify(&identity.id(), msg, &sig);
         assert!(result.verified);
         assert_eq!(result.signature_bytes, 64);
