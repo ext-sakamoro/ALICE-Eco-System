@@ -24,7 +24,6 @@ alice-physics = { path = "../ALICE-Physics" }
 alice-sync = { path = "../ALICE-Sync", features = ["telemetry"] }
 
 # Crate bridges (Synth, VCS, Motion, RTOS, Kinematics, Font)
-alice-font = { path = "../ALICE-Font", features = ["std"] }
 alice-synth = { path = "../ALICE-Synth", features = ["std"] }
 alice-kinematics = { path = "../ALICE-Kinematics", features = ["std", "encoder"] }
 alice-motion = { path = "../ALICE-Motion", features = ["std"] }
@@ -53,14 +52,9 @@ alice-auth = { path = "../ALICE-Auth", default-features = false, features = ["st
 alice-crypto = { path = "../ALICE-Crypto" }
 
 # Content Creation bridges (Animation, Manga, Print) — Proprietary, optional
-alice-animation = { path = "../ALICE-Animation", default-features = false, optional = true }
-alice-manga = { path = "../ALICE-Manga", default-features = false, optional = true }
-alice-print = { path = "../ALICE-Print", default-features = false, optional = true }
 
 # Container & Commercial bridges
 alice-container = { path = "../ALICE-Container", default-features = false, features = ["std"] }
-alice-streaming-protocol-commercial = { path = "../ALICE-Streaming-Protocol-Commercial", package = "libasp-enterprise", optional = true, default-features = false }
-alice-edge-commercial = { path = "../ALICE-Edge-Commercial", package = "alice-edge-enterprise", optional = true, default-features = false }
 
 # Browser & Cloud Gateway bridges
 alice-browser = { path = "../ALICE-Browser", default-features = false }
@@ -72,7 +66,6 @@ alice-cloud-gateway = { path = "../ALICE-Cloud-Gateway", default-features = fals
 alice-token = { path = "../ALICE-Token" }
 
 # Semantic Telemetry bridge
-alice-semantic-telemetry = { path = "../ALICE-Semantic-Telemetry" }
 
 # Training bridge
 alice-train = { path = "../ALICE-Train" }
@@ -92,63 +85,33 @@ alice-bio = { path = "../ALICE-Bio" }
 alice-legal = { path = "../ALICE-Legal" }
 alice-energy = { path = "../ALICE-Energy" }
 alice-space = { path = "../ALICE-Space" }
-alice-neural = { path = "../ALICE-Neural", optional = true }
 alice-climate = { path = "../ALICE-Climate" }
 
 # Advanced domain bridges (Path R-U)
 alice-history = { path = "../ALICE-History" }
-alice-atoms = { path = "../ALICE-Atoms", optional = true }
 alice-presence = { path = "../ALICE-Presence" }
 
 # Hardware bridge
 alice-bridge = { path = "../ALICE-Bridge" }
 
 # Infrastructure bridges
-alice-scheduler = { path = "../ALICE-Scheduler", default-features = false }
-alice-log = { path = "../ALICE-Log", default-features = false }
-alice-config = { path = "../ALICE-Config", default-features = false }
-alice-migrate = { path = "../ALICE-Migrate", default-features = false }
-alice-backup = { path = "../ALICE-Backup", default-features = false }
-alice-circuit = { path = "../ALICE-Circuit", default-features = false }
-alice-consensus = { path = "../ALICE-Consensus", default-features = false }
 
 # Data/Communication bridges
-alice-serial = { path = "../ALICE-Serial", default-features = false }
-alice-rate-limit = { path = "../ALICE-RateLimit", default-features = false }
-alice-realtime = { path = "../ALICE-Realtime" }
-alice-collab = { path = "../ALICE-Collab", default-features = false }
-alice-workflow = { path = "../ALICE-Workflow", default-features = false }
-alice-notify = { path = "../ALICE-Notify" }
 
 # Security bridges
 alice-browser-secure = { path = "../ALICE-Browser-Secure", default-features = false }
 alice-datashield = { path = "../ALICE-DataShield", default-features = false }
-alice-compliance = { path = "../ALICE-Compliance", default-features = false }
-alice-fincompliance = { path = "../ALICE-FinCompliance", default-features = false }
 
 # Analytics/Monitoring bridges
-alice-experiment = { path = "../ALICE-Experiment" }
 
 # Domain bridges
-alice-billing = { path = "../ALICE-Billing" }
 alice-legal-ai = { path = "../ALICE-Legal-AI", default-features = false }
-alice-digital-twin = { path = "../ALICE-Digital-Twin", default-features = false }
-alice-graph = { path = "../ALICE-Graph" }
-alice-geo = { path = "../ALICE-Geo" }
-alice-document = { path = "../ALICE-Document" }
-alice-i18n = { path = "../ALICE-i18n", default-features = false }
 
 # Media/Compression/Low-level bridges
-alice-image = { path = "../ALICE-Image" }
 alice-text-compression = { path = "../ALICE-Text-Compression", default-features = false }
-alice-vectordb = { path = "../ALICE-VectorDB", default-features = false }
-alice-wasm = { path = "../ALICE-WASM", default-features = false }
-alice-ffi = { path = "../ALICE-FFI", default-features = false }
 
 # Enterprise/Commercial bridges
-alice-db-enterprise = { path = "../ALICE-DB-Enterprise", default-features = false }
 alice-simd = { path = "../ALICE-SIMD", default-features = false, features = ["std"] }
-alice-voice-commercial = { path = "../ALICE-Voice-Commercial", package = "alice-voice-semantic", optional = true, default-features = false }
 
 # Media bridges (2026-03 batch)
 alice-audio = { path = "../ALICE-Audio", default-features = false }
@@ -161,7 +124,6 @@ alice-navigation = { path = "../ALICE-Navigation", default-features = false }
 # Optimization bridges (2026-03 batch)
 
 # Real-time bridges (2026-03 batch)
-alice-chat = { path = "../ALICE-Chat", default-features = false }
 
 # Compiler/Language bridges (2026-03 batch)
 alice-compiler = { path = "../ALICE-Compiler", default-features = false }
@@ -234,7 +196,6 @@ alice-vr = { path = "../ALICE-VR", default-features = false }
 alice-game-engine = { path = "../ALICE-GameEngine", default-features = false }
 
 # 2026-03 batch 2: IoT extended
-alice-iot = { path = "../ALICE-IoT", default-features = false }
 
 # 2026-03 batch 2: Cross-cutting
 
@@ -267,19 +228,6 @@ path = "examples/sdf_delivery.rs"
 [[example]]
 name = "game_pipeline"
 path = "examples/game_pipeline.rs"
-
-[features]
-default = []
-animation = ["dep:alice-animation"]
-manga = ["dep:alice-manga"]
-print = ["dep:alice-print"]
-content-creation = ["animation", "manga", "print"]
-edge-commercial = ["dep:alice-edge-commercial"]
-streaming-protocol-commercial = ["dep:alice-streaming-protocol-commercial"]
-neural = ["dep:alice-neural"]
-atoms = ["dep:alice-atoms"]
-voice-commercial = ["dep:alice-voice-commercial"]
-enterprise = ["edge-commercial", "streaming-protocol-commercial", "voice-commercial"]
 
 [[bench]]
 name = "bridge_bench"

@@ -8,11 +8,10 @@ crates can be followed.
 ## Building them
 
 `Cargo.toml` refers to every bridged crate by sibling path (`../ALICE-*`), and
-`src/lib.rs` compiles the bridge modules unconditionally; some of those
-crates are not public. **The demos therefore do not build from public
-checkouts alone at present.** Making them buildable needs the bridge modules
-for non-public crates put behind optional features; until then this page
-documents what each demo does, with links to its source.
+every one of them is a public repository (the bridges to crates that are not
+public are kept outside this repository). A build needs those repositories
+cloned next to this one, at the revisions this repository was written
+against. This page documents what each demo does, with links to its source.
 
 ## Edge-to-database pipeline (`cargo run`)
 

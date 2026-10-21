@@ -20,22 +20,6 @@ cargo fmt -- --check
 cargo doc --no-deps 2>&1 | grep warning
 ```
 
-## Optional Features
-
-```bash
-# Content-creation bridges (Animation, Manga, Print — proprietary)
-cargo build --features content-creation
-
-# Enterprise bridges (Edge-Commercial, ASP-Commercial)
-cargo build --features enterprise
-
-# Neural bridge
-cargo build --features neural
-
-# Atoms bridge
-cargo build --features atoms
-```
-
 ## License Boundary Policy
 
 ALICE crates follow a **MIT Core + AGPL SaaS Shell** licensing strategy.
@@ -84,4 +68,4 @@ See `BRAND_GUIDELINES.md` for trademark and SaaS wrapping rules.
 - **Branchless TTL**: Cache-targeted bridges compute TTL with branchless `base - condition * delta`.
 - **Enum → u8 via match**: never use `as u8` cast; always explicit `match` mapping.
 - **Minimum 8 tests per bridge file**: basic conversion, TTL paths, hash determinism.
-- **Feature-gated optionals**: proprietary / platform-specific crates are `optional = true` with `#[cfg(feature)]`.
+- **Public crates only**: this crate depends on public crates only; a bridge to a crate that is not public is kept outside this repository.
