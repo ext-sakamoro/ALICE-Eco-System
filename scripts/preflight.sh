@@ -44,4 +44,24 @@ fi
 step "crate-index.yml / online: Compare docs/crate-index.tsv with GitHub and crates.io"
 python3 scripts/readme_index.py --online
 
+step "ci.yml / test: Test (lib, integration, doctests)"
+(
+  export CARGO_TERM_COLOR="always" MIN_PASSED="1909"
+  # the default shell has no pipefail: without it cargo's exit status is lost in the pipe
+  set -o pipefail
+  log="$(mktemp)"
+  cargo test 2>&1 | tee "${log}"
+  passed=$(grep -E '^test result: ' "${log}" | awk '{s += $4} END {print s + 0}')
+  failed=$(grep -E '^test result: ' "${log}" | awk '{s += $6} END {print s + 0}')
+  echo "passed: ${passed} (minimum ${MIN_PASSED}), failed: ${failed}"
+  if [ "${failed}" -ne 0 ] || grep -E '^test result: ' "${log}" | grep -vE '^test result: ok\. ' >/dev/null; then
+    echo "::error::${failed} tests failed"
+    exit 1
+  fi
+  if [ "${passed}" -lt "${MIN_PASSED}" ]; then
+    echo "::error::${passed} tests passed, fewer than ${MIN_PASSED}"
+    exit 1
+  fi
+)
+
 echo; echo "preflight OK"

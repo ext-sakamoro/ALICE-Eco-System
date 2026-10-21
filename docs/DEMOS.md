@@ -11,7 +11,8 @@ crates can be followed.
 every one of them is a public repository (the bridges to crates that are not
 public are kept outside this repository). A build needs those repositories
 cloned next to this one, at the revisions this repository was written
-against. This page documents what each demo does, with links to its source.
+against; CI does that with the commits listed in `.github/workflows/ci.yml`.
+This page documents what each demo does, with links to its source.
 
 ## Edge-to-database pipeline (`cargo run`)
 

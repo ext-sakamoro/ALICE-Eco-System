@@ -34,7 +34,8 @@ repository with its own README, CHANGELOG and CI. This repository holds:
 - **Not buildable from this repository alone.** `Cargo.toml` refers to the
   other crates by sibling path (`../ALICE-*`), all of them public
   repositories, so a plain clone of this repository does not compile without
-  them; CI checks formatting, workflow syntax and the index, not a build.
+  them. CI checks out each of them next to this repository at a fixed commit
+  (`.github/workflows/ci.yml`) and builds and tests the crate there.
 - **Not a statement of maturity.** Crates in the index range from published,
   versioned libraries to early implementations. The crates.io column marks the
   ones that are released; each crate's own README states its status and known

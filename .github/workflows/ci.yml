@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'ci/**']
   pull_request:
     branches: [main]
 
@@ -53,3 +53,462 @@ jobs:
         run: python scripts/docs_lint.py --check
       - name: Crate index (README tables match docs/crate-index.tsv)
         run: python scripts/readme_index.py --check
+
+  test:
+    name: Test (public siblings)
+    runs-on: ubuntu-latest
+    env:
+      # the passed-test count of the feature set below at the commit that set it;
+      # fewer passed tests (a removed or skipped test, or none at all) is a failure
+      MIN_PASSED: "1909"
+    steps:
+      # cargo reads the manifest of every path dependency, optional ones included, so
+      # each sibling is checked out next to this repository at a fixed commit with the
+      # workflow's own token: a sibling that is not public cannot be checked out
+      - uses: actions/checkout@v5
+        with:
+          path: ALICE-Eco-System
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-API
+          ref: 904c4b0f71230a4df7df1fb2aa4715ed10c3685c
+          path: ALICE-API
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Agent
+          ref: d7719caa25e88bee3b4c1f9b71f065b7b5e0f920
+          path: ALICE-Agent
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Analytics
+          ref: 2c2f73c214f94b5db503d71d9ebb47db8fee3413
+          path: ALICE-Analytics
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Audio
+          ref: c169dfa9d17b8f3e33f8bfcbad3103b4b8d9ca18
+          path: ALICE-Audio
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Audit
+          ref: 7928fed4c95630806f3828fb1815199944b98378
+          path: ALICE-Audit
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Auth
+          ref: 2bacc1614f85c93cd02b2aa8016423274d305747
+          path: ALICE-Auth
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-AutoML
+          ref: 8aadeea22ebf36d549374de10778b5b8a23a5f0b
+          path: ALICE-AutoML
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-BLE
+          ref: 2d3e0f646f134136cbe506411876d29b46c41337
+          path: ALICE-BLE
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Bio
+          ref: d16a9e7e749158ae8c0cbf3715976452cc2afd37
+          path: ALICE-Bio
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Bridge
+          ref: eed4b548f0f250dd82bbec577070b58096f5733d
+          path: ALICE-Bridge
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Browser-Secure
+          ref: 336f14e2fc4fae8b0b0c493bd8474a1122715306
+          path: ALICE-Browser-Secure
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Browser
+          ref: 337cae54ae5c797b1be700d5a011e04a15ba1b97
+          path: ALICE-Browser
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-CDN
+          ref: 60157ad44c47872b9e6f2135170da3a523dc18db
+          path: ALICE-CDN
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-CRM
+          ref: f83c12c3431ee0445c9d9c0468776c7a88b5c803
+          path: ALICE-CRM
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Cache
+          ref: b4d8677ea1a17d01ffa53e968f37fb008e7efea6
+          path: ALICE-Cache
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Camera
+          ref: a0a045ca59cda0aaa9e9bd9adcd62004cf48bee4
+          path: ALICE-Camera
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Chemistry
+          ref: 8d3907dfcaa71b40c1afe9d171e94939c78abd5f
+          path: ALICE-Chemistry
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Climate
+          ref: 1e85b14acb908c9243612e9fafd253010d1b400b
+          path: ALICE-Climate
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Cloud-Gateway
+          ref: 047d33805b7e041e58b1019f6dcfcf59942c7517
+          path: ALICE-Cloud-Gateway
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Codec
+          ref: c96278e27bcb5fd5bee9d6df7b3dc8ef4deba081
+          path: ALICE-Codec
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Compiler
+          ref: 5d3569ced97441e2b88f484e713436bf7f40ea5a
+          path: ALICE-Compiler
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Container
+          ref: d4d3e626687b95468a68e3f2cd3a1c90eab6f92d
+          path: ALICE-Container
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Crypto
+          ref: c0b23db81ef048c3d3821a2eeec8cc54531f10af
+          path: ALICE-Crypto
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-DB
+          ref: 7e06aa990b124ee1ef2d9a9a462a43399c5e8522
+          path: ALICE-DB
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-DLP
+          ref: af45c38c2e3d248e3ac2a3d6383b8b26139f3617
+          path: ALICE-DLP
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-DNS
+          ref: 260c9c18bdb59cade5b79159d797c51abcc5f418
+          path: ALICE-DNS
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-DataShield
+          ref: 1ae8a11fafda77ea01372504ede19d0f05969c08
+          path: ALICE-DataShield
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-ERP
+          ref: 2545707d57b19f37d079ceba9583745693c27e12
+          path: ALICE-ERP
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Edge
+          ref: aa610f065f7b7d4d678808f3073786c9461116a2
+          path: ALICE-Edge
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Energy
+          ref: 269ef2ccf5995c09a9f9ae4d9cf39e82120ff3ea
+          path: ALICE-Energy
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-FIX
+          ref: 9efeb50688b06d27d963790caad57832a9a41fdf
+          path: ALICE-FIX
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-FileSystem
+          ref: e9984667a80d35ce0b11032541471f6888720af3
+          path: ALICE-FileSystem
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-GAN
+          ref: 18a35a687704f2d25d040a6a162ecf77152e17a3
+          path: ALICE-GAN
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-GameEngine
+          ref: a7917259cbd6b4d2066d70200d74fc4ad858e698
+          path: ALICE-GameEngine
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-HRM
+          ref: 36969214cbd2a4dbbe79ceb0e86d9676b785abc8
+          path: ALICE-HRM
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-HTTP
+          ref: 1e231493ab267095c7e20db3e246969843275dea
+          path: ALICE-HTTP
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-History
+          ref: 7fea36055b937a8cf709aa739687c950704346e3
+          path: ALICE-History
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Kinematics
+          ref: b2e2faca147709040859f5418673715de349e2cb
+          path: ALICE-Kinematics
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-LLM
+          ref: 01b8c7d713a0485c3cd06c54defd80c699791054
+          path: ALICE-LLM
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-LMS
+          ref: b93c106ed41c5ea34255c24b2c69bba75da4fde4
+          path: ALICE-LMS
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-LOL
+          ref: bf2aeb521a97e50a8bcecf054e2ed3c8d9b2534e
+          path: ALICE-LOL
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Ledger
+          ref: ead437750e88c9b1ef4861a39292844a53bf4d04
+          path: ALICE-Ledger
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Legal-AI
+          ref: fb1d7291be333b64b4bfcce4284241ac28d2e127
+          path: ALICE-Legal-AI
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Legal
+          ref: a7c3b41c14e473a432a287c74f8b8dab2f9a9986
+          path: ALICE-Legal
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-LoRa
+          ref: c3765e1fa272a2deb8bb082c8a9a1c448be30c03
+          path: ALICE-LoRa
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-ML
+          ref: 5d45fb65de47a6a3b39a35f235a393ead8f2eb38
+          path: ALICE-ML
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Monitor
+          ref: bdcefd23cd9a8638ddbafa11b5c01128a1187806
+          path: ALICE-Monitor
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Motion
+          ref: 523a823951bd76327bbd55cf79b178647bfe0133
+          path: ALICE-Motion
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-NFC
+          ref: 9edc8100ea81a5af0f89b233ac625c2610ab9c88
+          path: ALICE-NFC
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Navigation
+          ref: b3e3f82a09ea143b6ec144cd2ab69ff8f16c5716
+          path: ALICE-Navigation
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-ObjectStore
+          ref: 30ac885f212a37cdc2aa466746fc89db9099d073
+          path: ALICE-ObjectStore
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Optics
+          ref: b8d8a3c4a12ca0076819a65e6602ac0588e9f9d6
+          path: ALICE-Optics
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Parser
+          ref: 819278f58ea02c5a4e11fa8d08b7842847619667
+          path: ALICE-Parser
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Physics
+          ref: 739589ea0ed17cac9ecfc19f7f7a19fbee54bd44
+          path: ALICE-Physics
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Presence
+          ref: 96c33cc970ea4b93d67c51f61d92a9b85272a752
+          path: ALICE-Presence
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Proxy
+          ref: 08b0aff6628037f43de370a66be44019223609f3
+          path: ALICE-Proxy
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Queue
+          ref: 887d353a786e5b7a6c342deee69219423a0ffe90
+          path: ALICE-Queue
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-RTOS
+          ref: 9cbe9ef6274974bcb79376e8daa17e2c020df269
+          path: ALICE-RTOS
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Risk
+          ref: 8eb5149b455e6e73cd836eef01e9f74526599865
+          path: ALICE-Risk
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-SDF
+          ref: 63b706ab36134c8eb1f0a9f4fca44d3903d8adab
+          path: ALICE-SDF
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-SIMD
+          ref: 5aff7d1162681592ea5e35158593a33a6bd1a98e
+          path: ALICE-SIMD
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Search
+          ref: 6dfe74115adba53af0fdee27e40071f675055ec9
+          path: ALICE-Search
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Settlement
+          ref: 2df2c01e97fc799feaf7151a222ef9c560db5583
+          path: ALICE-Settlement
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Signal
+          ref: e71c2d8131235fe346d4ff59ddbe84d97b651bb4
+          path: ALICE-Signal
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Space
+          ref: 853298e7ce7f609aa755c49a24123721b1ebd9c3
+          path: ALICE-Space
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Streaming-Protocol
+          ref: 1e60b5deb61710dfe2a8f3c824489aaa6622ecbf
+          path: ALICE-Streaming-Protocol
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Swarm
+          ref: b161069a1ad59914b444035133ea5ce5229a4dd0
+          path: ALICE-Swarm
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Sync
+          ref: f5117e6505607ba260605b8ee40a2b5f044c3685
+          path: ALICE-Sync
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Synth
+          ref: 359269b304d598f7e0c27ad6157f6f14b67f5869
+          path: ALICE-Synth
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-TRT
+          ref: 6a48a5f9c305df30eafd89da745cbeed8873153b
+          path: ALICE-TRT
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Terraform
+          ref: fb5e0f7d9c7a06fb838ee73f564d6a95abddc645
+          path: ALICE-Terraform
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Text-Compression
+          ref: 6c30b4ca923c9392423f7ef06bfc5c39a3432db6
+          path: ALICE-Text-Compression
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Text
+          ref: 15010a4480512a9edd5d0f242b1c2a6eb1a62483
+          path: ALICE-Text
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Token
+          ref: 0cdabcd47c0187838e55ccbedfdd6d92e9d03611
+          path: ALICE-Token
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Train
+          ref: b1a98e9dbc2a38f216d2f4981c8f834e42f80381
+          path: ALICE-Train
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-VCS
+          ref: 8ffd24fe08fa47150d78afa4f26e1d6978c7c4be
+          path: ALICE-VCS
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-VM
+          ref: fef406f63ab32f3e99b0be95e7d446a713fabac3
+          path: ALICE-VM
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-VR
+          ref: ff9fa74930928e2ac600d4b9204fdb93f60c5f70
+          path: ALICE-VR
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Video
+          ref: cefe399b827c7d8e8f1fb74e435530a981953a5b
+          path: ALICE-Video
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-View
+          ref: eb6ac43df7529f908906b03b4b7cfc636af741c7
+          path: ALICE-View
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Voice
+          ref: 05336f2c49e33f26b04ea6464172611eac40c3ff
+          path: ALICE-Voice
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-WAF
+          ref: baaddb256270bc9e1cf80488e876a0ab5f6d7d89
+          path: ALICE-WAF
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-WebSocket
+          ref: bc7b008fb0981619985b889f8952a97ddd0f5fa1
+          path: ALICE-WebSocket
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-Zip
+          ref: a59ba9c0bd511f036180a6f4092c4b99a286567c
+          path: ALICE-Zip
+      - uses: actions/checkout@v5
+        with:
+          repository: ext-sakamoro/ALICE-gRPC
+          ref: a761df82358248aa5b66beaef7740e5779bba376
+          path: ALICE-gRPC
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test (lib, integration, doctests)
+        working-directory: ALICE-Eco-System
+        run: |
+          # the default shell has no pipefail: without it cargo's exit status is lost in the pipe
+          set -o pipefail
+          log="$(mktemp)"
+          cargo test 2>&1 | tee "${log}"
+          passed=$(grep -E '^test result: ' "${log}" | awk '{s += $4} END {print s + 0}')
+          failed=$(grep -E '^test result: ' "${log}" | awk '{s += $6} END {print s + 0}')
+          echo "passed: ${passed} (minimum ${MIN_PASSED}), failed: ${failed}"
+          if [ "${failed}" -ne 0 ] || grep -E '^test result: ' "${log}" | grep -vE '^test result: ok\. ' >/dev/null; then
+            echo "::error::${failed} tests failed"
+            exit 1
+          fi
+          if [ "${passed}" -lt "${MIN_PASSED}" ]; then
+            echo "::error::${passed} tests passed, fewer than ${MIN_PASSED}"
+            exit 1
+          fi
