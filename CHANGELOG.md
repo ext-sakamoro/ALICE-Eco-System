@@ -19,6 +19,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - **`bridge_physics` / `bridge_physics_scene_io` の test を `ManifoldConfig` / `PhysicsScene` の struct literal から `Default` / `new` に変更 (2026-09-30)** `PhysicsScene` は alice-physics 1.5.0 で既に `#[non_exhaustive]` なので、literal のままでは test が compile できなかった (E0639) `ManifoldConfig` は将来の付与に備えた予防 公開 API の変更なし
 
 ### Removed
+- 依存: どこからも使われていない非公開の path 依存 62 個と、そのうち 1 つだけを有効にしていた feature `firewall` を外した `bridge_firewall` はその crate を使っておらず公開の crate だけで build できるので、feature なしで常に build される (file 内の `fnv1a` は試験だけが使うので `#[cfg(test)]` を付ける) 試験の名前と数は前後で同じ (2472) `Cargo.lock` は sibling を固定した CI の job を入れる時に作り直す
 - **Breaking:** `bridge_physics` の Bridge 7 (`multiworld_to_analytics` / `MultiWorldAnalyticsEvent`) と試験 3 本を外し、`alice-physics` の `replay` feature を使わなくした (ALICE-Physics の責務分割で `multi_world` と `replay` が alice-physics から外れるため) `pipeline::AlicePipeline` は game tick の replay の記録を外し、`PipelineConfig` の `replay_path` と `num_bodies` (記録にだけ使っていた) を削除した 例 `game_pipeline` は replay の記録と再生 (旧 PHASE 6) を外し、ALICE-Sync の telemetry を ALICE-DB に保存して集計するところまでを示す (`docs/DEMOS.md` も同じ) この repository の CI は crate を build しないので、`bridge_physics` は分割後の alice-physics に対して単独で build と試験をし、`pipeline` と例は rustfmt の構文検査だけを通している (依存の多くが公開されていない)
 - 使われていない bridge module 6 本と、それに対応する lib.rs の pipeline 説明 2 件を削除
 - build 生成物の `libbridge_*.rlib` 22 file を追跡対象から外し `.gitignore` に `*.rlib` を追加

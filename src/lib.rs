@@ -148,7 +148,6 @@ pub mod bridge_edge_commercial;
 pub mod bridge_edge_ext;
 pub mod bridge_energy;
 pub mod bridge_energy_cross;
-#[cfg(feature = "firewall")]
 pub mod bridge_firewall;
 pub mod bridge_fix;
 pub mod bridge_fix_ext;

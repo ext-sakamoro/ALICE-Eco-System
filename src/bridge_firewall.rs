@@ -2,6 +2,8 @@
 //!
 //! 6 bridges connecting ML-based flow classification to the ALICE ecosystem.
 
+// used by the tests only (the bridges themselves do not hash)
+#[cfg(test)]
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
     let mut h: u64 = 0xcbf29ce484222325;
