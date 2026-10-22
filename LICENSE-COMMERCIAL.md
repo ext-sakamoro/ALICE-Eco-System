@@ -42,11 +42,11 @@ ALICE-Eco-System is dual-licensed:
 ## What the Commercial License does NOT grant
 
 - Rights to **third-party dependencies**, which keep their own licences. Those
-  terms continue to apply independently of this licence. Optional feature
-  bridges may pull additional AGPL-licensed ALICE crates — see the feature
-  table in [`README.md`](README.md).
+  terms continue to apply independently of this licence. This crate depends
+  on AGPL-licensed ALICE crates (not only through optional features); those
+  need their own Commercial License for closed-source use.
 - Trademark rights over the "ALICE" or "ALICE-Eco-System" names — see
-  [TRADEMARK_NOTICE](TRADEMARK_NOTICE).
+  [BRAND_GUIDELINES.md](BRAND_GUIDELINES.md).
 
 ## How to obtain a Commercial License
 
