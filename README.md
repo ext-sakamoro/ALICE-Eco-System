@@ -79,8 +79,8 @@ compares the TSV with the repositories themselves (visibility, license from
 
 | Repository | Crate | License | Description |
 |---|---|---|---|
-| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | [![crates.io](https://img.shields.io/crates/v/alice-sdf.svg)](https://crates.io/crates/alice-sdf) | MIT OR Apache-2.0 | Signed distance functions: CSG, GLSL / WGSL / HLSL transpilation, sparse voxel octree, meshing |
-| [ALICE-LOL](https://github.com/ext-sakamoro/ALICE-LOL) | [![crates.io](https://img.shields.io/crates/v/alice-lol.svg)](https://crates.io/crates/alice-lol) | MIT OR Apache-2.0 | Law-oriented SDF DSL as a proc macro, with shader transpilation and print export (STL / 3MF / OBJ / FBX) |
+| [ALICE-SDF](https://github.com/ext-sakamoro/ALICE-SDF) | [![crates.io](https://img.shields.io/crates/v/alice-sdf.svg)](https://crates.io/crates/alice-sdf) | Apache-2.0 | Signed distance functions: CSG, GLSL / WGSL / HLSL transpilation, sparse voxel octree, meshing |
+| [ALICE-LOL](https://github.com/ext-sakamoro/ALICE-LOL) | [![crates.io](https://img.shields.io/crates/v/alice-lol.svg)](https://crates.io/crates/alice-lol) | Apache-2.0 | Law-oriented SDF DSL as a proc macro, with shader transpilation and print export (STL / 3MF / OBJ / FBX) |
 | [ALICE-Shader](https://github.com/ext-sakamoro/ALICE-Shader) | `alice-shader` | MIT OR LicenseRef-Commercial | GLSL and WGSL shader library (sky, terrain, PBR, SDF, VFX); frozen, SDF primitives moved to alice-sdf |
 | [ALICE-View](https://github.com/ext-sakamoro/ALICE-View) | `alice-view` | MIT OR Apache-2.0 | Real-time procedural rendering engine |
 | [ALICE-GameEngine](https://github.com/ext-sakamoro/ALICE-GameEngine) | `alice-game-engine` | MIT OR LicenseRef-Commercial | Hybrid mesh and SDF game engine on wgpu |
@@ -92,7 +92,7 @@ compares the TSV with the repositories themselves (visibility, license from
 | Repository | Crate | License | Description |
 |---|---|---|---|
 | [ALICE-Physics](https://github.com/ext-sakamoro/ALICE-Physics) | [![crates.io](https://img.shields.io/crates/v/alice-physics.svg)](https://crates.io/crates/alice-physics) | AGPL-3.0-or-later OR LicenseRef-Commercial | Deterministic physics on 128-bit fixed point: bit-exact replay, snapshots, rollback |
-| [ALICE-DetMath](https://github.com/ext-sakamoro/ALICE-DetMath) | [![crates.io](https://img.shields.io/crates/v/alice-det-math.svg)](https://crates.io/crates/alice-det-math) | MIT OR Apache-2.0 | Cross-platform bit-exact f32 / f64 transcendentals, scalar and SIMD, no_std |
+| [ALICE-DetMath](https://github.com/ext-sakamoro/ALICE-DetMath) | [![crates.io](https://img.shields.io/crates/v/alice-det-math.svg)](https://crates.io/crates/alice-det-math) | Apache-2.0 | Cross-platform bit-exact f32 / f64 transcendentals, scalar and SIMD, no_std |
 | [ALICE-Motion](https://github.com/ext-sakamoro/ALICE-Motion) | `alice-motion` | MIT OR Apache-2.0 | NURBS / Bezier trajectory control with trapezoidal and S-curve profiles, no_std |
 | [ALICE-Kinematics](https://github.com/ext-sakamoro/ALICE-Kinematics) | [![crates.io](https://img.shields.io/crates/v/alice-kinematics.svg)](https://crates.io/crates/alice-kinematics) | MIT OR Apache-2.0 | Compression of human motion samples into compact kinematic intent |
 | [ALICE-Navigation](https://github.com/ext-sakamoro/ALICE-Navigation) | `alice-navigation` | MIT OR Apache-2.0 | Path planning: RRT, PRM, potential fields, velocity obstacles, navigation mesh |
@@ -122,7 +122,7 @@ compares the TSV with the repositories themselves (visibility, license from
 
 | Repository | Crate | License | Description |
 |---|---|---|---|
-| [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | [![crates.io](https://img.shields.io/crates/v/alice-zip.svg)](https://crates.io/crates/alice-zip) | MIT OR Apache-2.0 | Compression (LZ77, dictionary coding) and procedural signal generators, no_std |
+| [ALICE-Zip](https://github.com/ext-sakamoro/ALICE-Zip) | [![crates.io](https://img.shields.io/crates/v/alice-zip.svg)](https://crates.io/crates/alice-zip) | Apache-2.0 | Compression (LZ77, dictionary coding) and procedural signal generators, no_std |
 | [ALICE-Edge](https://github.com/ext-sakamoro/ALICE-Edge) | [![crates.io](https://img.shields.io/crates/v/alice-edge.svg)](https://crates.io/crates/alice-edge) | MIT OR Apache-2.0 | Embedded model fitting that compresses sensor samples into a few bytes, no_std |
 | [ALICE-Codec](https://github.com/ext-sakamoro/ALICE-Codec) | [![crates.io](https://img.shields.io/crates/v/alice-codec.svg)](https://crates.io/crates/alice-codec) | AGPL-3.0-or-later OR LicenseRef-Commercial | 3D wavelet video codec |
 | [ALICE-Text](https://github.com/ext-sakamoro/ALICE-Text) | `alice-text` | MIT OR Apache-2.0 | Exception-based text compression |
@@ -143,7 +143,7 @@ compares the TSV with the repositories themselves (visibility, license from
 | [ALICE-Search](https://github.com/ext-sakamoro/ALICE-Search) | `alice-search` | AGPL-3.0 OR LicenseRef-Commercial | FM-index full-text search |
 | [ALICE-ObjectStore](https://github.com/ext-sakamoro/ALICE-ObjectStore) | `alice-objectstore` | AGPL-3.0 OR LicenseRef-Commercial | S3-compatible object storage engine |
 | [ALICE-FileSystem](https://github.com/ext-sakamoro/ALICE-FileSystem) | `alice-filesystem` | AGPL-3.0 OR LicenseRef-Commercial | Virtual filesystem: inodes, permissions, symlinks, mounting |
-| [ALICE-Analytics](https://github.com/ext-sakamoro/ALICE-Analytics) | [![crates.io](https://img.shields.io/crates/v/alice-analytics.svg)](https://crates.io/crates/alice-analytics) | MIT OR Apache-2.0 | Telemetry and statistical estimation with probabilistic data structures |
+| [ALICE-Analytics](https://github.com/ext-sakamoro/ALICE-Analytics) | [![crates.io](https://img.shields.io/crates/v/alice-analytics.svg)](https://crates.io/crates/alice-analytics) | Apache-2.0 | Telemetry and statistical estimation with probabilistic data structures |
 | [ALICE-History](https://github.com/ext-sakamoro/ALICE-History) | `alice-history` | AGPL-3.0-or-later OR LicenseRef-Commercial | Restoration of degraded historical data |
 
 ### Networking
@@ -174,6 +174,7 @@ compares the TSV with the repositories themselves (visibility, license from
 | [ALICE-DLP](https://github.com/ext-sakamoro/ALICE-DLP) | `alice-dlp` | AGPL-3.0 OR LicenseRef-Commercial | Data loss prevention: PII detection, classification, masking |
 | [ALICE-WAF](https://github.com/ext-sakamoro/ALICE-WAF) | `alice-waf` | AGPL-3.0 OR LicenseRef-Commercial | Web application firewall: rule engine, SQLi / XSS detection, rate limiting |
 | [ALICE-Presence](https://github.com/ext-sakamoro/ALICE-Presence) | `alice-presence` | MIT OR Apache-2.0 | Proof of encounter with Vivaldi coordinates and zero-knowledge proofs |
+| [ALICE-Sign](https://github.com/ext-sakamoro/ALICE-Sign) | `alice-sign` | MIT OR Apache-2.0 | Ed25519 signatures, SHA-256 hashing and a SHA-256 Merkle tree with fixed, tested byte layouts |
 
 ### Systems & Tooling
 
@@ -190,6 +191,7 @@ compares the TSV with the repositories themselves (visibility, license from
 | [ALICE-Terraform](https://github.com/ext-sakamoro/ALICE-Terraform) | `alice-terraform` | AGPL-3.0 OR LicenseRef-Commercial | Infrastructure-as-code engine: resource graph, state, plan / apply |
 | [ALICE-Monitor](https://github.com/ext-sakamoro/ALICE-Monitor) | `alice-monitor` | AGPL-3.0 OR LicenseRef-Commercial | Monitoring: health checks, alerts, SLA tracking, heartbeats |
 | [ALICE-Signal](https://github.com/ext-sakamoro/ALICE-Signal) | [![crates.io](https://img.shields.io/crates/v/alice-signal.svg)](https://crates.io/crates/alice-signal) | MIT OR Apache-2.0 | Digital signal processing: FFT, FIR / IIR, wavelets, PSD |
+| [ALICE-Law](https://github.com/ext-sakamoro/ALICE-Law) | `alice-law-integration` | AGPL-3.0-or-later OR LicenseRef-Commercial | Integration checks across the core crates, built from their crates.io releases: end-to-end digest, conformance criteria, release train |
 
 ### Finance
 

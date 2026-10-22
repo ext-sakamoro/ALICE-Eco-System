@@ -26,6 +26,9 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - 使われていない bridge module 6 本と、それに対応する lib.rs の pipeline 説明 2 件を削除
 - build 生成物の `libbridge_*.rlib` 22 file を追跡対象から外し `.gitignore` に `*.rlib` を追加
 
+### Fixed
+- crate 索引: ALICE-SDF / ALICE-LOL / ALICE-DetMath / ALICE-Zip / ALICE-Analytics の license を各 Cargo.toml の値 `Apache-2.0` に合わせた (索引は `MIT OR Apache-2.0` のままだった) 索引に無かった public の crate repository の ALICE-Sign (`MIT OR Apache-2.0`) と ALICE-Law (`AGPL-3.0-or-later OR LicenseRef-Commercial`、crates.io には公開しない) を足した `scripts/readme_index.py --online` は 87 行と索引外の public repository 26 個を比べて差 0
+
 ## [0.3.4] - 2026-07-01
 
 ### Changed
