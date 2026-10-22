@@ -25,7 +25,7 @@ cargo doc --no-deps 2>&1 | grep warning
 ALICE crates follow a **MIT Core + AGPL SaaS Shell** licensing strategy.
 This boundary must be strictly maintained.
 
-### What belongs in MIT-licensed crates (SDF, Eco-System, etc.)
+### What belongs in MIT-licensed crates
 
 - Pure computation algorithms (math, data structures, serialization)
 - Platform-agnostic abstractions (no network, no I/O, no cloud)

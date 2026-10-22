@@ -4,7 +4,7 @@ version = "0.3.4"
 edition = "2021"
 authors = ["Moroya Sakamoto <sakamoro@alicelaw.net>"]
 description = "Index of the public ALICE crates and the integration hub that connects them"
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-or-later OR LicenseRef-Commercial"
 repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
 [dependencies]

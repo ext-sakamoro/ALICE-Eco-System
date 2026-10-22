@@ -12,6 +12,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- **license を `MIT OR Apache-2.0` から `AGPL-3.0-or-later OR LicenseRef-Commercial` に変えた** hub は AGPL の crate に (optional でない依存として) 依存するので、それに合わせた `LICENSE-AGPL` (AGPL v3 の全文) と `LICENSE-COMMERCIAL.md` (他の ALICE crate と同じ商用 license の案内) を足し、`LICENSE` (MIT) と `LICENSE-APACHE` を外した README の badge と License の節、CONTRIBUTING の MIT の crate の例から Eco-System を外した 索引の各 crate の license は変わらない
 - 依存: ALICE-Sign を git で固定する sibling 11 個 (Container / CRM / ERP / HRM / LMS / Settlement / VCS / DNS / Ledger / Queue / Risk) の固定 commit を、alice-sign を ALICE-Sign の main `6b79a0ba` に揃えた各 main に動かした lock では alice-sign が 3 つの revision (`5420e71f` / `b2c80d06` / `6b79a0ba`) から link されていたが、1 つになった (lock の変更は alice-sign の entry だけ)
 - `bridge_auth` の試験: `alice-auth` の `Identity::sign` が `Result<AliceSig, SignError>` を返す (予約接頭辞 `alice-auth/` で始まる message には署名しない) のに合わせ、試験の message `b"hello"` の署名を `expect` で取り出す 公開 API の変更なし
 - 依存: lock を sibling の main に合わせ、yank 済みの `zip` 2.4.2 (`alice-train` 経由、9.0.4 へ) と `spin` 0.9.8 (0.9.9 へ) を外した この変更の時点では CI が crate を build しなかった (path 依存の sibling 185 個が要った) ので、lock の古さと yank は CI に現れていなかった (lock は上の Added の CI の job を入れる時に、公開の sibling 85 個で作り直した)
