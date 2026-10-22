@@ -5,12 +5,14 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- `scripts/lock_git_revs.py` と test: Cargo.lock で 1 つの alice-* package が 2 つ以上の git revision から link されていたら失敗する (比較件数 0 と読めない lock は exit 2) CI の `Test (public siblings)` が `cargo test` の後に実行し、test は `Docs and crate index` (3 OS) と `scripts/preflight.sh` が実行する
 - CI: job `Test (public siblings)` 公開の sibling 85 個を固定の commit でこの repository の隣に checkout し、`cargo test` を走らせる (公開でない sibling は checkout で落ちる) 失敗した試験がある時と、通った試験が 1909 本より少ない時は失敗する `ci/**` への push でも走る `scripts/preflight.sh` (`--quick` 無し) も同じ試験と下限を見る `ALICE-Physics` は package 名が `alice-physics-core` に変わる前の commit に固定している `Cargo.lock` はこの sibling の組で作り直した
 - `docs/crate-index.tsv` と `scripts/readme_index.py`: README の crate 索引の元データと検査器 `--check` は README の表と TSV の一致 (CI、3 OS)、`--online` は TSV と各 repository の一致 (public か、Cargo.toml の license、crates.io の公開状況、索引に無い public crate repository) を見る `crate-index.yml` が TSV の変更時と毎週実行する 比較件数 0 は失敗
 - `scripts/docs_lint.py` と test: 公開文書と追跡 file の語彙、CHANGELOG の版見出しを検査 (CI、3 OS)
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- 依存: ALICE-Sign を git で固定する sibling 11 個 (Container / CRM / ERP / HRM / LMS / Settlement / VCS / DNS / Ledger / Queue / Risk) の固定 commit を、alice-sign を ALICE-Sign の main `6b79a0ba` に揃えた各 main に動かした lock では alice-sign が 3 つの revision (`5420e71f` / `b2c80d06` / `6b79a0ba`) から link されていたが、1 つになった (lock の変更は alice-sign の entry だけ)
 - `bridge_auth` の試験: `alice-auth` の `Identity::sign` が `Result<AliceSig, SignError>` を返す (予約接頭辞 `alice-auth/` で始まる message には署名しない) のに合わせ、試験の message `b"hello"` の署名を `expect` で取り出す 公開 API の変更なし
 - 依存: lock を sibling の main に合わせ、yank 済みの `zip` 2.4.2 (`alice-train` 経由、9.0.4 へ) と `spin` 0.9.8 (0.9.9 へ) を外した この変更の時点では CI が crate を build しなかった (path 依存の sibling 185 個が要った) ので、lock の古さと yank は CI に現れていなかった (lock は上の Added の CI の job を入れる時に、公開の sibling 85 個で作り直した)
 - `bridge_analytics`: `alice_analytics::prelude` はどの公開版にも無く、使っている 2 つの型を `alice_analytics::sketch::{HyperLogLog12, DDSketch256}` から import する (挙動は同じ)

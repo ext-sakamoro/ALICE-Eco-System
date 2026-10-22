@@ -197,7 +197,7 @@ version = "1.0.0"
 name = "alice-audit"
 version = "1.3.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=6b79a0bad3db4c7de1719251d6a2a9405fbc0ee2)",
+ "alice-sign",
 ]
 
 [[package]]
@@ -321,7 +321,7 @@ version = "1.0.0"
 name = "alice-container"
 version = "0.3.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=5420e71fbbf47dd1202b6abcb3c885ef3aa176ca)",
+ "alice-sign",
  "libc",
 ]
 
@@ -329,7 +329,7 @@ dependencies = [
 name = "alice-crm"
 version = "1.1.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=5420e71fbbf47dd1202b6abcb3c885ef3aa176ca)",
+ "alice-sign",
 ]
 
 [[package]]
@@ -424,7 +424,7 @@ name = "alice-dns"
 version = "0.2.0"
 dependencies = [
  "alice-cache",
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=b2c80d06a17d67e100c3d220d68f4ad003e6ea5a)",
+ "alice-sign",
 ]
 
 [[package]]
@@ -541,7 +541,7 @@ dependencies = [
 name = "alice-erp"
 version = "1.1.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=5420e71fbbf47dd1202b6abcb3c885ef3aa176ca)",
+ "alice-sign",
 ]
 
 [[package]]
@@ -587,7 +587,7 @@ dependencies = [
 name = "alice-hrm"
 version = "1.1.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=5420e71fbbf47dd1202b6abcb3c885ef3aa176ca)",
+ "alice-sign",
 ]
 
 [[package]]
@@ -605,7 +605,7 @@ dependencies = [
 name = "alice-ledger"
 version = "0.3.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=b2c80d06a17d67e100c3d220d68f4ad003e6ea5a)",
+ "alice-sign",
  "alice-sync",
 ]
 
@@ -613,7 +613,7 @@ dependencies = [
 name = "alice-legal"
 version = "0.3.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=6b79a0bad3db4c7de1719251d6a2a9405fbc0ee2)",
+ "alice-sign",
 ]
 
 [[package]]
@@ -631,7 +631,7 @@ dependencies = [
 name = "alice-lms"
 version = "1.1.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=5420e71fbbf47dd1202b6abcb3c885ef3aa176ca)",
+ "alice-sign",
 ]
 
 [[package]]
@@ -724,7 +724,7 @@ version = "1.0.0"
 name = "alice-queue"
 version = "0.2.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=b2c80d06a17d67e100c3d220d68f4ad003e6ea5a)",
+ "alice-sign",
  "blake3",
  "memmap2",
 ]
@@ -734,7 +734,7 @@ name = "alice-risk"
 version = "0.2.0"
 dependencies = [
  "alice-ledger",
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=b2c80d06a17d67e100c3d220d68f4ad003e6ea5a)",
+ "alice-sign",
 ]
 
 [[package]]
@@ -787,31 +787,13 @@ version = "0.2.0"
 name = "alice-settlement"
 version = "0.2.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=5420e71fbbf47dd1202b6abcb3c885ef3aa176ca)",
-]
-
-[[package]]
-name = "alice-sign"
-version = "0.1.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Sign?rev=5420e71fbbf47dd1202b6abcb3c885ef3aa176ca#5420e71fbbf47dd1202b6abcb3c885ef3aa176ca"
-dependencies = [
- "ed25519-dalek",
- "sha2",
+ "alice-sign",
 ]
 
 [[package]]
 name = "alice-sign"
 version = "0.1.0"
 source = "git+https://github.com/ext-sakamoro/ALICE-Sign?rev=6b79a0bad3db4c7de1719251d6a2a9405fbc0ee2#6b79a0bad3db4c7de1719251d6a2a9405fbc0ee2"
-dependencies = [
- "ed25519-dalek",
- "sha2",
-]
-
-[[package]]
-name = "alice-sign"
-version = "0.1.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Sign?rev=b2c80d06a17d67e100c3d220d68f4ad003e6ea5a#b2c80d06a17d67e100c3d220d68f4ad003e6ea5a"
 dependencies = [
  "ed25519-dalek",
  "sha2",
@@ -920,7 +902,7 @@ dependencies = [
 name = "alice-vcs"
 version = "0.2.0"
 dependencies = [
- "alice-sign 0.1.0 (git+https://github.com/ext-sakamoro/ALICE-Sign?rev=5420e71fbbf47dd1202b6abcb3c885ef3aa176ca)",
+ "alice-sign",
 ]
 
 [[package]]

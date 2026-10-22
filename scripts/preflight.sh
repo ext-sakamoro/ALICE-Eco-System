@@ -36,6 +36,9 @@ python3 scripts/docs_lint.py --check
 step "ci.yml / docs: Crate index (README tables match docs/crate-index.tsv)"
 python3 scripts/readme_index.py --check
 
+step "ci.yml / docs: Lock git revisions (tests)"
+python3 scripts/test_lock_git_revs.py
+
 if [[ $quick -eq 1 ]]; then
   echo; echo "preflight --quick OK (test / bench suites skipped)"; exit 0
 fi
@@ -63,5 +66,8 @@ step "ci.yml / test: Test (lib, integration, doctests)"
     exit 1
   fi
 )
+
+step "ci.yml / test: Lock (each alice-* git package from one revision)"
+python3 scripts/lock_git_revs.py Cargo.lock
 
 echo; echo "preflight OK"

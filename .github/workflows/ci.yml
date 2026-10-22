@@ -53,6 +53,8 @@ jobs:
         run: python scripts/docs_lint.py --check
       - name: Crate index (README tables match docs/crate-index.tsv)
         run: python scripts/readme_index.py --check
+      - name: Lock git revisions (tests)
+        run: python scripts/test_lock_git_revs.py
 
   test:
     name: Test (public siblings)
@@ -136,7 +138,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-CRM
-          ref: f83c12c3431ee0445c9d9c0468776c7a88b5c803
+          ref: ff3858d0d665585402c8f3bae4bd640d8221cc8b
           path: ALICE-CRM
       - uses: actions/checkout@v5
         with:
@@ -176,7 +178,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Container
-          ref: d4d3e626687b95468a68e3f2cd3a1c90eab6f92d
+          ref: 6fee3e9786f8a11c6e7552234d1748465c55a31c
           path: ALICE-Container
       - uses: actions/checkout@v5
         with:
@@ -196,7 +198,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-DNS
-          ref: 260c9c18bdb59cade5b79159d797c51abcc5f418
+          ref: a2066998d25a605fcb73facab9a8334290485621
           path: ALICE-DNS
       - uses: actions/checkout@v5
         with:
@@ -206,7 +208,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-ERP
-          ref: 2545707d57b19f37d079ceba9583745693c27e12
+          ref: 7f949f0e80ca1f6c1f4dc7e7215b616f3abe2588
           path: ALICE-ERP
       - uses: actions/checkout@v5
         with:
@@ -241,7 +243,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-HRM
-          ref: 36969214cbd2a4dbbe79ceb0e86d9676b785abc8
+          ref: 9195a6932d376a04555193d782f198a953e01139
           path: ALICE-HRM
       - uses: actions/checkout@v5
         with:
@@ -266,7 +268,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-LMS
-          ref: b93c106ed41c5ea34255c24b2c69bba75da4fde4
+          ref: d03254c25484663a026bb1fead7833230b4d51ff
           path: ALICE-LMS
       - uses: actions/checkout@v5
         with:
@@ -276,7 +278,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Ledger
-          ref: ead437750e88c9b1ef4861a39292844a53bf4d04
+          ref: 2302e5a2d0e988d7ddcdcce48e373b63582e0ff2
           path: ALICE-Ledger
       - uses: actions/checkout@v5
         with:
@@ -351,7 +353,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Queue
-          ref: 887d353a786e5b7a6c342deee69219423a0ffe90
+          ref: 69036d5beafd5bcb012fe3ac3564daea73494d4a
           path: ALICE-Queue
       - uses: actions/checkout@v5
         with:
@@ -361,7 +363,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Risk
-          ref: 8eb5149b455e6e73cd836eef01e9f74526599865
+          ref: b6eac51628a80356d9334af57273fcbe4365d687
           path: ALICE-Risk
       - uses: actions/checkout@v5
         with:
@@ -381,7 +383,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Settlement
-          ref: 2df2c01e97fc799feaf7151a222ef9c560db5583
+          ref: 7e913d7ea0096f724b18c7bd77b59029822cd402
           path: ALICE-Settlement
       - uses: actions/checkout@v5
         with:
@@ -446,7 +448,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-VCS
-          ref: 8ffd24fe08fa47150d78afa4f26e1d6978c7c4be
+          ref: 7a7e96632a1942e59921545fb658f537128c2cb4
           path: ALICE-VCS
       - uses: actions/checkout@v5
         with:
@@ -512,3 +514,7 @@ jobs:
             echo "::error::${passed} tests passed, fewer than ${MIN_PASSED}"
             exit 1
           fi
+      - name: Lock (each alice-* git package from one revision)
+        working-directory: ALICE-Eco-System
+        # after cargo test, so the lock checked is the one the build used
+        run: python3 scripts/lock_git_revs.py Cargo.lock
