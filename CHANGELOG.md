@@ -15,6 +15,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- alice-sync の `InputFrame` の入力が固定小数点 `InputFix` (全 bit) になったのに合わせた `bridge_kinematics` は Intent の 8 byte を `movement[0]` の整数の word に入れる (以前の 3 つの i16 は 8 byte のうち 6 byte しか運ばなかった) `bridge_sync` の hash は成分の全 word で取り、physics への力は固定小数点の値を f32 にする CI の ALICE-Sync の ref を 3a1ccc8 にした
 - Licence: `AGPL-3.0-or-later OR LicenseRef-Commercial` → `LicenseRef-Proprietary`
 - `LICENSE-COMMERCIAL.md`: 商用 license が含まない物の説明を hub に合わせた 「optional の feature が AGPL の crate を引くことがある」を「この crate は AGPL の ALICE crate に (optional の feature だけでなく) 依存し、それらは closed-source で使うには各々の商用 license が要る」に直し、商標の参照先を存在しない `TRADEMARK_NOTICE` から `BRAND_GUIDELINES.md` に直した
 - **license を `MIT OR Apache-2.0` から `AGPL-3.0-or-later OR LicenseRef-Commercial` に変えた** hub は AGPL の crate に (optional でない依存として) 依存するので、それに合わせた `LICENSE-AGPL` (AGPL v3 の全文) と `LICENSE-COMMERCIAL.md` (他の ALICE crate と同じ商用 license の案内) を足し、`LICENSE` (MIT) と `LICENSE-APACHE` を外した README の badge と License の節、CONTRIBUTING の MIT の crate の例から Eco-System を外した 索引の各 crate の license は変わらない

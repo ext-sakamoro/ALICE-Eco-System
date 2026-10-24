@@ -406,7 +406,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Sync
-          ref: f5117e6505607ba260605b8ee40a2b5f044c3685
+          ref: 3a1ccc8bf5d1662ad0c4359058b28ab47982da90
           path: ALICE-Sync
       - uses: actions/checkout@v5
         with:

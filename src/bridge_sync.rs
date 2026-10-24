@@ -4,7 +4,7 @@
 //! Covers sync session persistence, frame telemetry, CDN-based peer discovery,
 //! cache-assisted state prefetch, and analytics feed from input frame data.
 
-use alice_sync::InputFrame;
+use alice_sync::{InputFix, InputFrame};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -83,29 +83,46 @@ pub struct SyncAnalyticsFrameEvent {
     pub active_axes: u8,
 }
 
+/// The words of a fixed-point input component, `hi` then `lo`, little-endian.
+#[inline]
+fn fix_words(v: InputFix) -> [u8; 16] {
+    let mut out = [0u8; 16];
+    out[..8].copy_from_slice(&v.hi.to_le_bytes());
+    out[8..].copy_from_slice(&v.lo.to_le_bytes());
+    out
+}
+
+/// Every word of the movement then the aim components.
+#[inline]
+fn input_words(frame: &InputFrame) -> [u8; 96] {
+    let mut data = [0u8; 96];
+    for (i, &v) in frame.movement.iter().chain(frame.aim.iter()).enumerate() {
+        data[i * 16..i * 16 + 16].copy_from_slice(&fix_words(v));
+    }
+    data
+}
+
+/// The value `hi + lo / 2^64` of a fixed-point input component as `f32`.
+#[inline]
+fn fix_to_f32(v: InputFix) -> f32 {
+    (v.hi as f64 + v.lo as f64 / 18_446_744_073_709_551_616.0) as f32
+}
+
 /// Convert an `InputFrame` into a telemetry event for ALICE-Analytics.
 ///
-/// The movement and aim arrays are hashed as raw i16 bytes for a compact
-/// deduplication key without heap allocation.
+/// The movement and aim components are hashed as their raw words (`hi` then `lo`, little-endian)
+/// for a deduplication key without heap allocation.
 #[inline]
 #[must_use]
 pub fn sync_to_analytics_frame_event(frame: &InputFrame) -> SyncAnalyticsFrameEvent {
-    // Hash movement + aim as raw bytes (6 × i16 = 12 bytes per array = 24 bytes total).
-    let mut data = [0u8; 24];
-    for (i, &v) in frame.movement.iter().enumerate() {
-        let bytes = v.to_le_bytes();
-        data[i * 2] = bytes[0];
-        data[i * 2 + 1] = bytes[1];
-    }
-    for (i, &v) in frame.aim.iter().enumerate() {
-        let bytes = v.to_le_bytes();
-        data[6 + i * 2] = bytes[0];
-        data[6 + i * 2 + 1] = bytes[1];
-    }
-    let payload_hash = fnv1a(&data);
+    let payload_hash = fnv1a(&input_words(frame));
     // Count non-zero axes in movement and aim (branchless population count proxy).
-    let active_axes = frame.movement.iter().filter(|&&v| v != 0).count()
-        + frame.aim.iter().filter(|&&v| v != 0).count();
+    let active_axes = frame
+        .movement
+        .iter()
+        .filter(|&&v| v != InputFix::ZERO)
+        .count()
+        + frame.aim.iter().filter(|&&v| v != InputFix::ZERO).count();
     SyncAnalyticsFrameEvent {
         payload_hash,
         frame: frame.frame,
@@ -218,19 +235,8 @@ pub struct SyncDbFrameLog {
 #[inline]
 #[must_use]
 pub fn sync_to_db_frame_log(frame: &InputFrame) -> SyncDbFrameLog {
-    let mut data = [0u8; 24];
-    for (i, &v) in frame.movement.iter().enumerate() {
-        let b = v.to_le_bytes();
-        data[i * 2] = b[0];
-        data[i * 2 + 1] = b[1];
-    }
-    for (i, &v) in frame.aim.iter().enumerate() {
-        let b = v.to_le_bytes();
-        data[6 + i * 2] = b[0];
-        data[6 + i * 2 + 1] = b[1];
-    }
     SyncDbFrameLog {
-        payload_hash: fnv1a(&data),
+        payload_hash: fnv1a(&input_words(frame)),
         frame: frame.frame,
         player_id: frame.player_id,
         actions: frame.actions,
@@ -351,19 +357,19 @@ pub struct SyncPhysicsEvent {
 
 /// Convert an `InputFrame` into a physics force event for ALICE-Physics.
 ///
-/// `force_x` and `force_y` are direct casts from the i16 movement axes so
-/// that the physics engine receives the raw analog magnitude without
-/// normalisation — callers should apply their own force scaling.
+/// `force_x` and `force_y` are the fixed-point movement axes as `f32`, so that the physics engine
+/// receives the raw analog magnitude without normalisation — callers should apply their own force
+/// scaling.
 #[inline]
 #[must_use]
 pub fn sync_to_physics_event(frame: &InputFrame) -> SyncPhysicsEvent {
-    let force_x = frame.movement[0] as f32;
-    let force_y = frame.movement[1] as f32;
-    // Hash tick + movement bytes for deduplication.
-    let mut data = [0u8; 12];
+    let force_x = fix_to_f32(frame.movement[0]);
+    let force_y = fix_to_f32(frame.movement[1]);
+    // Hash tick + movement words for deduplication.
+    let mut data = [0u8; 40];
     data[0..8].copy_from_slice(&frame.frame.to_le_bytes());
-    data[8..10].copy_from_slice(&frame.movement[0].to_le_bytes());
-    data[10..12].copy_from_slice(&frame.movement[1].to_le_bytes());
+    data[8..24].copy_from_slice(&fix_words(frame.movement[0]));
+    data[24..40].copy_from_slice(&fix_words(frame.movement[1]));
     let content_hash = fnv1a(&data);
     let is_active = force_x != 0.0 || force_y != 0.0 || frame.actions != 0;
     SyncPhysicsEvent {
@@ -382,7 +388,11 @@ mod tests {
     use super::*;
 
     fn make_frame(frame: u64, player_id: u8) -> InputFrame {
-        InputFrame::new(frame, player_id).with_movement(100, -50, 0)
+        InputFrame::new(frame, player_id).with_movement(
+            InputFix::from_int(100),
+            InputFix::from_int(-50),
+            InputFix::from_int(0),
+        )
     }
 
     #[test]
@@ -417,7 +427,11 @@ mod tests {
     #[test]
     fn test_sync_to_analytics_frame_event_different_movement_different_hash() {
         let f1 = make_frame(1, 0);
-        let f2 = InputFrame::new(1, 0).with_movement(0, 0, 0);
+        let f2 = InputFrame::new(1, 0).with_movement(
+            InputFix::from_int(0),
+            InputFix::from_int(0),
+            InputFix::from_int(0),
+        );
         let e1 = sync_to_analytics_frame_event(&f1);
         let e2 = sync_to_analytics_frame_event(&f2);
         assert_ne!(
@@ -504,7 +518,11 @@ mod tests {
 
     #[test]
     fn test_sync_to_physics_event_zero_movement_inactive() {
-        let frame = InputFrame::new(5, 1).with_movement(0, 0, 0);
+        let frame = InputFrame::new(5, 1).with_movement(
+            InputFix::from_int(0),
+            InputFix::from_int(0),
+            InputFix::from_int(0),
+        );
         let ev = sync_to_physics_event(&frame);
         assert!((ev.force_x).abs() < f32::EPSILON);
         assert!((ev.force_y).abs() < f32::EPSILON);
