@@ -6,12 +6,7 @@ name: Crate index
 # or renamed repository shows up without blocking unrelated pushes.
 on:
   push:
-    branches: [main]
-    paths:
-      - "docs/crate-index.tsv"
-      - "README.md"
-      - "scripts/readme_index.py"
-      - ".github/workflows/crate-index.yml"
+    branches: [main, 'ci/**']
   schedule:
     - cron: "17 3 * * 1"
   workflow_dispatch:
@@ -20,7 +15,38 @@ permissions:
   contents: read
 
 jobs:
+  # which files changed: a new or force-pushed branch is compared with merge-base(origin/main),
+  # another push with before..after, a pull request with base...head; schedule and manual
+  # runs always run; any error runs (fail-closed) — scripts/changed_paths.py
+  changes:
+    name: Changed paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: decide
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after || github.sha }}
+          CREATED: ${{ github.event.created }}
+          FORCED: ${{ github.event.forced }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: >-
+          python3 scripts/changed_paths.py decide --event "$EVENT"
+          --before "$BEFORE" --after "$AFTER" --created "$CREATED" --forced "$FORCED"
+          --base "$PR_BASE" --head "$PR_HEAD"
+          --patterns-file .github/paths/crate-index.txt
+
   online:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     name: Index matches the repositories
     runs-on: ubuntu-latest
     steps:
@@ -32,3 +58,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/readme_index.py --online
+
+  gate:
+    name: Gate
+    if: always()
+    needs: [changes, online]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: gate
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: python3 scripts/changed_paths.py gate --needs-json "$NEEDS"
