@@ -6,7 +6,7 @@
 # Run `--quick` before every push.
 #
 # usage: scripts/preflight.sh [--quick]   (--quick skips the test / bench suites)
-# generator rev 7b9601a9abf759ed04c7dc9bf2ebd404323370c7
+# generator rev bf7b0e4d51e3a4f12a544f42a9d0732701aee444
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # --- heavy slot (begin) ---
@@ -253,6 +253,7 @@ has_toolchain() { grep -q "^$1" <<<"$(rustup toolchain list)"; }
 #   - ci.yml:docs: uses actions/setup-python@v6 (an action this file cannot run)
 
 need actionlint "brew install actionlint"
+command -v python >/dev/null 2>&1 || python() { python3 "$@"; }
 
 step "ci.yml / fmt: Check formatting"
 ( export CARGO_TERM_COLOR="always"; cargo fmt -- --check )
