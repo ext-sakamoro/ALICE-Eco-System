@@ -1,7 +1,7 @@
 # ALICE Ecosystem
 
 [![CI](https://github.com/ext-sakamoro/ALICE-Eco-System/actions/workflows/ci.yml/badge.svg)](https://github.com/ext-sakamoro/ALICE-Eco-System/actions/workflows/ci.yml)
-[![License: AGPL-3.0-or-later OR Commercial](https://img.shields.io/badge/license-AGPL--3.0--or--later%20OR%20Commercial-blue.svg)](#license)
+[![License](https://img.shields.io/badge/license-Proprietary-lightgrey)](LICENSE-Proprietary)
 
 An index of the public ALICE crates and the integration hub that connects them.
 
@@ -240,12 +240,10 @@ After editing `docs/crate-index.tsv`, regenerate the tables with
 
 ## License
 
-The hub crate in this repository is licensed under
-`AGPL-3.0-or-later OR LicenseRef-Commercial`, at your option:
+`LicenseRef-Proprietary`. The text is [LICENSE-Proprietary](LICENSE-Proprietary).
 
-- GNU Affero General Public License, version 3 or later ([LICENSE-AGPL](LICENSE-AGPL))
-- the commercial license ([LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md))
+The hub depends on ALICE crates that keep their own licences, some of them
+AGPL-3.0-or-later (not only behind optional features). Each crate in the index
+carries its own licence, shown in the table.
 
-The hub depends on AGPL-licensed crates (not only behind optional features), so
-its own license follows them. Each crate in the index carries its own license,
-shown in the table.
+Enquiries: https://extoria.co.jp/
