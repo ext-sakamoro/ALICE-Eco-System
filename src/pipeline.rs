@@ -633,10 +633,8 @@ impl AlicePipeline {
         let intent_bytes = intent.encode();
 
         // 2. Kinematics → Sync: pack into InputFrame
-        let mx = i16::from_le_bytes([intent_bytes[0], intent_bytes[1]]);
-        let my = i16::from_le_bytes([intent_bytes[2], intent_bytes[3]]);
-        let mz = i16::from_le_bytes([intent_bytes[4], intent_bytes[5]]);
-        let _input = InputFrame::new(frame, 0).with_movement(mx, my, mz);
+        let _input = crate::bridge_kinematics::kinematics_to_sync_input(intent, frame, 0);
+        debug_assert_eq!(_input.movement[0].hi.to_le_bytes(), intent_bytes);
 
         // 3. Kinematics → Physics: IK end-effector position
         let mut chain = ArmChain::right_arm();
@@ -834,6 +832,7 @@ mod tests {
     use alice_motion::Vec3;
     use alice_physics::Vec3Fix;
     use alice_sdf::SdfNode;
+    use alice_sync::InputFix;
     use alice_synth::{NoteEvent, NoteEventKind, Score};
     use tempfile::tempdir;
 
@@ -933,8 +932,16 @@ mod tests {
         // Frames 1..=10 are processed
         let mut stepped_count = 0;
         for frame in 0..=10u64 {
-            let local = InputFrame::new(frame, 0).with_movement(100, 0, 0);
-            let remote = InputFrame::new(frame, 1).with_movement(-50, 0, 0);
+            let local = InputFrame::new(frame, 0).with_movement(
+                InputFix::from_int(100),
+                InputFix::from_int(0),
+                InputFix::from_int(0),
+            );
+            let remote = InputFrame::new(frame, 1).with_movement(
+                InputFix::from_int(-50),
+                InputFix::from_int(0),
+                InputFix::from_int(0),
+            );
             let result = pipeline.game_tick(local, remote).unwrap();
 
             assert_eq!(result.positions.len(), 3);
@@ -1034,8 +1041,16 @@ mod tests {
 
         // Frames 1..=5 (frame 0 is skipped by lockstep protocol)
         for frame in 0..=5u64 {
-            let local = InputFrame::new(frame, 0).with_movement(50, 0, 0);
-            let remote = InputFrame::new(frame, 1).with_movement(-30, 0, 0);
+            let local = InputFrame::new(frame, 0).with_movement(
+                InputFix::from_int(50),
+                InputFix::from_int(0),
+                InputFix::from_int(0),
+            );
+            let remote = InputFrame::new(frame, 1).with_movement(
+                InputFix::from_int(-30),
+                InputFix::from_int(0),
+                InputFix::from_int(0),
+            );
             let tick = pipeline.game_tick(local, remote).unwrap();
             if frame > 0 {
                 assert!(tick.stepped);
@@ -1197,11 +1212,27 @@ mod tests {
         let mut positions1 = Vec::new();
         let mut positions2 = Vec::new();
         for frame in 0..=5u64 {
-            let local = InputFrame::new(frame, 0).with_movement(100, 0, 0);
-            let remote = InputFrame::new(frame, 1).with_movement(-50, 0, 0);
+            let local = InputFrame::new(frame, 0).with_movement(
+                InputFix::from_int(100),
+                InputFix::from_int(0),
+                InputFix::from_int(0),
+            );
+            let remote = InputFrame::new(frame, 1).with_movement(
+                InputFix::from_int(-50),
+                InputFix::from_int(0),
+                InputFix::from_int(0),
+            );
             let r1 = p1.game_tick(local, remote).unwrap();
-            let local2 = InputFrame::new(frame, 0).with_movement(100, 0, 0);
-            let remote2 = InputFrame::new(frame, 1).with_movement(-50, 0, 0);
+            let local2 = InputFrame::new(frame, 0).with_movement(
+                InputFix::from_int(100),
+                InputFix::from_int(0),
+                InputFix::from_int(0),
+            );
+            let remote2 = InputFrame::new(frame, 1).with_movement(
+                InputFix::from_int(-50),
+                InputFix::from_int(0),
+                InputFix::from_int(0),
+            );
             let r2 = p2.game_tick(local2, remote2).unwrap();
             if r1.stepped {
                 positions1.push(r1.positions.clone());

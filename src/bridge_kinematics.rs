@@ -4,7 +4,7 @@
 
 use alice_kinematics::{ArmChain, Intent, Predictor, Vec3k};
 use alice_physics::Vec3Fix;
-use alice_sync::InputFrame;
+use alice_sync::{InputFix, InputFrame};
 
 // ── Bridge 1: Kinematics → Sync (Intent → SyncEvent) ───────────────────
 
@@ -22,23 +22,20 @@ pub struct IntentSyncPacket {
 #[inline]
 #[must_use]
 pub fn kinematics_to_sync_input(intent: &Intent, frame: u64, player: u8) -> InputFrame {
-    let bytes = intent.encode();
-    // Pack intent bytes into InputFrame movement fields
-    let mx = i16::from_le_bytes([bytes[0], bytes[1]]);
-    let my = i16::from_le_bytes([bytes[2], bytes[3]]);
-    let mz = i16::from_le_bytes([bytes[4], bytes[5]]);
-    InputFrame::new(frame, player).with_movement(mx, my, mz)
+    // all 8 intent bytes in the integer word of the first movement component
+    let packed = i64::from_le_bytes(intent.encode());
+    InputFrame::new(frame, player).with_movement(
+        InputFix::from_int(packed),
+        InputFix::ZERO,
+        InputFix::ZERO,
+    )
 }
 
 /// Reconstruct Intent from `InputFrame` received via ALICE-Sync.
 #[inline]
 #[must_use]
 pub fn sync_input_to_kinematics(input: &InputFrame) -> Intent {
-    let mx = input.movement[0].to_le_bytes();
-    let my = input.movement[1].to_le_bytes();
-    let mz = input.movement[2].to_le_bytes();
-    let bytes = [mx[0], mx[1], my[0], my[1], mz[0], mz[1], 0, 0];
-    Intent::decode(&bytes)
+    Intent::decode(&input.movement[0].hi.to_le_bytes())
 }
 
 // ── Bridge 2: Kinematics → Edge (motion capture compression) ────────────
@@ -327,9 +324,9 @@ mod tests {
         let input = kinematics_to_sync_input(&intent, 42, 0);
         assert_eq!(input.frame, 42);
         assert_eq!(input.player_id, 0);
-        // Partial roundtrip (6 of 8 bytes via movement fields)
+        // every byte of the intent survives
         let recovered = sync_input_to_kinematics(&input);
-        assert_eq!(recovered.encode()[..6], intent.encode()[..6]);
+        assert_eq!(recovered.encode(), intent.encode());
     }
 
     #[test]

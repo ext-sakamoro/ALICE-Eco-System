@@ -30,7 +30,7 @@ use alice_cdn::{ContentLocator, VivaldiCoord};
 use alice_physics::{Fix128, PhysicsConfig, PhysicsWorld, RigidBody, Vec3Fix};
 use alice_sdf::{SdfNode, SdfTree};
 use alice_sync::telemetry::SyncTelemetry;
-use alice_sync::{InputFrame, LockstepSession};
+use alice_sync::{InputFix, InputFrame, LockstepSession};
 use tempfile::tempdir;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -175,9 +175,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for frame in 0..frames_to_simulate as u64 {
         // Player 1: move right
-        let input1 = InputFrame::new(frame, 0).with_movement(100, 0, 0);
+        let input1 = InputFrame::new(frame, 0).with_movement(
+            InputFix::from_int(100),
+            InputFix::from_int(0),
+            InputFix::from_int(0),
+        );
         // Player 2: move left
-        let input2 = InputFrame::new(frame, 1).with_movement(-50, 0, 0);
+        let input2 = InputFrame::new(frame, 1).with_movement(
+            InputFix::from_int(-50),
+            InputFix::from_int(0),
+            InputFix::from_int(0),
+        );
 
         // Input sync: both players submit
         session.add_local_input(input1);
