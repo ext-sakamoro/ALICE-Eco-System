@@ -16,6 +16,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 
 ### Changed
 - Licence: `AGPL-3.0-or-later OR LicenseRef-Commercial` → `LicenseRef-Proprietary`
+- README / BRAND_GUIDELINES / src/lib.rs の licence の記述を、crate ごとの licence は各 repository の `Cargo.toml` と `LICENSE*` にあるという書き方に直した (特定の licence model の列挙はしない)
 - `LICENSE-COMMERCIAL.md`: 商用 license が含まない物の説明を hub に合わせた 「optional の feature が AGPL の crate を引くことがある」を「この crate は AGPL の ALICE crate に (optional の feature だけでなく) 依存し、それらは closed-source で使うには各々の商用 license が要る」に直し、商標の参照先を存在しない `TRADEMARK_NOTICE` から `BRAND_GUIDELINES.md` に直した
 - **license を `MIT OR Apache-2.0` から `AGPL-3.0-or-later OR LicenseRef-Commercial` に変えた** hub は AGPL の crate に (optional でない依存として) 依存するので、それに合わせた `LICENSE-AGPL` (AGPL v3 の全文) と `LICENSE-COMMERCIAL.md` (他の ALICE crate と同じ商用 license の案内) を足し、`LICENSE` (MIT) と `LICENSE-APACHE` を外した README の badge と License の節、CONTRIBUTING の MIT の crate の例から Eco-System を外した 索引の各 crate の license は変わらない
 - 依存: ALICE-Sign を git で固定する sibling 11 個 (Container / CRM / ERP / HRM / LMS / Settlement / VCS / DNS / Ledger / Queue / Risk) の固定 commit を、alice-sign を ALICE-Sign の main `6b79a0ba` に揃えた各 main に動かした lock では alice-sign が 3 つの revision (`5420e71f` / `b2c80d06` / `6b79a0ba`) から link されていたが、1 つになった (lock の変更は alice-sign の entry だけ)

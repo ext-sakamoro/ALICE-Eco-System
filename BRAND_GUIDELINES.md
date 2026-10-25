@@ -20,7 +20,7 @@ You **may** use the ALICE name when:
 
 - Referring to the official ALICE project in documentation, blog posts, or academic papers.
 - Stating compatibility or interoperability (e.g., "Compatible with ALICE-Physics").
-- Using ALICE crates as dependencies in your project, as permitted by each crate's license (MIT, AGPL-3.0, etc.).
+- Using ALICE crates as dependencies in your project, as permitted by each crate's license.
 - Attributing the origin of code forked from ALICE repositories.
 
 ## 3. Prohibited Use
@@ -47,9 +47,10 @@ Example unacceptable fork name: `ALICE-Physics-Enterprise`
 
 Using ALICE crates as a backend for a SaaS product:
 
-- **AGPL-3.0 crates** (Auth, Physics, ML, Codec, Sync, Crypto, CDN): You must release your complete source code under AGPL-3.0, including all modifications and server-side code that uses these crates.
-- **MIT crates** (SDF, Eco-System): You may use these freely, but you may not name your SaaS product using the ALICE trademark.
-- **Commercial license**: Contact us at https://alicelaw.net for commercial licensing that permits proprietary use without AGPL obligations.
+- Follow each crate's own license, declared in its repository.
+- Naming a product with the ALICE trademark is governed by this document, separately from a
+  crate's code license.
+- For terms beyond a crate's published license, contact us via the form at https://alicelaw.net.
 
 ## 6. "Powered by ALICE" Attribution
 
@@ -59,7 +60,7 @@ If you use ALICE crates in your product and wish to display attribution:
 Powered by ALICE — https://alicelaw.net
 ```
 
-Use of the "Powered by ALICE" badge is encouraged but not required for MIT-licensed crates. For AGPL-licensed crates, proper license compliance (source disclosure) is mandatory regardless of badge display.
+Use of the "Powered by ALICE" badge is encouraged but not required. Displaying the badge does not change your obligations under a crate's own license.
 
 ## 7. Logo and Visual Identity
 
@@ -72,9 +73,9 @@ If you believe someone is misusing the ALICE trademarks or violating the license
 - **Report:** https://alicelaw.net/report
 - **Email:** Contact via the form at https://alicelaw.net
 
-## 9. Contact for Commercial Licensing
+## 9. Contact for Licensing and Support
 
-For commercial licensing inquiries, enterprise support, or trademark usage permissions:
+For licensing questions, enterprise support, or trademark usage permissions:
 
 - **Website:** https://alicelaw.net
 - **Repository:** https://github.com/ext-sakamoro
