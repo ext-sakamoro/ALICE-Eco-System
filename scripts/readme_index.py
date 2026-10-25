@@ -11,8 +11,9 @@ with the repositories it points to.
                * each repository exists, is public and not archived
                * it is a Rust crate (Cargo.toml at the root) and not a hosted
                  service template (docker-compose.yml + database/ + frontend/)
-               * the license column equals the Cargo.toml license
-                 ([package], [workspace.package], or the member crate)
+               * the Cargo.toml declares a license ([package],
+                 [workspace.package], or the member crate); the index does
+                 not copy it, so a license change needs no edit here
                * the crates.io column matches whether the crate is published
                * no public ALICE-* crate repository is missing from the index
              needs network; uses GITHUB_TOKEN / GH_TOKEN when set
@@ -40,7 +41,8 @@ START = "<!-- crate-index:start -->"
 END = "<!-- crate-index:end -->"
 OWNER = "ext-sakamoro"
 SELF = "ALICE-Eco-System"
-COLUMNS = ("category", "repository", "crate", "crates.io", "license", "description")
+COLUMNS = ("category", "repository", "crate", "crates.io", "description")
+HEADER = "# " + "\t".join(COLUMNS)
 
 
 def read(root: Path, rel: Path) -> str:
@@ -49,7 +51,11 @@ def read(root: Path, rel: Path) -> str:
 
 def load_rows(root: Path) -> list[dict[str, str]]:
     rows = []
-    for no, line in enumerate(read(root, TSV).splitlines(), 1):
+    lines = read(root, TSV).splitlines()
+    if not lines or lines[0] != HEADER:
+        # the header names the columns; a stored license column is not one of them
+        raise SystemExit(f"error: {TSV}:1: header must be {HEADER!r}")
+    for no, line in enumerate(lines, 1):
         if not line or line.startswith("#"):
             continue
         cells = line.split("\t")
@@ -62,7 +68,7 @@ def load_rows(root: Path) -> list[dict[str, str]]:
             raise SystemExit(f"error: {TSV}:{no}: published row needs a crate name")
         if not row["repository"].startswith("ALICE-"):
             raise SystemExit(f"error: {TSV}:{no}: repository must be an ALICE-* name")
-        for key in ("category", "license", "description"):
+        for key in ("category", "description"):
             if not row[key]:
                 raise SystemExit(f"error: {TSV}:{no}: empty {key}")
         rows.append(row)
@@ -77,7 +83,7 @@ def render(rows: list[dict[str, str]]) -> str:
             if category is not None:
                 out.append("")
             category = row["category"]
-            out += [f"### {category}", "", "| Repository | Crate | License | Description |", "|---|---|---|---|"]
+            out += [f"### {category}", "", "| Repository | Crate | Description |", "|---|---|---|"]
         repo = f"[{row['repository']}](https://github.com/{OWNER}/{row['repository']})"
         if row["crates.io"]:
             crate = (f"[![crates.io](https://img.shields.io/crates/v/{row['crate']}.svg)]"
@@ -86,7 +92,7 @@ def render(rows: list[dict[str, str]]) -> str:
             crate = f"`{row['crate']}`"
         else:
             crate = "workspace"
-        out.append(f"| {repo} | {crate} | {row['license']} | {row['description']} |")
+        out.append(f"| {repo} | {crate} | {row['description']} |")
     out += ["", END]
     return "\n".join(out)
 
@@ -200,9 +206,8 @@ def check_online(root: Path) -> list[str]:
             errors.append(f"{repo}: no Cargo.toml at the repository root")
         if is_service_template(names):
             errors.append(f"{repo}: hosted service template, not listed in the crate index")
-        lic = crate_license(repo, meta["default_branch"], row["crate"])
-        if lic != row["license"]:
-            errors.append(f"{repo}: license column '{row['license']}' but Cargo.toml says '{lic}'")
+        if not crate_license(repo, meta["default_branch"], row["crate"]):
+            errors.append(f"{repo}: Cargo.toml declares no license")
         if row["crate"]:
             status, _ = fetch(f"https://crates.io/api/v1/crates/{row['crate']}", None)
             published = status == 200
