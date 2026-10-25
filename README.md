@@ -225,12 +225,8 @@ compares the TSV with the repositories themselves (visibility, a license in
 
 ## Licensing model
 
-Crates use one of two licensing models, shown per crate in the index:
-
-- **Permissive**: `MIT OR Apache-2.0`
-- **Copyleft with a commercial option**: `AGPL-3.0-*` or `MIT`, each
-  `OR LicenseRef-Commercial`. The commercial terms are in each repository's
-  `LICENSE-COMMERCIAL.md`.
+Each crate's license is declared in its own repository (`Cargo.toml` and the
+`LICENSE*` files); see the crate's repository for its terms.
 
 The license column is the SPDX expression from the crate's `Cargo.toml`.
 
