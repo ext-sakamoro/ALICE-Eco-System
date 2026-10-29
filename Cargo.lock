@@ -703,6 +703,13 @@ version = "1.0.0"
 name = "alice-physics"
 version = "4.0.0"
 dependencies = [
+ "alice-physics-core",
+]
+
+[[package]]
+name = "alice-physics-core"
+version = "4.0.0"
+dependencies = [
  "alice-det-math",
  "sha2",
 ]

@@ -336,7 +336,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Physics
-          ref: 739589ea0ed17cac9ecfc19f7f7a19fbee54bd44
+          ref: 0ce0b337b9fbe25fcb091c2c0727be588557fce1
           path: ALICE-Physics
       - uses: actions/checkout@v5
         with:

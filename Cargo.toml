@@ -21,7 +21,7 @@ alice-cdn = { path = "../ALICE-CDN", features = ["content_types"] }
 alice-cache = { path = "../ALICE-Cache" }
 
 # Game Engine Pipeline
-alice-physics = { path = "../ALICE-Physics" }
+alice-physics = { path = "../ALICE-Physics/crates/alice-physics" }
 alice-sync = { path = "../ALICE-Sync", features = ["telemetry"] }
 
 # Crate bridges (Synth, VCS, Motion, RTOS, Kinematics, Font)
