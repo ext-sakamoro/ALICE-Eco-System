@@ -516,3 +516,9 @@ jobs:
         working-directory: ALICE-Eco-System
         # after cargo test, so the lock checked is the one the build used
         run: python3 scripts/lock_git_revs.py Cargo.lock
+      # The real check (`alice_dup_check.py .`) is not wired yet: this build links alice-crypto,
+      # alice-db, alice-sdf and alice-zip more than once. Only the checker's own tests run here,
+      # so a green run does not say the build is free of duplicates.
+      - name: alice-dup-check (tests of the checker only, the real check is not wired yet)
+        working-directory: ALICE-Eco-System
+        run: python3 scripts/alice_dup_check.py --self-test

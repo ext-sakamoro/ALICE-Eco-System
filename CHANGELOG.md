@@ -8,6 +8,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - tokio を 1.53.3 に上げる (RUSTSEC-2026-0386、`AsyncFd` の unsound、1.53.3 で修正) tokio 1.53.3 が要求する mio 1.2.4 / socket2 0.6.5 / tokio-macros 2.7.2 も上がり、tokio-macros が引く syn 3.0.9 が加わる それ以外の package の版と依存の辺は変えない `Test (public siblings)` が固定する sibling の組で解決した
 
 ### Added
+- CI: 共有の `scripts/alice_dup_check.py` を持つ 今は検査器自身の試験だけを走らせる (この build は `alice-crypto`、`alice-db`、`alice-sdf`、`alice-zip` を複数の版で link しているので、本体の検査はそれを解消してから繋ぐ)
 - `scripts/lock_git_revs.py` と test: Cargo.lock で 1 つの alice-* package が 2 つ以上の git revision から link されていたら失敗する (比較件数 0 と読めない lock は exit 2) CI の `Test (public siblings)` が `cargo test` の後に実行し、test は `Docs and crate index` (3 OS) と `scripts/preflight.sh` が実行する
 - CI: job `Test (public siblings)` 公開の sibling 85 個を固定の commit でこの repository の隣に checkout し、`cargo test` を走らせる (公開でない sibling は checkout で落ちる) 失敗した試験がある時と、通った試験が 1909 本より少ない時は失敗する `ci/**` への push でも走る `scripts/preflight.sh` (`--quick` 無し) も同じ試験と下限を見る `ALICE-Physics` は package 名が `alice-physics-core` に変わる前の commit に固定している `Cargo.lock` はこの sibling の組で作り直した
 - `docs/crate-index.tsv` と `scripts/readme_index.py`: README の crate 索引の元データと検査器 `--check` は README の表と TSV の一致 (CI、3 OS)、`--online` は TSV と各 repository の一致 (public か、Cargo.toml の license、crates.io の公開状況、索引に無い public crate repository) を見る `crate-index.yml` が TSV の変更時と毎週実行する 比較件数 0 は失敗

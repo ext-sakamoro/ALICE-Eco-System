@@ -276,6 +276,9 @@ step "ci.yml / docs: Lock git revisions (tests)"
 step "ci.yml / test: Lock (each alice-* git package from one revision)"
 ( export CARGO_TERM_COLOR="always" MIN_PASSED="1909"; python3 scripts/lock_git_revs.py Cargo.lock )
 
+step "ci.yml / test: alice-dup-check (tests of the checker only, the real check is not wired yet)"
+python3 scripts/alice_dup_check.py --self-test
+
 if [[ $quick -eq 1 ]]; then
   echo; echo "preflight --quick OK (test / bench suites skipped)"; exit 0
 fi
