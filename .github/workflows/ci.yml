@@ -366,7 +366,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-SDF
-          ref: 63b706ab36134c8eb1f0a9f4fca44d3903d8adab
+          ref: 2fc1a9f6cb05b4fc42fd61ecd48af562df4ce9d2
           path: ALICE-SDF
       - uses: actions/checkout@v5
         with:

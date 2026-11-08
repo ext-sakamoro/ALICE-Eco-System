@@ -767,6 +767,12 @@ fn classify_sdf2d(node: &Sdf2dNode) -> (u8, f32, f32, bool) {
         Sdf2dNode::RegularPolygon { radius, .. } => (9, radius * 2.0, radius * 2.0, true),
         Sdf2dNode::Star { outer_radius, .. } => (10, outer_radius * 2.0, outer_radius * 2.0, true),
         Sdf2dNode::Ellipse { semi_axes, .. } => (11, semi_axes[0] * 2.0, semi_axes[1] * 2.0, true),
+        Sdf2dNode::UnevenCapsule { a, b, ra, rb } => {
+            // the bounding box of the hull of the two end circles
+            let w = (a[0] + ra).max(b[0] + rb) - (a[0] - ra).min(b[0] - rb);
+            let h = (a[1] + ra).max(b[1] + rb) - (a[1] - ra).min(b[1] - rb);
+            (13, w, h, true)
+        }
         Sdf2dNode::Onion { child, thickness } => {
             let (_, cw, ch, _) = classify_sdf2d(child);
             (12, cw + thickness * 2.0, ch + thickness * 2.0, false)
@@ -1161,5 +1167,24 @@ mod tests {
         assert!(desc.is_leaf);
         assert!(desc.bound_width > 3.0);
         assert!(desc.bound_height > 4.0);
+    }
+
+    #[test]
+    fn test_sdf_2d_uneven_capsule_to_view_descriptor() {
+        // ends (0, 0) r 1 and (3, 4) r 0.5: x from -1 to 3.5, y from -1 to 4.5
+        let taper = Sdf2dNode::uneven_capsule([0.0, 0.0], [3.0, 4.0], 1.0, 0.5);
+        let desc = sdf_2d_to_view_descriptor(&taper);
+        assert_eq!(desc.primitive_type, 13);
+        assert!(desc.is_leaf);
+        assert!(
+            (desc.bound_width - 4.5).abs() < 1e-6,
+            "{}",
+            desc.bound_width
+        );
+        assert!(
+            (desc.bound_height - 5.5).abs() < 1e-6,
+            "{}",
+            desc.bound_height
+        );
     }
 }
