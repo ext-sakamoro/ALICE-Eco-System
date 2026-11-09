@@ -16,6 +16,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- 依存: CI の ALICE-Kinematics の pin を b2e2faca から e89e428 (0.4.0) に上げる 0.4.0 の CCD は各関節を骨の根元で回すので、腕の IK の結果の bits が変わる 試験 `bridge_kinematics::tests::keyframes_reach_reachable_targets` (既知の姿勢の先端を目標に 1 cm 未満、ALICE-Kinematics の届く目標の oracle と同じ上限) と `keyframes_are_the_recorded_bits` (この bridge の IK の出力 bits、Kinematics の算術が変わると動く) を足し、`KinematicsPhysicsState::joint_positions` の doc を「各骨の先端」に直した
 - Licence: `AGPL-3.0-or-later OR LicenseRef-Commercial` → `LicenseRef-Proprietary`
 - README / BRAND_GUIDELINES / src/lib.rs の licence の記述を、crate ごとの licence は各 repository の `Cargo.toml` と `LICENSE*` にあるという書き方に直した (特定の licence model の列挙はしない)
 - `LICENSE-COMMERCIAL.md`: 商用 license が含まない物の説明を hub に合わせた 「optional の feature が AGPL の crate を引くことがある」を「この crate は AGPL の ALICE crate に (optional の feature だけでなく) 依存し、それらは closed-source で使うには各々の商用 license が要る」に直し、商標の参照先を存在しない `TRADEMARK_NOTICE` から `BRAND_GUIDELINES.md` に直した

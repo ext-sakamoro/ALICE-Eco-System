@@ -60,7 +60,7 @@ jobs:
     env:
       # the passed-test count of the feature set below at the commit that set it;
       # fewer passed tests (a removed or skipped test, or none at all) is a failure
-      MIN_PASSED: "1909"
+      MIN_PASSED: "1911"
     steps:
       # cargo reads the manifest of every path dependency, optional ones included, so
       # each sibling is checked out next to this repository at a fixed commit with the
@@ -256,7 +256,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Kinematics
-          ref: b2e2faca147709040859f5418673715de349e2cb
+          ref: e89e428fab2cf6a6934349c5f07094fe668a86ab
           path: ALICE-Kinematics
       - uses: actions/checkout@v5
         with:

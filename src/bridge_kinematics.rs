@@ -77,7 +77,8 @@ pub fn kinematics_to_edge_packet(
 pub struct KinematicsPhysicsState {
     /// End-effector position in Fix128 coordinates.
     pub end_effector: Vec3Fix,
-    /// Per-joint positions in Fix128 coordinates.
+    /// The end of each link of the chain in Fix128 coordinates (`ArmChain::joint_position`): entry i
+    /// is where joint i's link reaches, which is where joint i + 1 turns, not joint i's pivot.
     pub joint_positions: Vec<Vec3Fix>,
     /// Number of active joints.
     pub joint_count: usize,
@@ -413,5 +414,74 @@ mod tests {
         assert_eq!(pkg.data.len(), 16);
         assert_ne!(pkg.content_hash, 0);
         assert!(pkg.total_duration_secs > 0.0);
+    }
+
+    // Targets reachable by construction: the tip of right_arm at three known poses inside every
+    // joint limit. The bound is the reachable-target bound of ALICE-Kinematics' own oracle
+    // (tests/analytic_oracle.rs: under 1 cm), here on this bridge's 50-iteration path.
+    fn reachable_targets() -> Vec<Vec3k> {
+        [
+            [0.3f32, -0.2, 0.4, 0.9, -0.3, 0.2, 0.1],
+            [0.8, 0.3, -0.5, 1.2, 0.4, -0.1, 0.3],
+            [-0.2, 0.6, 0.2, 0.5, 0.0, 0.1, -0.4],
+        ]
+        .iter()
+        .map(|pose| {
+            let mut posed = ArmChain::right_arm();
+            posed.set_angles(pose);
+            posed.forward_kinematics()
+        })
+        .collect()
+    }
+
+    #[test]
+    fn keyframes_reach_reachable_targets() {
+        let targets = reachable_targets();
+        let intents: Vec<Intent> = targets.iter().map(|&t| Intent::reach(t, 100)).collect();
+        let kf = kinematics_to_animation_keyframes(&intents);
+        assert_eq!(kf.len(), targets.len());
+        for (k, t) in kf.iter().zip(&targets) {
+            let (x, y, z) = k.position;
+            let err = Vec3k::new(x, y, z).distance(*t);
+            assert!(
+                err < 0.01,
+                "keyframe {:?} is {err} m from its reachable target",
+                k.position
+            );
+        }
+    }
+
+    // The bits this bridge's IK path gives for the targets above: a change in ALICE-Kinematics'
+    // arithmetic moves them. Re-record only for an intended change, and say which in the comment.
+    // Recorded against alice-kinematics 0.4.0 (the CCD turns each joint about the start of its link).
+    const KEYFRAME_BITS: [u32; 30] = [
+        3153353728, 3203815383, 3204915835, 1052307273, 3176723150, 3165502928, 1058553453,
+        1052725462, 3199383746, 1049290261, 3180707707, 1033182824, 3205970605, 1062147793,
+        3204625689, 1038428019, 1066109440, 1051919633, 3199383746, 1058162557, 1053179028,
+        3206719862, 3152155288, 1043520352, 1059827608, 1062470744, 1058334892, 1051657758,
+        3199383746, 1049697426,
+    ];
+
+    #[test]
+    fn keyframes_are_the_recorded_bits() {
+        let intents: Vec<Intent> = reachable_targets()
+            .iter()
+            .map(|&t| Intent::reach(t, 100))
+            .collect();
+        let got: Vec<u32> = kinematics_to_animation_keyframes(&intents)
+            .iter()
+            .flat_map(|k| {
+                let (x, y, z) = k.position;
+                [x, y, z]
+                    .into_iter()
+                    .chain(k.joint_angles)
+                    .map(f32::to_bits)
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        assert_eq!(
+            got, KEYFRAME_BITS,
+            "re-record only for an intended change: {got:?}"
+        );
     }
 }
