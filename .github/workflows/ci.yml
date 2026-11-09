@@ -81,7 +81,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: ext-sakamoro/ALICE-Analytics
-          ref: 2c2f73c214f94b5db503d71d9ebb47db8fee3413
+          ref: 882a9538aa7e5da7635eb6ce4507d360198ec791
           path: ALICE-Analytics
       - uses: actions/checkout@v5
         with:
