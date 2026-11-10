@@ -21,7 +21,7 @@ alice-cdn = { path = "../ALICE-CDN", features = ["content_types"] }
 alice-cache = { path = "../ALICE-Cache" }
 
 # Game Engine Pipeline
-alice-physics = { path = "../ALICE-Physics" }
+alice-physics = { path = "../ALICE-Physics/crates/alice-physics" }
 alice-sync = { path = "../ALICE-Sync", features = ["telemetry"] }
 
 # Crate bridges (Synth, VCS, Motion, RTOS, Kinematics, Font)
@@ -44,9 +44,8 @@ alice-trt = { path = "../ALICE-TRT", default-features = false }
 # Network & Security bridges
 alice-dns = { path = "../ALICE-DNS", default-features = false }
 alice-api = { path = "../ALICE-API", default-features = false, features = ["std"] }
-# crates.io core crate (lib name aliased to `alice_core` as used by bridge_zip.rs); the
-# `libalice` path dep broke when that package was renamed `alice-zip-cli` (0.4.0)
-alice_core = { package = "alice-zip", version = "0.5", default-features = false, features = ["std", "lzma"] }
+# the alice-zip sibling (lib name aliased to `alice_core` as used by bridge_zip.rs)
+alice_core = { package = "alice-zip", path = "../ALICE-Zip", default-features = false, features = ["std", "lzma"] }
 
 # Auth & Crypto bridges
 alice-auth = { path = "../ALICE-Auth", default-features = false, features = ["std"] }

@@ -16,6 +16,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- 依存: CI が固定する公開の sibling 85 個の commit をすべて各 repository の 2026-11-10 の main に上げる (alice-det-math 0.6 の関数ごとの識別子に揃った組) ALICE-Physics は workspace になり alice-physics が `crates/alice-physics` に移ったので path をそれに合わせる `alice_core` (alice-zip) は crates.io の 0.5 をやめ、隣に置く ALICE-Zip (0.11) を path で引く
 - 依存: CI の ALICE-Kinematics の pin を b2e2faca から e89e428 (0.4.0) に上げる 0.4.0 の CCD は各関節を骨の根元で回すので、腕の IK の結果の bits が変わる 試験 `bridge_kinematics::tests::keyframes_reach_reachable_targets` (既知の姿勢の先端を目標に 1 cm 未満、ALICE-Kinematics の届く目標の oracle と同じ上限) と `keyframes_are_the_recorded_bits` (この bridge の IK の出力 bits、Kinematics の算術が変わると動く) を足し、`KinematicsPhysicsState::joint_positions` の doc を「各骨の先端」に直した
 - Licence: `AGPL-3.0-or-later OR LicenseRef-Commercial` → `LicenseRef-Proprietary`
 - README / BRAND_GUIDELINES / src/lib.rs の licence の記述を、crate ごとの licence は各 repository の `Cargo.toml` と `LICENSE*` にあるという書き方に直した (特定の licence model の列挙はしない)
