@@ -4,7 +4,7 @@
 
 use alice_kinematics::{ArmChain, Intent, Predictor, Vec3k};
 use alice_physics::Vec3Fix;
-use alice_sync::InputFrame;
+use alice_sync::{InputFix, InputFrame};
 
 // ── Bridge 1: Kinematics → Sync (Intent → SyncEvent) ───────────────────
 
@@ -19,26 +19,28 @@ pub struct IntentSyncPacket {
 }
 
 /// Convert Intent to `InputFrame` for ALICE-Sync lockstep.
+///
+/// The 8 intent bytes are the integer part of `movement[0]` (little-endian
+/// `i64`); the other axes are zero. The frame carries the whole intent.
 #[inline]
 #[must_use]
 pub fn kinematics_to_sync_input(intent: &Intent, frame: u64, player: u8) -> InputFrame {
-    let bytes = intent.encode();
-    // Pack intent bytes into InputFrame movement fields
-    let mx = i16::from_le_bytes([bytes[0], bytes[1]]);
-    let my = i16::from_le_bytes([bytes[2], bytes[3]]);
-    let mz = i16::from_le_bytes([bytes[4], bytes[5]]);
-    InputFrame::new(frame, player).with_movement(mx, my, mz)
+    let packed = InputFix::from_int(i64::from_le_bytes(intent.encode()));
+    InputFrame::new(frame, player).with_movement(packed, InputFix::ZERO, InputFix::ZERO)
 }
 
 /// Reconstruct Intent from `InputFrame` received via ALICE-Sync.
+///
+/// `None` when the frame is not one [`kinematics_to_sync_input`] writes: a
+/// fractional part on `movement[0]`, or a non-zero `movement[1]` / `movement[2]`.
 #[inline]
 #[must_use]
-pub fn sync_input_to_kinematics(input: &InputFrame) -> Intent {
-    let mx = input.movement[0].to_le_bytes();
-    let my = input.movement[1].to_le_bytes();
-    let mz = input.movement[2].to_le_bytes();
-    let bytes = [mx[0], mx[1], my[0], my[1], mz[0], mz[1], 0, 0];
-    Intent::decode(&bytes)
+pub fn sync_input_to_kinematics(input: &InputFrame) -> Option<Intent> {
+    let [packed, y, z] = input.movement;
+    if packed.lo != 0 || y != InputFix::ZERO || z != InputFix::ZERO {
+        return None;
+    }
+    Some(Intent::decode(&packed.hi.to_le_bytes()))
 }
 
 // ── Bridge 2: Kinematics → Edge (motion capture compression) ────────────
@@ -328,9 +330,21 @@ mod tests {
         let input = kinematics_to_sync_input(&intent, 42, 0);
         assert_eq!(input.frame, 42);
         assert_eq!(input.player_id, 0);
-        // Partial roundtrip (6 of 8 bytes via movement fields)
-        let recovered = sync_input_to_kinematics(&input);
-        assert_eq!(recovered.encode()[..6], intent.encode()[..6]);
+        // all 8 intent bytes come back
+        let recovered = sync_input_to_kinematics(&input).expect("an intent frame");
+        assert_eq!(recovered.encode(), intent.encode());
+    }
+
+    #[test]
+    fn test_sync_input_that_is_not_an_intent_is_refused() {
+        let intent = Intent::reach(Vec3k::new(1.0, 2.0, 0.5), 100);
+        let input = kinematics_to_sync_input(&intent, 42, 0);
+        let mut fractional = input;
+        fractional.movement[0].lo = 1;
+        assert!(sync_input_to_kinematics(&fractional).is_none());
+        let mut second_axis = input;
+        second_axis.movement[1] = InputFix::from_int(1);
+        assert!(sync_input_to_kinematics(&second_axis).is_none());
     }
 
     #[test]

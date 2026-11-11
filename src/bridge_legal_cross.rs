@@ -34,8 +34,8 @@ pub struct LegalTextRecord {
     pub obligation_count: usize,
     /// Estimated text size in bytes (`clause_count` * 64, approximate average clause length).
     pub estimated_text_bytes: usize,
-    /// FNV-1a hash of the statute title.
-    pub title_hash: u64,
+    /// The statute's title hash (32 bytes, as alice-legal records it).
+    pub title_hash: [u8; 32],
 }
 
 /// Convert a statute tree into a text compression record.
@@ -46,12 +46,12 @@ pub fn legal_statute_to_text_record(statute: &StatuteTree) -> LegalTextRecord {
     let obligation_count = statute.obligations().len();
     let estimated_text_bytes = clause_count * 64;
 
-    let mut key = [0u8; 40];
+    let mut key = [0u8; 64];
     key[0..8].copy_from_slice(&statute.id.0.to_le_bytes());
     key[8..16].copy_from_slice(&(clause_count as u64).to_le_bytes());
     key[16..24].copy_from_slice(&(obligation_count as u64).to_le_bytes());
     key[24..32].copy_from_slice(&(estimated_text_bytes as u64).to_le_bytes());
-    key[32..40].copy_from_slice(&statute.title_hash.to_le_bytes());
+    key[32..64].copy_from_slice(&statute.title_hash);
 
     LegalTextRecord {
         content_hash: fnv1a(&key),
@@ -77,8 +77,8 @@ pub struct LegalSearchIndex {
     pub statute_id: u64,
     /// Total number of clauses.
     pub clause_count: usize,
-    /// FNV-1a hash of the statute title.
-    pub title_hash: u64,
+    /// The statute's title hash (32 bytes, as alice-legal records it).
+    pub title_hash: [u8; 32],
     /// Number of obligation clauses.
     pub obligation_count: usize,
     /// Whether the statute contains at least one Exception clause.
@@ -96,12 +96,12 @@ pub fn legal_statute_to_search_index(statute: &StatuteTree) -> LegalSearchIndex 
         .iter()
         .any(|c| matches!(c.kind, ClauseKind::Exception));
 
-    let mut key = [0u8; 33];
+    let mut key = [0u8; 57];
     key[0..8].copy_from_slice(&statute.id.0.to_le_bytes());
     key[8..16].copy_from_slice(&(clause_count as u64).to_le_bytes());
-    key[16..24].copy_from_slice(&statute.title_hash.to_le_bytes());
-    key[24..32].copy_from_slice(&(obligation_count as u64).to_le_bytes());
-    key[32] = has_exceptions as u8;
+    key[16..48].copy_from_slice(&statute.title_hash);
+    key[48..56].copy_from_slice(&(obligation_count as u64).to_le_bytes());
+    key[56] = u8::from(has_exceptions);
 
     LegalSearchIndex {
         content_hash: fnv1a(&key),
@@ -125,14 +125,14 @@ pub struct LegalAuthRecord {
     pub content_hash: u64,
     /// The entity (statute/contract/procedure) affected.
     pub entity_id: u64,
-    /// FNV-1a hash of the actor's identity.
-    pub actor_hash: u64,
+    /// Hash of the actor's identity (32 bytes, as alice-legal records it).
+    pub actor_hash: [u8; 32],
     /// Event kind as u8 discriminant.
     pub event_kind: u8,
     /// Event timestamp in Unix nanoseconds.
     pub timestamp_ns: u64,
-    /// Content hash from the original audit entry.
-    pub entry_hash: u64,
+    /// Content hash from the original audit entry (32 bytes).
+    pub entry_hash: [u8; 32],
     /// True for write events: `StatuteCreated`, `StatuteAmended`, `ContractCreated`,
     /// `ProcedureStarted` (state-changing operations).
     pub is_write_event: bool,
@@ -142,31 +142,30 @@ pub struct LegalAuthRecord {
 #[inline]
 #[must_use]
 pub fn legal_audit_to_auth_record(entry: &AuditEntry) -> LegalAuthRecord {
-    let kind_byte = match entry.kind {
-        AuditEventKind::StatuteCreated => 0,
-        AuditEventKind::StatuteAmended => 1,
-        AuditEventKind::ContractCreated => 2,
-        AuditEventKind::ContractFulfilled => 3,
-        AuditEventKind::ContractBreached => 4,
-        AuditEventKind::ProcedureStarted => 5,
-        AuditEventKind::ProcedureCompleted => 6,
-        AuditEventKind::ProcedureRejected => 7,
+    let kind_byte = crate::bridge_legal::audit_kind_byte(entry.kind);
+
+    // no wildcard: a new kind in alice-legal stops the compile until it is classified
+    let is_write_event = match entry.kind {
+        AuditEventKind::StatuteCreated
+        | AuditEventKind::StatuteAmended
+        | AuditEventKind::ContractCreated
+        | AuditEventKind::ProcedureStarted
+        // compiling a template writes a new document
+        | AuditEventKind::TemplateCompiled => true,
+        AuditEventKind::ContractFulfilled
+        | AuditEventKind::ContractBreached
+        | AuditEventKind::ProcedureCompleted
+        | AuditEventKind::ProcedureRejected
+        // analysing a document only reads it
+        | AuditEventKind::DocumentAnalyzed => false,
     };
 
-    let is_write_event = matches!(
-        entry.kind,
-        AuditEventKind::StatuteCreated
-            | AuditEventKind::StatuteAmended
-            | AuditEventKind::ContractCreated
-            | AuditEventKind::ProcedureStarted
-    );
-
-    let mut key = [0u8; 33];
+    let mut key = [0u8; 81];
     key[0..8].copy_from_slice(&entry.entity_id.to_le_bytes());
-    key[8..16].copy_from_slice(&entry.actor_hash.to_le_bytes());
-    key[16] = kind_byte;
-    key[17..25].copy_from_slice(&entry.timestamp_ns.to_le_bytes());
-    key[25..33].copy_from_slice(&entry.content_hash.to_le_bytes());
+    key[8..40].copy_from_slice(&entry.actor_hash);
+    key[40] = kind_byte;
+    key[41..49].copy_from_slice(&entry.timestamp_ns.to_le_bytes());
+    key[49..81].copy_from_slice(&entry.content_hash);
 
     LegalAuthRecord {
         content_hash: fnv1a(&key),
@@ -265,7 +264,7 @@ mod tests {
         assert_eq!(rec.clause_count, 3);
         assert_eq!(rec.obligation_count, 2);
         assert_eq!(rec.estimated_text_bytes, 3 * 64);
-        assert_ne!(rec.title_hash, 0);
+        assert_ne!(rec.title_hash, [0u8; 32]);
     }
 
     #[test]
@@ -324,7 +323,7 @@ mod tests {
 
     #[test]
     fn test_legal_audit_to_auth_record_write_event() {
-        let mut log = AuditLog::new();
+        let mut log = AuditLog::new(1);
         log.append(
             AuditEventKind::StatuteCreated,
             1,
@@ -336,7 +335,7 @@ mod tests {
         let rec = legal_audit_to_auth_record(entry);
         assert_ne!(rec.content_hash, 0);
         assert_eq!(rec.entity_id, 1);
-        assert_ne!(rec.actor_hash, 0);
+        assert_ne!(rec.actor_hash, [0u8; 32]);
         assert_eq!(rec.event_kind, 0); // StatuteCreated
         assert_eq!(rec.timestamp_ns, 1000);
         assert!(rec.is_write_event); // Created is a write event
@@ -344,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_legal_audit_to_auth_record_read_event() {
-        let mut log = AuditLog::new();
+        let mut log = AuditLog::new(1);
         log.append(
             AuditEventKind::ContractFulfilled,
             100,
@@ -360,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_legal_audit_to_auth_record_amended_is_write() {
-        let mut log = AuditLog::new();
+        let mut log = AuditLog::new(1);
         log.append(
             AuditEventKind::StatuteAmended,
             1,
@@ -376,7 +375,7 @@ mod tests {
 
     #[test]
     fn test_legal_audit_to_auth_record_deterministic() {
-        let mut log = AuditLog::new();
+        let mut log = AuditLog::new(1);
         log.append(
             AuditEventKind::ContractCreated,
             10,

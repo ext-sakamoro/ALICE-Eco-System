@@ -6,7 +6,7 @@
 //! These bridges focus on Key/Shard/Nonce/Hash *structure* metadata, complementing
 //! `bridge_crypto_ext` which operates on raw data payloads.
 
-use alice_crypto::{hash, Hash, Key, Nonce, Shard, TAG_SIZE};
+use alice_crypto::{hash, Hash, Key, Nonce, Shard, SssError, TAG_SIZE};
 
 #[inline(always)]
 fn fnv1a(data: &[u8]) -> u64 {
@@ -63,9 +63,9 @@ pub fn crypto_key_to_analytics(key: &Key, timestamp_ns: u64) -> CryptoKeyAnalyti
 
 /// SSS shard persistence record for ALICE-DB.
 ///
-/// Stores the shard coordinate and integrity hash without exposing the Y-values.
-/// The shard data itself should be encrypted before DB storage via ALICE-Crypto
-/// stream cipher.
+/// Stores the shard coordinate and an integrity hash of the shard's byte form
+/// without exposing the Y-values. The shard data itself should be encrypted
+/// before DB storage via ALICE-Crypto stream cipher.
 pub struct CryptoShardDbRecord {
     /// FNV-1a content hash over x-coordinate and shard length bytes.
     pub content_hash: u64,
@@ -73,31 +73,38 @@ pub struct CryptoShardDbRecord {
     pub x_coordinate: u8,
     /// Number of secret bytes encoded in this shard.
     pub shard_length: u32,
-    /// BLAKE3 hash of the Y-values for integrity verification on retrieval.
-    pub y_hash: [u8; 32],
+    /// BLAKE3 hash of the shard byte form ([`Shard::to_bytes`]: version,
+    /// threshold, x, split id, length, Y-values and its check) for integrity
+    /// verification on retrieval.
+    pub shard_hash: [u8; 32],
 }
 
 /// Convert a [`Shard`] into a DB persistence record.
 ///
-/// The Y-values are hashed (not stored) so the DB layer can verify shard
-/// integrity without holding the secret shares in plaintext.
+/// The shard byte form is hashed (not stored) so the DB layer can verify the
+/// shard on retrieval without holding the secret shares in plaintext.
+///
+/// # Errors
+///
+/// [`SssError::SecretTooLong`] for a share longer than `u32::MAX` bytes (the
+/// byte form's length field).
 #[inline]
-#[must_use]
-pub fn crypto_shard_to_db(shard: &Shard) -> CryptoShardDbRecord {
-    let y_hash = hash(&shard.y);
-    let shard_length = shard.y.len() as u32;
+pub fn crypto_shard_to_db(shard: &Shard) -> Result<CryptoShardDbRecord, SssError> {
+    let bytes = shard.to_bytes()?;
+    // `to_bytes` refuses a share longer than u32::MAX bytes, so the length fits
+    let shard_length = u32::try_from(shard.len()).map_err(|_| SssError::SecretTooLong)?;
 
     // Hash input: x (1 byte) || shard_length LE (4 bytes)
     let mut buf = [0u8; 5];
-    buf[0] = shard.x;
+    buf[0] = shard.x();
     buf[1..5].copy_from_slice(&shard_length.to_le_bytes());
 
-    CryptoShardDbRecord {
+    Ok(CryptoShardDbRecord {
         content_hash: fnv1a(&buf),
-        x_coordinate: shard.x,
+        x_coordinate: shard.x(),
         shard_length,
-        y_hash: *y_hash.as_bytes(),
-    }
+        shard_hash: *hash(&bytes).as_bytes(),
+    })
 }
 
 // ── Bridge 3: Hash → Cache (content-addressed lookup) ───────────────────
@@ -297,31 +304,38 @@ mod tests {
     #[test]
     fn test_shard_to_db_basic() {
         let shards = sss::split(b"secret_key_material", 5, 3).unwrap();
-        let rec = crypto_shard_to_db(&shards[0]);
+        let rec = crypto_shard_to_db(&shards[0]).unwrap();
 
         assert_ne!(rec.content_hash, 0);
         assert_eq!(rec.x_coordinate, 1);
         assert_eq!(rec.shard_length, 19); // "secret_key_material".len()
-        assert_ne!(rec.y_hash, [0u8; 32]);
+                                          // the hash is of the shard's byte form, which a reader recomputes from the stored shard
+        let bytes = shards[0].to_bytes().unwrap();
+        assert_eq!(rec.shard_hash, *hash(&bytes).as_bytes());
+        // and it follows the Y-values: a shard read back with one Y byte changed hashes differently
+        let mut damaged = bytes.to_vec();
+        damaged[3 + 16 + 4] ^= 1;
+        assert_ne!(*hash(&damaged).as_bytes(), rec.shard_hash);
     }
 
     #[test]
     fn test_shard_to_db_deterministic() {
         let shards = sss::split(b"test", 3, 2).unwrap();
-        let rec1 = crypto_shard_to_db(&shards[0]);
-        let rec2 = crypto_shard_to_db(&shards[0]);
+        let rec1 = crypto_shard_to_db(&shards[0]).unwrap();
+        let rec2 = crypto_shard_to_db(&shards[0]).unwrap();
         assert_eq!(rec1.content_hash, rec2.content_hash);
-        assert_eq!(rec1.y_hash, rec2.y_hash);
+        assert_eq!(rec1.shard_hash, rec2.shard_hash);
     }
 
     #[test]
     fn test_shard_to_db_different_shards_differ() {
         let shards = sss::split(b"abc", 3, 2).unwrap();
-        let rec0 = crypto_shard_to_db(&shards[0]);
-        let rec1 = crypto_shard_to_db(&shards[1]);
+        let rec0 = crypto_shard_to_db(&shards[0]).unwrap();
+        let rec1 = crypto_shard_to_db(&shards[1]).unwrap();
         // Different x-coordinates produce different content hashes.
         assert_ne!(rec0.content_hash, rec1.content_hash);
         assert_ne!(rec0.x_coordinate, rec1.x_coordinate);
+        assert_ne!(rec0.shard_hash, rec1.shard_hash);
     }
 
     // ── Bridge 3: Hash → Cache ─────────────────────────────────────────

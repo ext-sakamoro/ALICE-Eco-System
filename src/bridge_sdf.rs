@@ -693,7 +693,8 @@ pub struct Sdf2dViewDescriptor {
     /// FNV-1a hash of the 2D primitive content.
     pub content_hash: u64,
     /// Primitive type: 0=circle, 1=rect, `2=rounded_rect`, 3=line,
-    ///   4=bezier, `5=font_glyph`, 6=boolean, 7=transform.
+    ///   4=bezier, `5=font_glyph`, 6=boolean, 7=transform, 8=ring,
+    ///   `9=regular_polygon`, 10=star, 11=ellipse, 12=onion, `13=uneven_capsule`.
     pub primitive_type: u8,
     /// Estimated bounding width.
     pub bound_width: f32,
@@ -770,6 +771,12 @@ fn classify_sdf2d(node: &Sdf2dNode) -> (u8, f32, f32, bool) {
         Sdf2dNode::Onion { child, thickness } => {
             let (_, cw, ch, _) = classify_sdf2d(child);
             (12, cw + thickness * 2.0, ch + thickness * 2.0, false)
+        }
+        // the convex hull of the two end circles: the box around both circles
+        Sdf2dNode::UnevenCapsule { a, b, ra, rb } => {
+            let w = (a[0] + ra).max(b[0] + rb) - (a[0] - ra).min(b[0] - rb);
+            let h = (a[1] + ra).max(b[1] + rb) - (a[1] - ra).min(b[1] - rb);
+            (13, w, h, true)
         }
     }
 }
@@ -1139,6 +1146,22 @@ mod tests {
         assert_eq!(desc.primitive_type, 1);
         assert!((desc.bound_width - 4.0).abs() < f32::EPSILON);
         assert!((desc.bound_height - 2.0).abs() < f32::EPSILON);
+        assert!(desc.is_leaf);
+    }
+
+    #[test]
+    fn test_sdf_2d_uneven_capsule_to_view_descriptor() {
+        // circles of radius 1 at (0, 0) and radius 2 at (4, 0): x from -1 to 6, y from -2 to 2
+        let capsule = Sdf2dNode::UnevenCapsule {
+            a: [0.0, 0.0],
+            b: [4.0, 0.0],
+            ra: 1.0,
+            rb: 2.0,
+        };
+        let desc = sdf_2d_to_view_descriptor(&capsule);
+        assert_eq!(desc.primitive_type, 13);
+        assert!((desc.bound_width - 7.0).abs() < f32::EPSILON);
+        assert!((desc.bound_height - 4.0).abs() < f32::EPSILON);
         assert!(desc.is_leaf);
     }
 

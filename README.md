@@ -31,11 +31,12 @@ repository with its own README, CHANGELOG and CI. This repository holds:
 
 - **Not a single library to depend on.** Depend on the individual crates. The
   hub crate (`alice-eco-system`) is not published to crates.io.
-- **Not buildable from this repository alone.** `Cargo.toml` refers to the
-  other crates by sibling path (`../ALICE-*`), all of them public
-  repositories, so a plain clone of this repository does not compile without
-  them. CI checks out each of them next to this repository at a fixed commit
-  (`.github/workflows/ci.yml`) and builds and tests the crate there.
+- **Not pinned to old releases.** `Cargo.toml` takes every bridged crate
+  from its public repository by git (`branch = "main"` and a version), and
+  `Cargo.lock` records the commit of each. A plain clone builds with
+  `cargo build --locked`. CI fails when any `alice-*` crate in the lock comes
+  from a path, a registry, a fixed revision or a tag, or when one is linked
+  twice (`scripts/alice_dup_check.py`).
 - **Not a statement of maturity.** Crates in the index range from published,
   versioned libraries to early implementations. The crates.io column marks the
   ones that are released; each crate's own README states its status and known

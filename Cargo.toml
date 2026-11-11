@@ -10,170 +10,169 @@ repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
 [dependencies]
 # ALICE Ecosystem (Python bindings disabled for integration demo)
-alice-edge = { path = "../ALICE-Edge", features = ["std"] }
-alice-db = { path = "../ALICE-DB", default-features = false }
-libasp = { path = "../ALICE-Streaming-Protocol", default-features = false }
-alice-view = { path = "../ALICE-View" }
+alice-edge = { git = "https://github.com/ext-sakamoro/ALICE-Edge", branch = "main", version = "0.4", features = ["std"] }
+alice-db = { git = "https://github.com/ext-sakamoro/ALICE-DB", branch = "main", version = "0.6", default-features = false }
+libasp = { git = "https://github.com/ext-sakamoro/ALICE-Streaming-Protocol", branch = "main", version = "1", default-features = false }
+alice-view = { git = "https://github.com/ext-sakamoro/ALICE-View", branch = "main", version = "0.3" }
 
 # 3D Asset Delivery Pipeline
-alice-sdf = { path = "../ALICE-SDF", default-features = false, features = ["destruction"] }
-alice-cdn = { path = "../ALICE-CDN", features = ["content_types"] }
-alice-cache = { path = "../ALICE-Cache" }
+alice-sdf = { git = "https://github.com/ext-sakamoro/ALICE-SDF", branch = "main", version = "7", default-features = false, features = ["destruction"] }
+alice-cdn = { git = "https://github.com/ext-sakamoro/ALICE-CDN", branch = "main", version = "0.2", features = ["content_types"] }
+alice-cache = { git = "https://github.com/ext-sakamoro/ALICE-Cache", branch = "main", version = "0.2" }
 
 # Game Engine Pipeline
-alice-physics = { path = "../ALICE-Physics" }
-alice-sync = { path = "../ALICE-Sync", features = ["telemetry"] }
+alice-physics = { git = "https://github.com/ext-sakamoro/ALICE-Physics", branch = "main", version = "4" }
+alice-sync = { git = "https://github.com/ext-sakamoro/ALICE-Sync", branch = "main", version = "0.8", features = ["telemetry"] }
 
 # Crate bridges (Synth, VCS, Motion, RTOS, Kinematics, Font)
-alice-synth = { path = "../ALICE-Synth", features = ["std"] }
-alice-kinematics = { path = "../ALICE-Kinematics", features = ["std", "encoder"] }
-alice-motion = { path = "../ALICE-Motion", features = ["std"] }
-alice-rtos = { path = "../ALICE-RTOS" }
-alice-vcs = { path = "../ALICE-VCS", features = ["std"] }
+alice-synth = { git = "https://github.com/ext-sakamoro/ALICE-Synth", branch = "main", version = "0.2.0-dev", features = ["std"] }
+alice-kinematics = { git = "https://github.com/ext-sakamoro/ALICE-Kinematics", branch = "main", version = "0.4", features = ["std", "encoder"] }
+alice-motion = { git = "https://github.com/ext-sakamoro/ALICE-Motion", branch = "main", version = "0.1", features = ["std"] }
+alice-rtos = { git = "https://github.com/ext-sakamoro/ALICE-RTOS", branch = "main", version = "0.1" }
+alice-vcs = { git = "https://github.com/ext-sakamoro/ALICE-VCS", branch = "main", version = "0.2", features = ["std"] }
 
 # Media & Text Processing bridges
-alice-voice = { path = "../ALICE-Voice", default-features = false, features = ["std"] }
-alice-codec = { path = "../ALICE-Codec", default-features = false, features = ["std"] }
-alice-text = { path = "../ALICE-Text", default-features = false }
-alice-search = { path = "../ALICE-Search", default-features = false, features = ["std"] }
+alice-voice = { git = "https://github.com/ext-sakamoro/ALICE-Voice", branch = "main", version = "0.1", default-features = false, features = ["std"] }
+alice-codec = { git = "https://github.com/ext-sakamoro/ALICE-Codec", branch = "main", version = "0.2", default-features = false, features = ["std"] }
+alice-text = { git = "https://github.com/ext-sakamoro/ALICE-Text", branch = "main", version = "2", default-features = false }
+alice-search = { git = "https://github.com/ext-sakamoro/ALICE-Search", branch = "main", version = "0.2", default-features = false, features = ["std"] }
 
 # AI & GPU Inference bridges
-alice-ml = { path = "../ALICE-ML", default-features = false, features = ["std"] }
-alice-trt = { path = "../ALICE-TRT", default-features = false }
+alice-ml = { git = "https://github.com/ext-sakamoro/ALICE-ML", branch = "main", version = "0.4", default-features = false, features = ["std"] }
+alice-trt = { git = "https://github.com/ext-sakamoro/ALICE-TRT", branch = "main", version = "3", default-features = false }
 
 # Network & Security bridges
-alice-dns = { path = "../ALICE-DNS", default-features = false }
-alice-api = { path = "../ALICE-API", default-features = false, features = ["std"] }
-# crates.io core crate (lib name aliased to `alice_core` as used by bridge_zip.rs); the
-# `libalice` path dep broke when that package was renamed `alice-zip-cli` (0.4.0)
-alice_core = { package = "alice-zip", version = "0.5", default-features = false, features = ["std", "lzma"] }
+alice-dns = { git = "https://github.com/ext-sakamoro/ALICE-DNS", branch = "main", version = "0.2", default-features = false }
+alice-api = { git = "https://github.com/ext-sakamoro/ALICE-API", branch = "main", version = "0.2", default-features = false, features = ["std"] }
+# the alice-zip sibling (lib name aliased to `alice_core` as used by bridge_zip.rs)
+alice_core = { package = "alice-zip", git = "https://github.com/ext-sakamoro/ALICE-Zip", branch = "main", version = "0.11", default-features = false, features = ["std", "lzma"] }
 
 # Auth & Crypto bridges
-alice-auth = { path = "../ALICE-Auth", default-features = false, features = ["std"] }
-alice-crypto = { path = "../ALICE-Crypto" }
+alice-auth = { git = "https://github.com/ext-sakamoro/ALICE-Auth", branch = "main", version = "0.6", default-features = false, features = ["std"] }
+alice-crypto = { git = "https://github.com/ext-sakamoro/ALICE-Crypto", branch = "main", version = "0.7" }
 
 # Content Creation bridges (Animation, Manga, Print) — Proprietary, optional
 
 # Container & Commercial bridges
-alice-container = { path = "../ALICE-Container", default-features = false, features = ["std"] }
+alice-container = { git = "https://github.com/ext-sakamoro/ALICE-Container", branch = "main", version = "0.3", default-features = false, features = ["std"] }
 
 # Browser & Cloud Gateway bridges
-alice-browser = { path = "../ALICE-Browser", default-features = false }
-alice-cloud-gateway = { path = "../ALICE-Cloud-Gateway", default-features = false }
+alice-browser = { git = "https://github.com/ext-sakamoro/ALICE-Browser", branch = "main", version = "0.2", default-features = false }
+alice-cloud-gateway = { git = "https://github.com/ext-sakamoro/ALICE-Cloud-Gateway", branch = "main", version = "0.1", default-features = false }
 
 # Firewall bridge (Linux only — depends on nfq/netfilter)
 
 # Tokenizer bridge
-alice-token = { path = "../ALICE-Token" }
+alice-token = { git = "https://github.com/ext-sakamoro/ALICE-Token", branch = "main", version = "1" }
 
 # Semantic Telemetry bridge
 
 # Training bridge
-alice-train = { path = "../ALICE-Train" }
+alice-train = { git = "https://github.com/ext-sakamoro/ALICE-Train", branch = "main", version = "0.3" }
 
 # Telemetry & Messaging bridges
-alice-analytics = { path = "../ALICE-Analytics", default-features = false, features = ["std"] }
-alice-queue = { path = "../ALICE-Queue" }
+alice-analytics = { git = "https://github.com/ext-sakamoro/ALICE-Analytics", branch = "main", version = "0.7", default-features = false, features = ["std"] }
+alice-queue = { git = "https://github.com/ext-sakamoro/ALICE-Queue", branch = "main", version = "0.2" }
 
 # Financial domain bridges
-alice-ledger = { path = "../ALICE-Ledger" }
-alice-risk = { path = "../ALICE-Risk" }
-alice-fix = { path = "../ALICE-FIX" }
-alice-settlement = { path = "../ALICE-Settlement" }
+alice-ledger = { git = "https://github.com/ext-sakamoro/ALICE-Ledger", branch = "main", version = "0.3" }
+alice-risk = { git = "https://github.com/ext-sakamoro/ALICE-Risk", branch = "main", version = "0.2" }
+alice-fix = { git = "https://github.com/ext-sakamoro/ALICE-FIX", branch = "main", version = "0.2" }
+alice-settlement = { git = "https://github.com/ext-sakamoro/ALICE-Settlement", branch = "main", version = "0.2" }
 
 # Science & Domain-Specific bridges (Path L-Q)
-alice-bio = { path = "../ALICE-Bio" }
-alice-legal = { path = "../ALICE-Legal" }
-alice-energy = { path = "../ALICE-Energy" }
-alice-space = { path = "../ALICE-Space" }
-alice-climate = { path = "../ALICE-Climate" }
+alice-bio = { git = "https://github.com/ext-sakamoro/ALICE-Bio", branch = "main", version = "0.2" }
+alice-legal = { git = "https://github.com/ext-sakamoro/ALICE-Legal", branch = "main", version = "0.3" }
+alice-energy = { git = "https://github.com/ext-sakamoro/ALICE-Energy", branch = "main", version = "0.1" }
+alice-space = { git = "https://github.com/ext-sakamoro/ALICE-Space", branch = "main", version = "0.8" }
+alice-climate = { git = "https://github.com/ext-sakamoro/ALICE-Climate", branch = "main", version = "0.1" }
 
 # Advanced domain bridges (Path R-U)
-alice-history = { path = "../ALICE-History" }
-alice-presence = { path = "../ALICE-Presence" }
+alice-history = { git = "https://github.com/ext-sakamoro/ALICE-History", branch = "main", version = "0.1" }
+alice-presence = { git = "https://github.com/ext-sakamoro/ALICE-Presence", branch = "main", version = "0.2" }
 
 # Hardware bridge
-alice-bridge = { path = "../ALICE-Bridge" }
+alice-bridge = { git = "https://github.com/ext-sakamoro/ALICE-Bridge", branch = "main", version = "0.2" }
 
 # Infrastructure bridges
 
 # Data/Communication bridges
 
 # Security bridges
-alice-browser-secure = { path = "../ALICE-Browser-Secure", default-features = false }
-alice-datashield = { path = "../ALICE-DataShield", default-features = false }
+alice-browser-secure = { git = "https://github.com/ext-sakamoro/ALICE-Browser-Secure", branch = "main", version = "0.1", default-features = false }
+alice-datashield = { git = "https://github.com/ext-sakamoro/ALICE-DataShield", branch = "main", version = "0.2", default-features = false }
 
 # Analytics/Monitoring bridges
 
 # Domain bridges
-alice-legal-ai = { path = "../ALICE-Legal-AI", default-features = false }
+alice-legal-ai = { git = "https://github.com/ext-sakamoro/ALICE-Legal-AI", branch = "main", version = "0.1", default-features = false }
 
 # Media/Compression/Low-level bridges
-alice-text-compression = { path = "../ALICE-Text-Compression", default-features = false }
+alice-text-compression = { git = "https://github.com/ext-sakamoro/ALICE-Text-Compression", branch = "main", version = "0.1", default-features = false }
 
 # Enterprise/Commercial bridges
-alice-simd = { path = "../ALICE-SIMD", default-features = false, features = ["std"] }
+alice-simd = { git = "https://github.com/ext-sakamoro/ALICE-SIMD", branch = "main", version = "1", default-features = false, features = ["std"] }
 
 # Media bridges (2026-03 batch)
-alice-audio = { path = "../ALICE-Audio", default-features = false }
-alice-video = { path = "../ALICE-Video", default-features = false }
-alice-camera = { path = "../ALICE-Camera", default-features = false }
+alice-audio = { git = "https://github.com/ext-sakamoro/ALICE-Audio", branch = "main", version = "2", default-features = false }
+alice-video = { git = "https://github.com/ext-sakamoro/ALICE-Video", branch = "main", version = "1", default-features = false }
+alice-camera = { git = "https://github.com/ext-sakamoro/ALICE-Camera", branch = "main", version = "1", default-features = false }
 
 # Spatial bridges (2026-03 batch)
-alice-navigation = { path = "../ALICE-Navigation", default-features = false }
+alice-navigation = { git = "https://github.com/ext-sakamoro/ALICE-Navigation", branch = "main", version = "1", default-features = false }
 
 # Optimization bridges (2026-03 batch)
 
 # Real-time bridges (2026-03 batch)
 
 # Compiler/Language bridges (2026-03 batch)
-alice-compiler = { path = "../ALICE-Compiler", default-features = false }
-alice-vm = { path = "../ALICE-VM", default-features = false }
-alice-parser = { path = "../ALICE-Parser", default-features = false }
+alice-compiler = { git = "https://github.com/ext-sakamoro/ALICE-Compiler", branch = "main", version = "2", default-features = false }
+alice-vm = { git = "https://github.com/ext-sakamoro/ALICE-VM", branch = "main", version = "1", default-features = false }
+alice-parser = { git = "https://github.com/ext-sakamoro/ALICE-Parser", branch = "main", version = "1", default-features = false }
 
 # Networking bridges (2026-03 batch)
-alice-proxy = { path = "../ALICE-Proxy", default-features = false }
-alice-websocket = { path = "../ALICE-WebSocket", default-features = false }
-alice-grpc = { path = "../ALICE-gRPC", default-features = false }
-alice-http = { path = "../ALICE-HTTP", default-features = false }
+alice-proxy = { git = "https://github.com/ext-sakamoro/ALICE-Proxy", branch = "main", version = "1", default-features = false }
+alice-websocket = { git = "https://github.com/ext-sakamoro/ALICE-WebSocket", branch = "main", version = "1", default-features = false }
+alice-grpc = { git = "https://github.com/ext-sakamoro/ALICE-gRPC", branch = "main", version = "1", default-features = false }
+alice-http = { git = "https://github.com/ext-sakamoro/ALICE-HTTP", branch = "main", version = "1", default-features = false }
 
 # Storage bridges (2026-03 batch)
-alice-filesystem = { path = "../ALICE-FileSystem", default-features = false }
-alice-objectstore = { path = "../ALICE-ObjectStore", default-features = false }
+alice-filesystem = { git = "https://github.com/ext-sakamoro/ALICE-FileSystem", branch = "main", version = "1", default-features = false }
+alice-objectstore = { git = "https://github.com/ext-sakamoro/ALICE-ObjectStore", branch = "main", version = "1", default-features = false }
 
 # Security bridges (2026-03 batch)
-alice-waf = { path = "../ALICE-WAF", default-features = false }
-alice-dlp = { path = "../ALICE-DLP", default-features = false }
-alice-audit = { path = "../ALICE-Audit", default-features = false }
+alice-waf = { git = "https://github.com/ext-sakamoro/ALICE-WAF", branch = "main", version = "1", default-features = false }
+alice-dlp = { git = "https://github.com/ext-sakamoro/ALICE-DLP", branch = "main", version = "1", default-features = false }
+alice-audit = { git = "https://github.com/ext-sakamoro/ALICE-Audit", branch = "main", version = "1", default-features = false }
 
 # AI/ML bridges (2026-03 batch)
-alice-llm = { path = "../ALICE-LLM", default-features = false }
-alice-gan = { path = "../ALICE-GAN", default-features = false }
-alice-automl = { path = "../ALICE-AutoML", default-features = false }
+alice-llm = { git = "https://github.com/ext-sakamoro/ALICE-LLM", branch = "main", version = "4", default-features = false }
+alice-gan = { git = "https://github.com/ext-sakamoro/ALICE-GAN", branch = "main", version = "1", default-features = false }
+alice-automl = { git = "https://github.com/ext-sakamoro/ALICE-AutoML", branch = "main", version = "1", default-features = false }
 
 # Swarm/IoT bridges (2026-03 batch)
-alice-swarm = { path = "../ALICE-Swarm", default-features = false }
-alice-ble = { path = "../ALICE-BLE", default-features = false }
-alice-lora = { path = "../ALICE-LoRa", default-features = false }
-alice-nfc = { path = "../ALICE-NFC", default-features = false }
+alice-swarm = { git = "https://github.com/ext-sakamoro/ALICE-Swarm", branch = "main", version = "1", default-features = false }
+alice-ble = { git = "https://github.com/ext-sakamoro/ALICE-BLE", branch = "main", version = "1", default-features = false }
+alice-lora = { git = "https://github.com/ext-sakamoro/ALICE-LoRa", branch = "main", version = "1", default-features = false }
+alice-nfc = { git = "https://github.com/ext-sakamoro/ALICE-NFC", branch = "main", version = "1", default-features = false }
 
 # Infrastructure bridges (2026-03 batch)
-alice-terraform = { path = "../ALICE-Terraform", default-features = false }
-alice-monitor = { path = "../ALICE-Monitor", default-features = false }
+alice-terraform = { git = "https://github.com/ext-sakamoro/ALICE-Terraform", branch = "main", version = "1", default-features = false }
+alice-monitor = { git = "https://github.com/ext-sakamoro/ALICE-Monitor", branch = "main", version = "1", default-features = false }
 
 # Science bridges (2026-03 batch)
-alice-chemistry = { path = "../ALICE-Chemistry", default-features = false }
-alice-optics = { path = "../ALICE-Optics", default-features = false }
-alice-signal = { path = "../ALICE-Signal", default-features = false }
+alice-chemistry = { git = "https://github.com/ext-sakamoro/ALICE-Chemistry", branch = "main", version = "1", default-features = false }
+alice-optics = { git = "https://github.com/ext-sakamoro/ALICE-Optics", branch = "main", version = "1", default-features = false }
+alice-signal = { git = "https://github.com/ext-sakamoro/ALICE-Signal", branch = "main", version = "1", default-features = false }
 
 # Business bridges (2026-03 batch)
-alice-crm = { path = "../ALICE-CRM", default-features = false }
-alice-erp = { path = "../ALICE-ERP", default-features = false }
-alice-hrm = { path = "../ALICE-HRM", default-features = false }
-alice-lms = { path = "../ALICE-LMS", default-features = false }
+alice-crm = { git = "https://github.com/ext-sakamoro/ALICE-CRM", branch = "main", version = "1", default-features = false }
+alice-erp = { git = "https://github.com/ext-sakamoro/ALICE-ERP", branch = "main", version = "1", default-features = false }
+alice-hrm = { git = "https://github.com/ext-sakamoro/ALICE-HRM", branch = "main", version = "1", default-features = false }
+alice-lms = { git = "https://github.com/ext-sakamoro/ALICE-LMS", branch = "main", version = "1", default-features = false }
 
 # XR bridges (2026-03 batch)
-alice-vr = { path = "../ALICE-VR", default-features = false }
+alice-vr = { git = "https://github.com/ext-sakamoro/ALICE-VR", branch = "main", version = "1", default-features = false }
 
 # 2026-03 batch 2: AI/ML extended
 
@@ -194,14 +193,14 @@ alice-vr = { path = "../ALICE-VR", default-features = false }
 # 2026-03 batch 2: Application
 
 # 2026-03 batch 2: Compute extended
-alice-game-engine = { path = "../ALICE-GameEngine", default-features = false }
+alice-game-engine = { git = "https://github.com/ext-sakamoro/ALICE-GameEngine", branch = "main", version = "0.6", default-features = false }
 
 # 2026-03 batch 2: IoT extended
 
 # 2026-03 batch 2: Cross-cutting
 
 # Agent bridge (2026-04)
-alice-agent = { path = "../ALICE-Agent", default-features = false }
+alice-agent = { git = "https://github.com/ext-sakamoro/ALICE-Agent", branch = "main", version = "0.1", default-features = false }
 
 # Serialization (in-memory ASDF, zero disk I/O)
 bincode = "1"

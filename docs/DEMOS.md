@@ -7,12 +7,11 @@ crates can be followed.
 
 ## Building them
 
-`Cargo.toml` refers to every bridged crate by sibling path (`../ALICE-*`), and
-every one of them is a public repository (the bridges to crates that are not
-public are kept outside this repository). A build needs those repositories
-cloned next to this one, at the revisions this repository was written
-against; CI does that with the commits listed in `.github/workflows/ci.yml`.
-This page documents what each demo does, with links to its source.
+`Cargo.toml` takes every bridged crate from its public repository by git
+(`branch = "main"` and a version; the bridges to crates that are not public are
+kept outside this repository), and `Cargo.lock` records the commit of each, so
+`cargo run --locked` builds from a plain clone. This page documents what each
+demo does, with links to its source.
 
 ## Edge-to-database pipeline (`cargo run`)
 

@@ -20,8 +20,8 @@ fn fnv1a(data: &[u8]) -> u64 {
 pub struct LegalAnalyticsStatuteEvent {
     /// Content hash over statute title hash and clause count bytes.
     pub content_hash: u64,
-    /// FNV-1a hash of the statute title.
-    pub title_hash: u64,
+    /// The statute's title hash (32 bytes, as alice-legal records it).
+    pub title_hash: [u8; 32],
     /// Total number of clauses in the statute tree.
     pub clause_count: usize,
     /// Number of obligation clauses.
@@ -44,10 +44,10 @@ pub fn legal_statute_to_analytics(statute: &StatuteTree) -> LegalAnalyticsStatut
         .filter(|c| matches!(c.kind, ClauseKind::Prohibition))
         .count();
 
-    let mut key = [0u8; 20];
-    key[0..8].copy_from_slice(&statute.title_hash.to_le_bytes());
-    key[8..16].copy_from_slice(&(clause_count as u64).to_le_bytes());
-    key[16..20].copy_from_slice(&statute.version.to_le_bytes());
+    let mut key = [0u8; 44];
+    key[0..32].copy_from_slice(&statute.title_hash);
+    key[32..40].copy_from_slice(&(clause_count as u64).to_le_bytes());
+    key[40..44].copy_from_slice(&statute.version.to_le_bytes());
 
     LegalAnalyticsStatuteEvent {
         content_hash: fnv1a(&key),
@@ -167,11 +167,12 @@ pub struct LegalAnalyticsAuditEvent {
     pub timestamp_ns: u64,
 }
 
-/// Convert an audit entry into an analytics event.
+/// The byte the bridge records for an audit event kind (no wildcard: a new
+/// kind in alice-legal stops the compile until it has its own byte).
 #[inline]
 #[must_use]
-pub fn legal_audit_to_analytics(entry: &AuditEntry) -> LegalAnalyticsAuditEvent {
-    let kind_byte = match entry.kind {
+pub const fn audit_kind_byte(kind: AuditEventKind) -> u8 {
+    match kind {
         AuditEventKind::StatuteCreated => 0,
         AuditEventKind::StatuteAmended => 1,
         AuditEventKind::ContractCreated => 2,
@@ -180,7 +181,16 @@ pub fn legal_audit_to_analytics(entry: &AuditEntry) -> LegalAnalyticsAuditEvent 
         AuditEventKind::ProcedureStarted => 5,
         AuditEventKind::ProcedureCompleted => 6,
         AuditEventKind::ProcedureRejected => 7,
-    };
+        AuditEventKind::DocumentAnalyzed => 8,
+        AuditEventKind::TemplateCompiled => 9,
+    }
+}
+
+/// Convert an audit entry into an analytics event.
+#[inline]
+#[must_use]
+pub fn legal_audit_to_analytics(entry: &AuditEntry) -> LegalAnalyticsAuditEvent {
+    let kind_byte = audit_kind_byte(entry.kind);
 
     let mut key = [0u8; 17];
     key[0..8].copy_from_slice(&entry.sequence.to_le_bytes());
@@ -206,30 +216,21 @@ pub struct LegalDbAuditRecord {
     pub sequence: u64,
     /// Entity ID.
     pub entity_id: u64,
-    /// Actor hash (who performed the action).
-    pub actor_hash: u64,
+    /// Actor hash (who performed the action, 32 bytes).
+    pub actor_hash: [u8; 32],
     /// Event kind byte.
     pub event_kind: u8,
     /// Timestamp of the event.
     pub timestamp_ns: u64,
-    /// Content hash from the audit entry itself.
-    pub entry_content_hash: u64,
+    /// Content hash from the audit entry itself (32 bytes).
+    pub entry_content_hash: [u8; 32],
 }
 
 /// Convert an audit entry into a DB persistence record.
 #[inline]
 #[must_use]
 pub fn legal_audit_to_db(entry: &AuditEntry) -> LegalDbAuditRecord {
-    let kind_byte = match entry.kind {
-        AuditEventKind::StatuteCreated => 0,
-        AuditEventKind::StatuteAmended => 1,
-        AuditEventKind::ContractCreated => 2,
-        AuditEventKind::ContractFulfilled => 3,
-        AuditEventKind::ContractBreached => 4,
-        AuditEventKind::ProcedureStarted => 5,
-        AuditEventKind::ProcedureCompleted => 6,
-        AuditEventKind::ProcedureRejected => 7,
-    };
+    let kind_byte = audit_kind_byte(entry.kind);
 
     let mut key = [0u8; 24];
     key[0..8].copy_from_slice(&entry.sequence.to_le_bytes());
@@ -296,7 +297,7 @@ mod tests {
 
     #[test]
     fn test_audit_to_analytics() {
-        let mut log = AuditLog::new();
+        let mut log = AuditLog::new(1);
         log.append(
             AuditEventKind::StatuteCreated,
             1,
@@ -314,7 +315,7 @@ mod tests {
 
     #[test]
     fn test_audit_to_db() {
-        let mut log = AuditLog::new();
+        let mut log = AuditLog::new(1);
         log.append(
             AuditEventKind::ContractCreated,
             100,
@@ -332,7 +333,7 @@ mod tests {
 
     #[test]
     fn test_hash_determinism() {
-        let mut log = AuditLog::new();
+        let mut log = AuditLog::new(1);
         log.append(
             AuditEventKind::StatuteAmended,
             1,

@@ -8,7 +8,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - tokio を 1.53.3 に上げる (RUSTSEC-2026-0386、`AsyncFd` の unsound、1.53.3 で修正) tokio 1.53.3 が要求する mio 1.2.4 / socket2 0.6.5 / tokio-macros 2.7.2 も上がり、tokio-macros が引く syn 3.0.9 が加わる それ以外の package の版と依存の辺は変えない `Test (public siblings)` が固定する sibling の組で解決した
 
 ### Added
-- CI: 共有の `scripts/alice_dup_check.py` を持つ 今は検査器自身の試験だけを走らせる (この build は `alice-crypto`、`alice-db`、`alice-sdf`、`alice-zip` を複数の版で link しているので、本体の検査はそれを解消してから繋ぐ)
+- CI: 共有の `scripts/alice_dup_check.py` を持つ (検査器自身の試験と、この build の本体の検査)
 - `scripts/lock_git_revs.py` と test: Cargo.lock で 1 つの alice-* package が 2 つ以上の git revision から link されていたら失敗する (比較件数 0 と読めない lock は exit 2) CI の `Test (public siblings)` が `cargo test` の後に実行し、test は `Docs and crate index` (3 OS) と `scripts/preflight.sh` が実行する
 - CI: job `Test (public siblings)` 公開の sibling 85 個を固定の commit でこの repository の隣に checkout し、`cargo test` を走らせる (公開でない sibling は checkout で落ちる) 失敗した試験がある時と、通った試験が 1909 本より少ない時は失敗する `ci/**` への push でも走る `scripts/preflight.sh` (`--quick` 無し) も同じ試験と下限を見る `ALICE-Physics` は package 名が `alice-physics-core` に変わる前の commit に固定している `Cargo.lock` はこの sibling の組で作り直した
 - `docs/crate-index.tsv` と `scripts/readme_index.py`: README の crate 索引の元データと検査器 `--check` は README の表と TSV の一致 (CI、3 OS)、`--online` は TSV と各 repository の一致 (public か、Cargo.toml の license、crates.io の公開状況、索引に無い public crate repository) を見る `crate-index.yml` が TSV の変更時と毎週実行する 比較件数 0 は失敗
@@ -16,6 +16,14 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- 依存: 全ての alice-* を隣の path でなく各 repository の git (`branch = "main"` と version) から引き、`Cargo.lock` が commit を記録する (CI は sibling を checkout せず `cargo test --locked`) `alice_core` (alice-zip) は crates.io の 0.5 をやめ ALICE-Zip (0.11) を git で、alice-sync は 0.8 lock の alice-* は 93 package で、全てが git の branch main から来て、alice-det-math / alice-sign / alice-zip などは各 1 つ
+- **Breaking (bridge の型):** 各 crate の今の main に合わせた
+  - `bridge_crypto::crypto_shard_to_db` は `Result<CryptoShardDbRecord, SssError>` を返し、`y_hash` (Y の値の hash) を `shard_hash` (`Shard::to_bytes` の byte 形式の BLAKE3、Y と split id と検査を含む) にした alice-crypto の `Shard` が Y の値を公開しなくなったため 長さは `as u32` で切らず、`u32` に入らない share は `SssError::SecretTooLong`
+  - alice-sync 0.8 の入力は固定小数点 `InputFix` (64.64): `bridge_sync` の analytics / DB の payload hash は各軸の 16 byte で取り、`SyncPhysicsEvent::force_x` / `force_y` は `f32` に丸めず `InputFix` のまま渡す
+  - `bridge_kinematics::kinematics_to_sync_input` は Intent の 8 byte を `movement[0]` の整数部に全部載せ (以前は 6 byte だけ運び 2 byte を落としていた)、`sync_input_to_kinematics` は `Option<Intent>` で、小数部のある値や他の軸が 0 でない frame を断る `pipeline` の mocap は同じ関数を使う (同じ詰め方の写しを消した)
+  - alice-legal の hash が 32 byte になった: `bridge_legal` / `bridge_legal_cross` の `title_hash` / `actor_hash` / `entry_content_hash` / `entry_hash` を `u64` から `[u8; 32]` にし、content hash の key に 32 byte をそのまま入れる (切り詰めない) イベントの種類の byte は `bridge_legal::audit_kind_byte` の 1 か所にし、`DocumentAnalyzed` = 8 / `TemplateCompiled` = 9 を足した (wildcard なし) `LegalAuthRecord::is_write_event` は網羅の match で、`TemplateCompiled` は書き込み、`DocumentAnalyzed` は読み取り
+  - alice-sdf の `Sdf2dNode::UnevenCapsule`: `Sdf2dViewDescriptor` は種別 13、外接は 2 つの端の円の外接の合併 (試験 `test_sdf_2d_uneven_capsule_to_view_descriptor`)
+- CI: lock の検査の段が、alice-* が path・registry・固定 revision・tag から来るものを 1 つでも含む時、alice-* が 2 つ未満の時、alice-det-math が 1 つでない時に失敗する `scripts/alice_dup_check.py` の本体の検査 (同じ alice-* を 2 回 link したら失敗) を CI に繋いだ path の依存を 1 本戻すと両方が失敗することを確かめた
 - 依存: CI の ALICE-Kinematics の pin を b2e2faca から e89e428 (0.4.0) に上げる 0.4.0 の CCD は各関節を骨の根元で回すので、腕の IK の結果の bits が変わる 試験 `bridge_kinematics::tests::keyframes_reach_reachable_targets` (既知の姿勢の先端を目標に 1 cm 未満、ALICE-Kinematics の届く目標の oracle と同じ上限) と `keyframes_are_the_recorded_bits` (この bridge の IK の出力 bits、Kinematics の算術が変わると動く) を足し、`KinematicsPhysicsState::joint_positions` の doc を「各骨の先端」に直した
 - Licence: `AGPL-3.0-or-later OR LicenseRef-Commercial` → `LicenseRef-Proprietary`
 - README / BRAND_GUIDELINES / src/lib.rs の licence の記述を、crate ごとの licence は各 repository の `Cargo.toml` と `LICENSE*` にあるという書き方に直した (特定の licence model の列挙はしない)
