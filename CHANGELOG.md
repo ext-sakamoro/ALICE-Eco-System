@@ -16,6 +16,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- 依存: `alice-trt` の版の要求を `"3"` から `">=3, <5"` にした (lock は 3.2.0 のまま) ALICE-TRT 4.0.0 (`GpuNeuralSdf::fit` が型付きの error を返す破壊的変更、この crate は ALICE-TRT の API を使わない) を main に取り込む前段で、取り込んだ後に `"4"` にして lock を上げる
 - 依存: 全ての alice-* を隣の path でなく各 repository の git (`branch = "main"` と version) から引き、`Cargo.lock` が commit を記録する (CI は sibling を checkout せず `cargo test --locked`) `alice_core` (alice-zip) は crates.io の 0.5 をやめ ALICE-Zip (0.11) を git で、alice-sync は 0.8 lock の alice-* は 93 package で、全てが git の branch main から来て、alice-det-math / alice-sign / alice-zip などは各 1 つ
 - **Breaking (bridge の型):** 各 crate の今の main に合わせた
   - `bridge_crypto::crypto_shard_to_db` は `Result<CryptoShardDbRecord, SssError>` を返し、`y_hash` (Y の値の hash) を `shard_hash` (`Shard::to_bytes` の byte 形式の BLAKE3、Y と split id と検査を含む) にした alice-crypto の `Shard` が Y の値を公開しなくなったため 長さは `as u32` で切らず、`u32` に入らない share は `SssError::SecretTooLong`
