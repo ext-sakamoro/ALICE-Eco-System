@@ -16,6 +16,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- alice-llm の要求を `"4"` から `">=4, <6"` に広げた (Cargo.lock は 4.0.0 のまま、5.0.0 の着地後に上げる)
 - 依存: `alice-trt` を 4.0.0 (ALICE-TRT main dc9f93cf) に上げ、版の要求を `"4"` にした lock は alice-trt の行だけ変わる (`cargo update -p alice-trt` は windows-sys を範囲で引く package の辺も組み替えたので、その行だけを書き換え `cargo metadata --locked` で整合を確かめた)
 - 依存: `alice-trt` の版の要求を `"3"` から `">=3, <5"` にした (lock は 3.2.0 のまま) ALICE-TRT 4.0.0 (`GpuNeuralSdf::fit` が型付きの error を返す破壊的変更、この crate は ALICE-TRT の API を使わない) を main に取り込む前段で、取り込んだ後に `"4"` にして lock を上げる
 - 依存: 全ての alice-* を隣の path でなく各 repository の git (`branch = "main"` と version) から引き、`Cargo.lock` が commit を記録する (CI は sibling を checkout せず `cargo test --locked`) `alice_core` (alice-zip) は crates.io の 0.5 をやめ ALICE-Zip (0.11) を git で、alice-sync は 0.8 lock の alice-* は 93 package で、全てが git の branch main から来て、alice-det-math / alice-sign / alice-zip などは各 1 つ
