@@ -988,8 +988,8 @@ dependencies = [
 
 [[package]]
 name = "alice-trt"
-version = "3.2.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-TRT?branch=main#5b315a1a179a5b490c99d204a424d86e08903526"
+version = "4.0.0"
+source = "git+https://github.com/ext-sakamoro/ALICE-TRT?branch=main#dc9f93cfdbaa91657450de13464f1e268e507796"
 dependencies = [
  "alice-ml",
  "bytemuck",

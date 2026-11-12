@@ -39,7 +39,7 @@ alice-search = { git = "https://github.com/ext-sakamoro/ALICE-Search", branch = 
 
 # AI & GPU Inference bridges
 alice-ml = { git = "https://github.com/ext-sakamoro/ALICE-ML", branch = "main", version = "0.4", default-features = false, features = ["std"] }
-alice-trt = { git = "https://github.com/ext-sakamoro/ALICE-TRT", branch = "main", version = ">=3, <5", default-features = false }
+alice-trt = { git = "https://github.com/ext-sakamoro/ALICE-TRT", branch = "main", version = "4", default-features = false }
 
 # Network & Security bridges
 alice-dns = { git = "https://github.com/ext-sakamoro/ALICE-DNS", branch = "main", version = "0.2", default-features = false }
