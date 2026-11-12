@@ -146,7 +146,7 @@ alice-dlp = { git = "https://github.com/ext-sakamoro/ALICE-DLP", branch = "main"
 alice-audit = { git = "https://github.com/ext-sakamoro/ALICE-Audit", branch = "main", version = "1", default-features = false }
 
 # AI/ML bridges (2026-03 batch)
-alice-llm = { git = "https://github.com/ext-sakamoro/ALICE-LLM", branch = "main", version = ">=4, <6", default-features = false }
+alice-llm = { git = "https://github.com/ext-sakamoro/ALICE-LLM", branch = "main", version = "5", default-features = false }
 alice-gan = { git = "https://github.com/ext-sakamoro/ALICE-GAN", branch = "main", version = "1", default-features = false }
 alice-automl = { git = "https://github.com/ext-sakamoro/ALICE-AutoML", branch = "main", version = "1", default-features = false }
 
