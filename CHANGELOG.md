@@ -16,6 +16,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- 依存: alice-db を 0.7 に、alice-zip (`alice_core`) を 0.12 に、alice-edge を 0.5 に上げる (alice-zip 0.12 は展開に上限を必須にした版、この crate は圧縮だけを使い展開を呼ばない alice-db 0.7 は blob の格納形式が変わる版で `AliceDB::open` はそのまま) 識別子は動かない (`DB_SEMANTICS_ID` は不変、この crate は peer の識別子を固定していない)
 - alice-llm を 5.0.0 (e8b8a1df) に上げ、要求を `"5"` にした (Cargo.lock は alice-llm の行だけ)
 - alice-llm の要求を `"4"` から `">=4, <6"` に広げた (Cargo.lock は 4.0.0 のまま、5.0.0 の着地後に上げる)
 - 依存: `alice-trt` を 4.0.0 (ALICE-TRT main dc9f93cf) に上げ、版の要求を `"4"` にした lock は alice-trt の行だけ変わる (`cargo update -p alice-trt` は windows-sys を範囲で引く package の辺も組み替えたので、その行だけを書き換え `cargo metadata --locked` で整合を確かめた)

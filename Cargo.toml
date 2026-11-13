@@ -10,8 +10,8 @@ repository = "https://github.com/ext-sakamoro/ALICE-Eco-System"
 
 [dependencies]
 # ALICE Ecosystem (Python bindings disabled for integration demo)
-alice-edge = { git = "https://github.com/ext-sakamoro/ALICE-Edge", branch = "main", version = "0.4", features = ["std"] }
-alice-db = { git = "https://github.com/ext-sakamoro/ALICE-DB", branch = "main", version = "0.6", default-features = false }
+alice-edge = { git = "https://github.com/ext-sakamoro/ALICE-Edge", branch = "main", version = "0.5", features = ["std"] }
+alice-db = { git = "https://github.com/ext-sakamoro/ALICE-DB", branch = "main", version = "0.7", default-features = false }
 libasp = { git = "https://github.com/ext-sakamoro/ALICE-Streaming-Protocol", branch = "main", version = "1", default-features = false }
 alice-view = { git = "https://github.com/ext-sakamoro/ALICE-View", branch = "main", version = "0.3" }
 
@@ -45,7 +45,7 @@ alice-trt = { git = "https://github.com/ext-sakamoro/ALICE-TRT", branch = "main"
 alice-dns = { git = "https://github.com/ext-sakamoro/ALICE-DNS", branch = "main", version = "0.2", default-features = false }
 alice-api = { git = "https://github.com/ext-sakamoro/ALICE-API", branch = "main", version = "0.2", default-features = false, features = ["std"] }
 # the alice-zip sibling (lib name aliased to `alice_core` as used by bridge_zip.rs)
-alice_core = { package = "alice-zip", git = "https://github.com/ext-sakamoro/ALICE-Zip", branch = "main", version = "0.11", default-features = false, features = ["std", "lzma"] }
+alice_core = { package = "alice-zip", git = "https://github.com/ext-sakamoro/ALICE-Zip", branch = "main", version = "0.12", default-features = false, features = ["std", "lzma"] }
 
 # Auth & Crypto bridges
 alice-auth = { git = "https://github.com/ext-sakamoro/ALICE-Auth", branch = "main", version = "0.6", default-features = false, features = ["std"] }
