@@ -132,7 +132,7 @@ alice-parser = { git = "https://github.com/ext-sakamoro/ALICE-Parser", branch = 
 
 # Networking bridges (2026-03 batch)
 alice-proxy = { git = "https://github.com/ext-sakamoro/ALICE-Proxy", branch = "main", version = "1", default-features = false }
-alice-websocket = { git = "https://github.com/ext-sakamoro/ALICE-WebSocket", branch = "main", version = "1", default-features = false }
+alice-websocket = { git = "https://github.com/ext-sakamoro/ALICE-WebSocket", branch = "main", version = ">=1, <3", default-features = false }
 alice-grpc = { git = "https://github.com/ext-sakamoro/ALICE-gRPC", branch = "main", version = "1", default-features = false }
 alice-http = { git = "https://github.com/ext-sakamoro/ALICE-HTTP", branch = "main", version = "1", default-features = false }
 
