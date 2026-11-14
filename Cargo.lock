@@ -1071,8 +1071,8 @@ source = "git+https://github.com/ext-sakamoro/ALICE-WAF?branch=main#a7bc20a4894b
 
 [[package]]
 name = "alice-websocket"
-version = "1.0.1"
-source = "git+https://github.com/ext-sakamoro/ALICE-WebSocket?branch=main#a104e072e29fc081914c5dfe42dc906e8d1a67b4"
+version = "2.0.0"
+source = "git+https://github.com/ext-sakamoro/ALICE-WebSocket?branch=main#7cd1ec6937825e1b2c991374e139d13e2ec754bc"
 
 [[package]]
 name = "alice-zip"
