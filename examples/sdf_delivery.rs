@@ -57,11 +57,13 @@ struct CdnNode {
 
 /// Serialize `SdfTree` to ASDF binary format in-memory (zero disk I/O)
 ///
-/// Layout: [`AsdfHeader`: 16B] + [bincode body: variable]
-/// CRC32 computed on-the-fly over body bytes.
+/// Layout: [`AsdfHeader::new`: the header with alice-sdf's semantics identifier] + [the tree in
+/// the bincode 1 layout (alice-serial's bincode1): variable]
+/// CRC32 computed over the body bytes.
 #[inline]
 fn serialize_asdf(tree: &SdfTree) -> Vec<u8> {
-    let body = bincode::serialize(tree).expect("SdfTree serialization");
+    let body =
+        alice_serial::bincode1::to_vec(tree, 256 * 1024 * 1024).expect("SdfTree serialization");
     let crc = crc32fast::hash(&body);
     let header = AsdfHeader::new(tree, crc);
     let mut buf = Vec::with_capacity(16 + body.len());

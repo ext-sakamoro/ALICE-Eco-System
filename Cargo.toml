@@ -202,8 +202,8 @@ alice-game-engine = { git = "https://github.com/ext-sakamoro/ALICE-GameEngine", 
 # Agent bridge (2026-04)
 alice-agent = { git = "https://github.com/ext-sakamoro/ALICE-Agent", branch = "main", version = "0.1", default-features = false }
 
-# Serialization (in-memory ASDF, zero disk I/O)
-bincode = "1"
+# Serialization (in-memory ASDF, zero disk I/O): the bincode 1 layout through alice-serial's bincode1
+alice-serial = { git = "https://github.com/ext-sakamoro/ALICE-Serial", branch = "main", version = "0.2", default-features = false, features = ["serde"] }
 crc32fast = "1"
 
 # Utilities

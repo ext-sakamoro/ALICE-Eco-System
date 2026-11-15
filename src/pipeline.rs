@@ -35,6 +35,9 @@ use alice_synth::{FmPatch, Patch, Score, Synthesizer};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
+/// The most bytes an in-memory `.asdf` body is written to (256 MiB, as alice-sdf's own limit)
+const ASDF_LIMIT: usize = 256 * 1024 * 1024;
+
 // ── Config ───────────────────────────────────────────────────────────────
 
 /// Pipeline configuration.
@@ -82,9 +85,10 @@ pub struct SensorIngestResult {
 }
 
 /// The in-memory `.asdf` bytes [`AlicePipeline::deliver_asset`] stores: the 16-byte header
-/// (`AsdfHeader::new`, the body's CRC-32) then the tree in the bincode 1 layout
+/// (`AsdfHeader::new`, the body's CRC-32) then the tree in the bincode 1 layout (alice-serial's
+/// bincode1: the bytes bincode 1.3.3 wrote, at most `ASDF_LIMIT` bytes)
 pub(crate) fn encode_asdf(tree: &SdfTree) -> Result<Vec<u8>> {
-    let body = bincode::serialize(tree)?;
+    let body = alice_serial::bincode1::to_vec(tree, ASDF_LIMIT)?;
     let crc = crc32fast::hash(&body);
     let header = AsdfHeader::new(tree, crc);
     let mut asdf_bytes = Vec::with_capacity(16 + body.len());
@@ -923,7 +927,14 @@ mod asdf_fixtures {
     fn the_bytes_written_now_are_the_bytes_bincode_wrote() {
         for (name, t) in trees() {
             let want = std::fs::read(dir().join(format!("{name}.asdf"))).unwrap();
-            assert!(encode_asdf(&t).unwrap() == want, "{name}");
+            let got = encode_asdf(&t).unwrap();
+            let first = got.iter().zip(&want).position(|(a, b)| a != b);
+            assert!(
+                got == want,
+                "{name}: {} bytes written, {} pinned, first difference at {first:?}",
+                got.len(),
+                want.len()
+            );
             assert!(encode_asdf(&t).unwrap() == want, "{name}: written again");
         }
     }

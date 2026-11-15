@@ -16,6 +16,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- `deliver_asset` がメモリ上に作る .asdf の本体を bincode 1 でなく alice-serial の bincode1 (bincode 1 の layout、上限 256 MiB) で書く bytes は同じ: 変更前に bincode 1.3.3 で書いた 4 本の fixture (`tests/fixtures/asdf_delivery`、球 / 2 形の面 / smooth・subtract・rotate の木 / 40 段の union の鎖) がそのまま通る 符号化は `encode_asdf` に分けた (挙動は同じ) bincode の依存を外した (lock の alice-token と alice-sdf がまだ bincode を引くので、次の変更で上げる)
 - 依存: alice-websocket の要求を `"3"` にし、lock を 3.0.0 (branch main、705a5aa) にする (2.x と 3 の両方を受ける `">=2, <4"` の橋を経て、ALICE-Sync と同じ 3 に揃えた) 3.0.0 では mask の源の失敗を panic でなく `WsError::Mask` で返す (`MaskSource::fill` が `Result` を返す) この crate は mask の源を実装しないので code は変わらない
 - 依存: alice-text の要求を `"3"` にし、lock を 3.0.0 (28de466) と alice-serial (4a44974、Text 3 が payload を書くのに使う) に上げた alice-zip と alice-det-math の rev は据え置き (cargo update が先頭へ動かした分を --precise で戻した) Text 3 は bincode を引かないが、この crate はまだ alice-sdf と alice-token / 自身の直接依存から bincode を引く (移行の最後の段で外す)
 - 依存: alice-text の要求を `">=2.0.0, <4"` に広げる (ALICE-Text 3.0.0 への移行の橋、lock は 2 のまま) Text 3.0.0 は保存する payload を alice-serial の bincode1 で書き (byte は同じ)、多言語表の map を順序付きにする この crate は 3.0.0 で build と試験が通る (既定の feature、1913 件)

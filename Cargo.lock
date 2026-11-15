@@ -511,6 +511,7 @@ dependencies = [
  "alice-rtos",
  "alice-sdf",
  "alice-search",
+ "alice-serial",
  "alice-settlement",
  "alice-signal",
  "alice-simd",
@@ -533,7 +534,6 @@ dependencies = [
  "alice-waf",
  "alice-websocket",
  "alice-zip",
- "bincode 1.3.3",
  "crc32fast",
  "criterion",
  "libasp",
@@ -864,7 +864,7 @@ source = "git+https://github.com/ext-sakamoro/ALICE-Search?branch=main#e5432769d
 [[package]]
 name = "alice-serial"
 version = "0.2.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Serial?branch=main#4a449740d8cce4f028ca777708cd15e244295c49"
+source = "git+https://github.com/ext-sakamoro/ALICE-Serial?branch=main#ccf4338606257aae8cbfdbfac8544577d11bb927"
 dependencies = [
  "serde",
 ]
