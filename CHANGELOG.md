@@ -16,6 +16,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 - `docs/DEMOS.md`: 3 本の pipeline demo (`cargo run` / `sdf_delivery` / `game_pipeline`) の説明を README から移した build には隣に置く公開の sibling の repository が要ることを書いた (公開されていない crate を使う bridge は下の Removed で外した)
 
 ### Changed
+- 依存: alice-text の要求を `">=2.0.0, <4"` に広げる (ALICE-Text 3.0.0 への移行の橋、lock は 2 のまま) Text 3.0.0 は保存する payload を alice-serial の bincode1 で書き (byte は同じ)、多言語表の map を順序付きにする この crate は 3.0.0 で build と試験が通る (既定の feature、1913 件)
 - 依存: alice-db を 0.7 に、alice-zip (`alice_core`) を 0.12 に、alice-edge を 0.5 に上げる (alice-zip 0.12 は展開に上限を必須にした版、この crate は圧縮だけを使い展開を呼ばない alice-db 0.7 は blob の格納形式が変わる版で `AliceDB::open` はそのまま) 識別子は動かない (`DB_SEMANTICS_ID` は不変、この crate は peer の識別子を固定していない)
 - alice-llm を 5.0.0 (e8b8a1df) に上げ、要求を `"5"` にした (Cargo.lock は alice-llm の行だけ)
 - alice-llm の要求を `"4"` から `">=4, <6"` に広げた (Cargo.lock は 4.0.0 のまま、5.0.0 の着地後に上げる)
