@@ -17,6 +17,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 
 ### Changed
 - 依存: alice-websocket の要求を `"3"` にし、lock を 3.0.0 (branch main、705a5aa) にする (2.x と 3 の両方を受ける `">=2, <4"` の橋を経て、ALICE-Sync と同じ 3 に揃えた) 3.0.0 では mask の源の失敗を panic でなく `WsError::Mask` で返す (`MaskSource::fill` が `Result` を返す) この crate は mask の源を実装しないので code は変わらない
+- 依存: alice-text の要求を `"3"` にし、lock を 3.0.0 (28de466) と alice-serial (4a44974、Text 3 が payload を書くのに使う) に上げた alice-zip と alice-det-math の rev は据え置き (cargo update が先頭へ動かした分を --precise で戻した) Text 3 は bincode を引かないが、この crate はまだ alice-sdf と alice-token / 自身の直接依存から bincode を引く (移行の最後の段で外す)
 - 依存: alice-text の要求を `">=2.0.0, <4"` に広げる (ALICE-Text 3.0.0 への移行の橋、lock は 2 のまま) Text 3.0.0 は保存する payload を alice-serial の bincode1 で書き (byte は同じ)、多言語表の map を順序付きにする この crate は 3.0.0 で build と試験が通る (既定の feature、1913 件)
 - 依存: alice-db を 0.7 に、alice-zip (`alice_core`) を 0.12 に、alice-edge を 0.5 に上げる (alice-zip 0.12 は展開に上限を必須にした版、この crate は圧縮だけを使い展開を呼ばない alice-db 0.7 は blob の格納形式が変わる版で `AliceDB::open` はそのまま) 識別子は動かない (`DB_SEMANTICS_ID` は不変、この crate は peer の識別子を固定していない)
 - alice-llm を 5.0.0 (e8b8a1df) に上げ、要求を `"5"` にした (Cargo.lock は alice-llm の行だけ)
