@@ -834,7 +834,8 @@ impl AlicePipeline {
 
 #[cfg(test)]
 mod asdf_fixtures {
-    //! The bytes `encode_asdf` wrote with bincode 1.3.3, pinned before the encoder changed:
+    //! The bytes `encode_asdf` wrote with bincode 1.3.3, pinned before the encoder changed (the
+    //! header's semantics identifier is alice-sdf's and moves with it; the rest is pinned):
     //! `tests/fixtures/asdf_delivery/<name>.asdf` for fixed trees (a fixed version string, so the
     //! bytes do not follow the alice-sdf version), named with their SHA-256 in `SHA256SUMS`.
     use super::*;
@@ -925,17 +926,28 @@ mod asdf_fixtures {
 
     #[test]
     fn the_bytes_written_now_are_the_bytes_bincode_wrote() {
+        // the header is 16 bytes (magic, version, flags, node count, CRC-32 of the body) then
+        // alice-sdf's 32-byte semantics identifier; the identifier follows the locked alice-sdf
+        // (the fixtures carry the one of alice-sdf bed9d564), everything else is pinned
+        const ID: core::ops::Range<usize> = 16..48;
         for (name, t) in trees() {
             let want = std::fs::read(dir().join(format!("{name}.asdf"))).unwrap();
             let got = encode_asdf(&t).unwrap();
-            let first = got.iter().zip(&want).position(|(a, b)| a != b);
+            assert_eq!(got.len(), want.len(), "{name}: length");
+            assert!(got[..ID.start] == want[..ID.start], "{name}: header");
             assert!(
-                got == want,
-                "{name}: {} bytes written, {} pinned, first difference at {first:?}",
-                got.len(),
-                want.len()
+                got[ID] == alice_sdf::SDF_SEMANTICS_ID,
+                "{name}: the header carries the locked alice-sdf's identifier"
             );
-            assert!(encode_asdf(&t).unwrap() == want, "{name}: written again");
+            let first = got[ID.end..]
+                .iter()
+                .zip(&want[ID.end..])
+                .position(|(a, b)| a != b);
+            assert!(
+                got[ID.end..] == want[ID.end..],
+                "{name}: body differs at {first:?} after the header"
+            );
+            assert!(encode_asdf(&t).unwrap() == got, "{name}: written again");
         }
     }
 }

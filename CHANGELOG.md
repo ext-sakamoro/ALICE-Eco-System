@@ -5,6 +5,7 @@ All notable changes to ALICE-Eco-System will be documented in this file.
 ## [Unreleased]
 
 ### Security
+- bincode (RUSTSEC-2025-0141、保守されていない) が依存の graph から無くなった lock の alice-token を main fc1bbc8 (1.0.1、bincode 1.3.3 を引かない) に、alice-sdf を main 62de0060 (bincode 2.0.1 を引かない) に上げ、alice-sdf が要る alice-det-math を 9b6538aa に (src の変更なし、conformance の文書だけ) 他の package は動かしていない alice-sdf の semantics identifier が変わるので、`deliver_asset` がメモリ上に作る .asdf の header の識別子 (byte 16..48) は新しい alice-sdf のものになる header の他の field と本体の bytes は変わらない (fixture の試験は本体と header を固定し、識別子は lock の alice-sdf の `SDF_SEMANTICS_ID` と比べる)
 - tokio を 1.53.3 に上げる (RUSTSEC-2026-0386、`AsyncFd` の unsound、1.53.3 で修正) tokio 1.53.3 が要求する mio 1.2.4 / socket2 0.6.5 / tokio-macros 2.7.2 も上がり、tokio-macros が引く syn 3.0.9 が加わる それ以外の package の版と依存の辺は変えない `Test (public siblings)` が固定する sibling の組で解決した
 
 ### Added
