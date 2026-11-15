@@ -210,6 +210,8 @@ crc32fast = "1"
 tempfile = "3"
 
 [dev-dependencies]
+# the SHA-256 of the pinned .asdf delivery fixtures (src/pipeline.rs asdf_fixtures)
+sha2 = "0.10"
 criterion = { version = "0.5", features = ["html_reports"] }
 serde_json = "1"
 

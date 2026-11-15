@@ -1,0 +1,3 @@
+# .asdf bytes captured from bincode 1.3.3 and pinned by sha256: no line-ending conversion
+tests/fixtures/asdf_delivery/*.asdf binary
+tests/fixtures/asdf_delivery/SHA256SUMS text eol=lf

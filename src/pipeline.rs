@@ -81,6 +81,18 @@ pub struct SensorIngestResult {
     pub compression_ratio: f64,
 }
 
+/// The in-memory `.asdf` bytes [`AlicePipeline::deliver_asset`] stores: the 16-byte header
+/// (`AsdfHeader::new`, the body's CRC-32) then the tree in the bincode 1 layout
+pub(crate) fn encode_asdf(tree: &SdfTree) -> Result<Vec<u8>> {
+    let body = bincode::serialize(tree)?;
+    let crc = crc32fast::hash(&body);
+    let header = AsdfHeader::new(tree, crc);
+    let mut asdf_bytes = Vec::with_capacity(16 + body.len());
+    asdf_bytes.extend_from_slice(&header.to_bytes());
+    asdf_bytes.extend_from_slice(&body);
+    Ok(asdf_bytes)
+}
+
 /// Result of asset delivery (Path B-1: SDF → CDN → Cache).
 pub struct AssetDeliveryResult {
     /// ASDF binary size in bytes.
@@ -473,12 +485,7 @@ impl AlicePipeline {
     /// Returns an error if SDF serialization fails.
     pub fn deliver_asset(&self, tree: &SdfTree, asset_id: u64) -> Result<AssetDeliveryResult> {
         // 1. ALICE-SDF: serialize to ASDF binary (in-memory, zero disk I/O)
-        let body = bincode::serialize(tree)?;
-        let crc = crc32fast::hash(&body);
-        let header = AsdfHeader::new(tree, crc);
-        let mut asdf_bytes = Vec::with_capacity(16 + body.len());
-        asdf_bytes.extend_from_slice(&header.to_bytes());
-        asdf_bytes.extend_from_slice(&body);
+        let asdf_bytes = encode_asdf(tree)?;
         let asdf_size = asdf_bytes.len();
 
         // 2. ALICE-CDN: type-aware routing (ASDF gets priority=4, replicas=5)
@@ -820,6 +827,107 @@ impl AlicePipeline {
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod asdf_fixtures {
+    //! The bytes `encode_asdf` wrote with bincode 1.3.3, pinned before the encoder changed:
+    //! `tests/fixtures/asdf_delivery/<name>.asdf` for fixed trees (a fixed version string, so the
+    //! bytes do not follow the alice-sdf version), named with their SHA-256 in `SHA256SUMS`.
+    use super::*;
+    use alice_sdf::SdfNode;
+    use std::fmt::Write as _;
+    use std::path::{Path, PathBuf};
+
+    fn tree(root: SdfNode) -> SdfTree {
+        SdfTree {
+            version: "fixture".to_string(),
+            root,
+            metadata: None,
+        }
+    }
+
+    fn trees() -> Vec<(&'static str, SdfTree)> {
+        let mut chain = SdfNode::sphere(1.0);
+        for i in 1..40 {
+            chain = chain.union(SdfNode::sphere(0.5).translate(i as f32, 0.0, 0.0));
+        }
+        vec![
+            ("sphere", tree(SdfNode::sphere(1.0))),
+            (
+                "level",
+                tree(
+                    SdfNode::box3d(10.0, 1.0, 10.0)
+                        .union(SdfNode::cylinder(1.0, 5.0).translate(3.0, 2.5, 0.0)),
+                ),
+            ),
+            (
+                "smooth",
+                tree(
+                    SdfNode::torus(0.7, 0.2)
+                        .smooth_union(SdfNode::cylinder(0.25, 0.8), 0.1)
+                        .subtract(SdfNode::box3d(0.3, 0.3, 0.3))
+                        .rotate_euler(0.1, 0.2, 0.3),
+                ),
+            ),
+            ("chain40", tree(chain)),
+        ]
+    }
+
+    fn dir() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/asdf_delivery")
+    }
+
+    fn sha256_hex(b: &[u8]) -> String {
+        use sha2::{Digest, Sha256};
+        Sha256::digest(b).iter().fold(String::new(), |mut s, x| {
+            let _ = write!(s, "{x:02x}");
+            s
+        })
+    }
+
+    /// Writes the fixtures (run once with the bincode 1.3.3 encoder:
+    /// `ALICE_ECO_WRITE_ASDF_FIXTURES=1 cargo test --lib asdf_fixtures::write -- --ignored`).
+    #[test]
+    #[ignore = "writes tests/fixtures/asdf_delivery; run only to capture"]
+    fn write_asdf_fixtures() {
+        if std::env::var_os("ALICE_ECO_WRITE_ASDF_FIXTURES").is_none() {
+            return;
+        }
+        std::fs::create_dir_all(dir()).unwrap();
+        let mut sums = String::new();
+        for (name, t) in trees() {
+            let b = encode_asdf(&t).unwrap();
+            std::fs::write(dir().join(format!("{name}.asdf")), &b).unwrap();
+            let _ = writeln!(sums, "{}  {name}.asdf", sha256_hex(&b));
+        }
+        std::fs::write(dir().join("SHA256SUMS"), sums).unwrap();
+    }
+
+    #[test]
+    fn every_fixture_matches_its_recorded_sha256() {
+        let sums = std::fs::read_to_string(dir().join("SHA256SUMS")).unwrap();
+        let mut checked = 0;
+        for line in sums.lines() {
+            let (hash, name) = line.split_once("  ").expect("`<sha256>  <name>`");
+            assert_eq!(
+                sha256_hex(&std::fs::read(dir().join(name)).unwrap()),
+                hash,
+                "{name}"
+            );
+            checked += 1;
+        }
+        assert_eq!(checked, trees().len());
+    }
+
+    #[test]
+    fn the_bytes_written_now_are_the_bytes_bincode_wrote() {
+        for (name, t) in trees() {
+            let want = std::fs::read(dir().join(format!("{name}.asdf"))).unwrap();
+            assert!(encode_asdf(&t).unwrap() == want, "{name}");
+            assert!(encode_asdf(&t).unwrap() == want, "{name}: written again");
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
