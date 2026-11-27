@@ -448,7 +448,7 @@ dependencies = [
 
 [[package]]
 name = "alice-eco-system"
-version = "0.3.4"
+version = "0.4.0"
 dependencies = [
  "alice-agent",
  "alice-analytics",
@@ -897,8 +897,8 @@ dependencies = [
 
 [[package]]
 name = "alice-simd"
-version = "1.0.1"
-source = "git+https://github.com/ext-sakamoro/ALICE-SIMD?branch=main#cf2316e7c5ff1185420d8e444238415666f22caf"
+version = "2.0.0"
+source = "git+https://github.com/ext-sakamoro/ALICE-SIMD?branch=main#0079bc30e468bc824daf44a9dc258bded1938fbf"
 
 [[package]]
 name = "alice-space"

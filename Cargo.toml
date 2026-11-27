@@ -1,6 +1,6 @@
 [package]
 name = "alice-eco-system"
-version = "0.3.4"
+version = "0.4.0"
 edition = "2021"
 authors = ["Moroya Sakamoto"]
 description = "Index of the public ALICE crates and the integration hub that connects them"
@@ -111,7 +111,7 @@ alice-legal-ai = { git = "https://github.com/ext-sakamoro/ALICE-Legal-AI", branc
 alice-text-compression = { git = "https://github.com/ext-sakamoro/ALICE-Text-Compression", branch = "main", version = "0.1", default-features = false }
 
 # Enterprise/Commercial bridges
-alice-simd = { git = "https://github.com/ext-sakamoro/ALICE-SIMD", branch = "main", version = "1", default-features = false, features = ["std"] }
+alice-simd = { git = "https://github.com/ext-sakamoro/ALICE-SIMD", branch = "main", version = "2", default-features = false, features = ["std"] }
 
 # Media bridges (2026-03 batch)
 alice-audio = { git = "https://github.com/ext-sakamoro/ALICE-Audio", branch = "main", version = "2", default-features = false }

@@ -3,7 +3,7 @@
 //! 5 bridges exposing ALICE-SIMD's aligned vector ops, branchless
 //! arithmetic, and FNV-1a hashing to sibling crates.
 
-use alice_simd::{AlignedVec, Vec3};
+use alice_simd::{AlignedVec, CapacityOverflow, Vec3};
 
 // ── Bridge 1: SIMD → Physics (aligned batch transforms) ─────────────────
 
@@ -20,32 +20,39 @@ pub struct SimdPhysicsBatch {
 }
 
 /// Apply uniform gravity to a batch of particle positions via SIMD.
+///
+/// # Errors
+///
+/// [`CapacityOverflow`] when `3 * count` positions cannot be laid out in an
+/// aligned buffer.
 #[inline]
-#[must_use]
 pub fn simd_to_physics_gravity(
     positions: &[Vec3],
     velocities: &[Vec3],
     gravity: f32,
     dt: f32,
-) -> SimdPhysicsBatch {
+) -> Result<SimdPhysicsBatch, CapacityOverflow> {
     let count = positions.len().min(velocities.len());
-    let mut hash_bytes = Vec::with_capacity(count * 12);
-    let mut out = AlignedVec::with_capacity(count * 3);
+    // a count past usize::MAX / 3 saturates to a capacity with_capacity rejects
+    let mut out = AlignedVec::with_capacity(count.saturating_mul(3))?;
+    let mut hash_bytes = Vec::with_capacity(count.saturating_mul(12));
     for i in 0..count {
         hash_bytes.extend_from_slice(&positions[i].x.to_le_bytes());
         hash_bytes.extend_from_slice(&positions[i].y.to_le_bytes());
         hash_bytes.extend_from_slice(&positions[i].z.to_le_bytes());
         let vz = velocities[i].z.mul_add(1.0, gravity * dt);
-        out.push(velocities[i].x.mul_add(dt, positions[i].x));
-        out.push(velocities[i].y.mul_add(dt, positions[i].y));
-        out.push(vz.mul_add(dt, positions[i].z));
+        out.extend_from_slice(&[
+            velocities[i].x.mul_add(dt, positions[i].x),
+            velocities[i].y.mul_add(dt, positions[i].y),
+            vz.mul_add(dt, positions[i].z),
+        ])?;
     }
-    SimdPhysicsBatch {
+    Ok(SimdPhysicsBatch {
         content_hash: fnv1a(&hash_bytes),
         positions: out,
         count,
         simd_accelerated: cfg!(target_feature = "avx2") || cfg!(target_feature = "neon"),
-    }
+    })
 }
 
 // ── Bridge 2: SIMD → SDF (aligned distance buffer) ──────────────────────
@@ -61,18 +68,21 @@ pub struct SimdSdfDistances {
 }
 
 /// Allocate an aligned distance buffer for SDF batch evaluation.
+///
+/// # Errors
+///
+/// [`CapacityOverflow`] when `point_count` distances cannot be laid out.
 #[inline]
-#[must_use]
-pub fn simd_to_sdf_distances(point_count: usize) -> SimdSdfDistances {
-    let mut distances = AlignedVec::with_capacity(point_count);
+pub fn simd_to_sdf_distances(point_count: usize) -> Result<SimdSdfDistances, CapacityOverflow> {
+    let mut distances = AlignedVec::with_capacity(point_count)?;
     for _ in 0..point_count {
-        distances.push(f32::MAX);
+        distances.push(f32::MAX)?;
     }
-    SimdSdfDistances {
+    Ok(SimdSdfDistances {
         content_hash: fnv1a(&point_count.to_le_bytes()),
         distances,
         point_count,
-    }
+    })
 }
 
 // ── Bridge 3: SIMD → ML (aligned weight buffer) ─────────────────────────
@@ -90,19 +100,22 @@ pub struct SimdMlWeightBuffer {
 }
 
 /// Allocate an aligned buffer for ML ternary weight packing.
+///
+/// # Errors
+///
+/// [`CapacityOverflow`] when `byte_count` bytes cannot be laid out.
 #[inline]
-#[must_use]
-pub fn simd_to_ml_weights(byte_count: usize) -> SimdMlWeightBuffer {
-    let mut data = AlignedVec::with_capacity(byte_count);
+pub fn simd_to_ml_weights(byte_count: usize) -> Result<SimdMlWeightBuffer, CapacityOverflow> {
+    let mut data = AlignedVec::with_capacity(byte_count)?;
     for _ in 0..byte_count {
-        data.push(0);
+        data.push(0)?;
     }
-    SimdMlWeightBuffer {
+    Ok(SimdMlWeightBuffer {
         content_hash: fnv1a(&byte_count.to_le_bytes()),
         data,
         byte_count,
         lane_width: alice_simd::SIMD_WIDTH,
-    }
+    })
 }
 
 // ── Bridge 4: SIMD → Edge (fast hashing for flow keys) ──────────────────
@@ -187,7 +200,7 @@ mod tests {
             y: 0.0,
             z: 0.0,
         }];
-        let result = simd_to_physics_gravity(&p, &v, -9.81, 0.1);
+        let result = simd_to_physics_gravity(&p, &v, -9.81, 0.1).unwrap();
         assert_ne!(result.content_hash, 0);
         assert_eq!(result.count, 1);
     }
@@ -204,7 +217,7 @@ mod tests {
             y: 0.0,
             z: 0.0,
         }];
-        let result = simd_to_physics_gravity(&p, &v, -9.81, 0.1);
+        let result = simd_to_physics_gravity(&p, &v, -9.81, 0.1).unwrap();
         assert_eq!(result.positions.len(), 3);
         // x should advance: 0.0 + 1.0*0.1 = 0.1
         assert!((result.positions[0] - 0.1).abs() < 1e-5);
@@ -212,7 +225,7 @@ mod tests {
 
     #[test]
     fn sdf_distance_alloc_hash() {
-        let buf = simd_to_sdf_distances(1024);
+        let buf = simd_to_sdf_distances(1024).unwrap();
         assert_ne!(buf.content_hash, 0);
         assert_eq!(buf.point_count, 1024);
         assert_eq!(buf.distances.len(), 1024);
@@ -220,13 +233,13 @@ mod tests {
 
     #[test]
     fn sdf_distance_initial_value() {
-        let buf = simd_to_sdf_distances(8);
+        let buf = simd_to_sdf_distances(8).unwrap();
         assert!((buf.distances[0] - f32::MAX).abs() < 1.0);
     }
 
     #[test]
     fn ml_weight_alloc_hash() {
-        let buf = simd_to_ml_weights(256);
+        let buf = simd_to_ml_weights(256).unwrap();
         assert_ne!(buf.content_hash, 0);
         assert_eq!(buf.byte_count, 256);
         assert!(buf.lane_width > 0);
@@ -234,7 +247,7 @@ mod tests {
 
     #[test]
     fn ml_weight_zero_initialized() {
-        let buf = simd_to_ml_weights(64);
+        let buf = simd_to_ml_weights(64).unwrap();
         assert!(buf.data.iter().all(|&b| b == 0));
     }
 
@@ -266,5 +279,17 @@ mod tests {
     fn fnv1a_consistency() {
         assert_eq!(fnv1a(b"test"), fnv1a(b"test"));
         assert_ne!(fnv1a(b"x"), fnv1a(b"y"));
+    }
+
+    #[test]
+    fn oversized_buffers_are_an_error_not_a_panic() {
+        assert!(matches!(
+            simd_to_sdf_distances(usize::MAX),
+            Err(CapacityOverflow { .. })
+        ));
+        assert!(matches!(
+            simd_to_ml_weights(usize::MAX),
+            Err(CapacityOverflow { .. })
+        ));
     }
 }
