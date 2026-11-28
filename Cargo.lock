@@ -562,9 +562,19 @@ dependencies = [
 [[package]]
 name = "alice-ephemeris"
 version = "0.1.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Ephemeris?branch=main#69754efa56cc7a4100298735202c8f504930e48c"
+source = "git+https://github.com/ext-sakamoro/ALICE-Ephemeris?branch=main#f3b48208bfc50f4dbdae6abe1970af1e49e0f796"
 dependencies = [
  "alice-det-math",
+ "alice-ephemeris-os-local",
+]
+
+[[package]]
+name = "alice-ephemeris-os-local"
+version = "0.1.0"
+source = "git+https://github.com/ext-sakamoro/ALICE-Ephemeris?branch=main#f3b48208bfc50f4dbdae6abe1970af1e49e0f796"
+dependencies = [
+ "libc",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -692,7 +702,7 @@ dependencies = [
 [[package]]
 name = "alice-lol"
 version = "0.5.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-LOL?branch=main#f620a63d1a8357a0c99527a18cdf9638e892afd6"
+source = "git+https://github.com/ext-sakamoro/ALICE-LOL?branch=main#c70a92884d85484c0319dce0072ba1231603cd9a"
 dependencies = [
  "alice-det-math",
  "alice-lol-layout",
@@ -707,7 +717,7 @@ dependencies = [
 [[package]]
 name = "alice-lol-layout"
 version = "0.1.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-LOL?branch=main#f620a63d1a8357a0c99527a18cdf9638e892afd6"
+source = "git+https://github.com/ext-sakamoro/ALICE-LOL?branch=main#c70a92884d85484c0319dce0072ba1231603cd9a"
 dependencies = [
  "sha2",
 ]
@@ -715,7 +725,7 @@ dependencies = [
 [[package]]
 name = "alice-lol-macro"
 version = "0.4.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-LOL?branch=main#f620a63d1a8357a0c99527a18cdf9638e892afd6"
+source = "git+https://github.com/ext-sakamoro/ALICE-LOL?branch=main#c70a92884d85484c0319dce0072ba1231603cd9a"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -836,7 +846,7 @@ source = "git+https://github.com/ext-sakamoro/ALICE-RTOS?branch=main#b890a0cfa27
 [[package]]
 name = "alice-sdf"
 version = "7.0.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-SDF?branch=main#62de006047becf5512ebbad000219a6e3b2a509d"
+source = "git+https://github.com/ext-sakamoro/ALICE-SDF?branch=main#4accaad56d0c8575dba8c466297b806edb026e20"
 dependencies = [
  "alice-det-math",
  "alice-zip",
@@ -940,11 +950,11 @@ source = "git+https://github.com/ext-sakamoro/ALICE-Terraform?branch=main#b7e2ee
 [[package]]
 name = "alice-text"
 version = "3.0.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Text?branch=main#28de46687a19ecb7f72fb53595b07aeb0cd50793"
+source = "git+https://github.com/ext-sakamoro/ALICE-Text?branch=main#f1291307a2eb3e7375612d6feb04ab347e3e8cf8"
 dependencies = [
+ "alice-ephemeris",
  "alice-serial",
  "alice-zip",
- "chrono",
  "clap",
  "lzma-rs",
  "memmap2",
@@ -1019,13 +1029,13 @@ source = "git+https://github.com/ext-sakamoro/ALICE-Video?branch=main#7939d0ba17
 [[package]]
 name = "alice-view"
 version = "0.3.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-View?branch=main#c3625e332a3e9caf4f4e2dc474dd0f4bd93f4528"
+source = "git+https://github.com/ext-sakamoro/ALICE-View?branch=main#32012a4fada4fbfbf5c50f118106c6aca6b2ad8d"
 dependencies = [
+ "alice-ephemeris",
  "alice-lol",
  "alice-sdf",
  "anyhow",
  "bytemuck",
- "chrono",
  "dirs 5.0.1",
  "egui 0.31.1",
  "egui-wgpu 0.31.1",
@@ -1238,7 +1248,7 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "parking_lot",
  "percent-encoding",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
  "x11rb",
 ]
 
@@ -1923,19 +1933,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "chrono"
-version = "0.4.45"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
-dependencies = [
- "iana-time-zone",
- "js-sys",
- "num-traits",
- "wasm-bindgen",
- "windows-link",
-]
-
-[[package]]
 name = "ciborium"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2501,7 +2498,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.3",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2953,7 +2950,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3775,30 +3772,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "iana-time-zone"
-version = "0.1.65"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e31bc9ad994ba00e440a8aa5c9ef0ec67d5cb5e5cb0cc7f8b744a35b389cc470"
-dependencies = [
- "android_system_properties",
- "core-foundation-sys",
- "iana-time-zone-haiku",
- "js-sys",
- "log",
- "wasm-bindgen",
- "windows-core 0.58.0",
-]
-
-[[package]]
-name = "iana-time-zone-haiku"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f31827a206f56af32e590ba56d5d2d085f558508192593743f16b2306495269f"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "icu_collections"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3995,7 +3968,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi",
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4713,7 +4686,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6108,7 +6081,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6812,10 +6785,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.6",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7918,7 +7891,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
