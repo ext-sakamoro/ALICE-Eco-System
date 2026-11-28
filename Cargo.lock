@@ -378,7 +378,7 @@ dependencies = [
 [[package]]
 name = "alice-crypto"
 version = "0.7.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Crypto?branch=main#9a6457390aeff4ae8a86e3e97110993eaa71bb31"
+source = "git+https://github.com/ext-sakamoro/ALICE-Crypto?branch=main#2338f890e6460430885eb9d402a600581adc437b"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -404,7 +404,7 @@ dependencies = [
 [[package]]
 name = "alice-db"
 version = "0.7.2"
-source = "git+https://github.com/ext-sakamoro/ALICE-DB?branch=main#f717243f9c4045be8df5748271cb231f948cc972"
+source = "git+https://github.com/ext-sakamoro/ALICE-DB?branch=main#52495f911881917fe11f474c4907dbecf3c715bf"
 dependencies = [
  "alice-det-math",
  "alice-serial",
@@ -426,7 +426,7 @@ dependencies = [
 [[package]]
 name = "alice-det-math"
 version = "0.6.1"
-source = "git+https://github.com/ext-sakamoro/ALICE-DetMath?branch=main#9b6538aab2f166ae0afb5b806ae8611b89cad5dd"
+source = "git+https://github.com/ext-sakamoro/ALICE-DetMath?branch=main#ae6dd20d6d037168d245c602fed295f90abb016e"
 dependencies = [
  "bytemuck",
  "wide",
@@ -594,7 +594,7 @@ version = "0.6.0"
 source = "git+https://github.com/ext-sakamoro/ALICE-GameEngine?branch=main#4719e14bb8f26d0b64c8cd915222d251b3a085ab"
 dependencies = [
  "alice-sdf",
- "glam 0.29.3",
+ "glam",
  "log",
  "rayon",
  "serde",
@@ -635,8 +635,8 @@ source = "git+https://github.com/ext-sakamoro/ALICE-HTTP?branch=main#3d1ad91b22f
 
 [[package]]
 name = "alice-identity"
-version = "3.0.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Identity?branch=main#0e1809b95fdb93fa14ff7dda4ae692ea76d2a665"
+version = "4.0.0"
+source = "git+https://github.com/ext-sakamoro/ALICE-Identity?branch=main#78e2d280bd60a689a9cd329766255ac2818a4910"
 dependencies = [
  "alice-crypto",
  "alice-sign",
@@ -699,7 +699,7 @@ dependencies = [
  "alice-lol-macro",
  "alice-sdf",
  "alice-zip",
- "glam 0.29.3",
+ "glam",
  "sha2",
  "stacker",
 ]
@@ -844,7 +844,7 @@ dependencies = [
  "ash",
  "bytemuck",
  "crc32fast",
- "glam 0.29.3",
+ "glam",
  "log",
  "pollster",
  "rayon",
@@ -864,7 +864,7 @@ source = "git+https://github.com/ext-sakamoro/ALICE-Search?branch=main#e5432769d
 [[package]]
 name = "alice-serial"
 version = "0.2.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Serial?branch=main#ccf4338606257aae8cbfdbfac8544577d11bb927"
+source = "git+https://github.com/ext-sakamoro/ALICE-Serial?branch=main#7899261f6b291edaa2a881838475f7bb49806d94"
 dependencies = [
  "serde",
 ]
@@ -880,7 +880,7 @@ dependencies = [
 [[package]]
 name = "alice-sign"
 version = "0.1.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Sign?branch=main#41b19c231f362f7da8877295ceb9291553d24bdf"
+source = "git+https://github.com/ext-sakamoro/ALICE-Sign?branch=main#8322e392acd5006b59e042f5c6b2adab6deaee04"
 dependencies = [
  "ed25519-dalek",
  "sha2",
@@ -917,7 +917,7 @@ source = "git+https://github.com/ext-sakamoro/ALICE-Swarm?branch=main#481e7d79f5
 [[package]]
 name = "alice-sync"
 version = "0.8.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Sync?branch=main#bb13b877b5bbfd29efc2e77e3c9cc63a8be9c388"
+source = "git+https://github.com/ext-sakamoro/ALICE-Sync?branch=main#118d19eb8baf576d714a6eab41c670721bc84f96"
 dependencies = [
  "alice-db",
  "alice-identity",
@@ -1030,7 +1030,7 @@ dependencies = [
  "egui 0.31.1",
  "egui-wgpu 0.31.1",
  "egui-winit 0.31.1",
- "glam 0.29.3",
+ "glam",
  "image",
  "log",
  "mimalloc",
@@ -1081,7 +1081,7 @@ source = "git+https://github.com/ext-sakamoro/ALICE-WebSocket?branch=main#705a5a
 [[package]]
 name = "alice-zip"
 version = "0.12.0"
-source = "git+https://github.com/ext-sakamoro/ALICE-Zip?branch=main#95ef35acd5ae33bc1dfceaf4d3b74925c50775a4"
+source = "git+https://github.com/ext-sakamoro/ALICE-Zip?branch=main#b1743e656d0798e1297bca47d6b78f551d26e0ef"
 dependencies = [
  "alice-det-math",
  "crc",
@@ -1613,7 +1613,7 @@ dependencies = [
  "arrayvec",
  "bitcode_derive",
  "bytemuck",
- "glam 0.34.3",
+ "glam",
  "serde",
 ]
 
@@ -3353,12 +3353,6 @@ dependencies = [
  "bytemuck",
  "serde",
 ]
-
-[[package]]
-name = "glam"
-version = "0.34.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "627003914c6057c9c8f0832ee4f870b5a4f599d0cfa83f4072675114860cd0ff"
 
 [[package]]
 name = "glob"
